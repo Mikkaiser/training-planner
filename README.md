@@ -1,3 +1,46 @@
+## Training Planner
+
+Next.js 14 (App Router) + TypeScript + Supabase + Tailwind + shadcn/ui.
+
+### Local setup
+
+Create your env file:
+
+```bash
+cp .env.example .env.local
+```
+
+Fill in:
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+
+Then run:
+
+```bash
+pnpm install
+pnpm dev
+```
+
+### Supabase database setup
+
+This repo includes:
+- `supabase/migrations/0001_init.sql`: tables + RLS + storage buckets
+- `supabase/seed.sql`: the 4 macro-subcompetences + a sample plan/phases/gate
+
+Apply them in the Supabase Dashboard SQL Editor (in this order):
+1. Run `supabase/migrations/0001_init.sql`
+2. Run `supabase/seed.sql`
+
+### Roles
+
+New users default to `instructor` via an `auth.users` trigger that creates a row in `public.profiles`.
+
+To make the first user an admin, update their profile role in SQL:
+
+```sql
+update public.profiles set role = 'admin' where id = '<user_uuid>';
+```
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
