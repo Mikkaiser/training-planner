@@ -21,13 +21,45 @@ pnpm install
 pnpm dev
 ```
 
+### Supabase CLI (Linux)
+
+Install the Supabase CLI:
+
+```bash
+# Option 1 — official install script
+curl -fsSL https://supabase.com/install.sh | sh
+
+# Option 2 — Homebrew (Linuxbrew)
+brew install supabase/tap/supabase
+
+# Option 3 — npm
+npm install -g supabase
+```
+
+Verify the installation:
+
+```bash
+supabase --version
+```
+
 ### Supabase database setup
 
 This repo includes:
 - `supabase/migrations/0001_init.sql`: tables + RLS + storage buckets
 - `supabase/seed.sql`: the 4 macro-subcompetences + a sample plan/phases/gate
 
-Apply them in the Supabase Dashboard SQL Editor (in this order):
+**Using the Supabase CLI (recommended):**
+
+```bash
+supabase login
+supabase link --project-ref <your-project-ref>
+supabase db push
+supabase db seed
+```
+
+**Using the Dashboard SQL Editor (alternative):**
+
+Apply in this order:
 1. Run `supabase/migrations/0001_init.sql`
 2. Run `supabase/seed.sql`
 
