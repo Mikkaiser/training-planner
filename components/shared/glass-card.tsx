@@ -1,21 +1,25 @@
 import { cn } from "@/lib/utils";
 
+type GlassVariant = "default" | "subtle" | "strong";
+
+const variantClass: Record<GlassVariant, string> = {
+  default: "glass",
+  subtle: "glass-subtle",
+  strong: "glass-strong",
+};
+
 export function GlassCard({
   className,
+  variant = "default",
   children,
 }: {
   className?: string;
+  variant?: GlassVariant;
   children: React.ReactNode;
 }) {
   return (
-    <div
-      className={cn(
-        "glass-panel border-accent-border/70 bg-[rgba(35,39,61,0.55)] shadow-glow transition-colors hover:border-accent-border",
-        className
-      )}
-    >
+    <div className={cn(variantClass[variant], "p-4", className)}>
       {children}
     </div>
   );
 }
-

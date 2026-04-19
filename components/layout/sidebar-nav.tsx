@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import {
   BookOpen,
   FileText,
-  GraduationCap,
   Layers,
   LayoutDashboard,
   Map,
@@ -13,6 +12,7 @@ import {
   Users,
 } from "lucide-react";
 
+import { TrainingPlannerLogo } from "@/components/brand/training-planner-logo";
 import type { ProfileRole } from "@/types";
 import { cn } from "@/lib/utils";
 
@@ -25,42 +25,61 @@ const nav = [
   { href: "/dashboard/gates", label: "Gates", icon: ShieldCheck },
 ] as const;
 
-export function SidebarNav({ role }: { role: ProfileRole | null }) {
+/** Only one item active: `/dashboard` matches the home route only, not nested paths. */
+function isNavItemActive(pathname: string, href: string): boolean {
+  if (href === "/dashboard") {
+    return pathname === "/dashboard";
+  }
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+export function SidebarNav({
+  role,
+  onNavigate,
+}: {
+  role: ProfileRole | null;
+  /** Called after a nav link is activated (e.g. close mobile sheet). */
+  onNavigate?: () => void;
+}) {
   const pathname = usePathname();
+  const usersActive = isNavItemActive(pathname, "/dashboard/users");
 
   return (
-    <aside className="flex h-full flex-col p-4">
-      <div className="mb-4 flex items-center gap-2 px-2">
-        <GraduationCap className="h-5 w-5 text-accent" />
-        <div className="leading-tight">
-          <div className="text-sm font-semibold text-secondary">
-            Training Planner
-          </div>
-          <div className="text-xs text-[rgba(244,253,217,0.6)]">
-            WorldSkills roadmap
-          </div>
-        </div>
-      </div>
+    <aside className="relative z-10 flex h-full flex-col p-4">
+      <Link
+        href="/dashboard"
+        onClick={() => onNavigate?.()}
+        className="mb-5 flex flex-col items-center rounded-lg px-1 text-center transition-opacity hover:opacity-90"
+        aria-label="Training Planner home"
+      >
+        <TrainingPlannerLogo variant="sidebar" />
+      </Link>
 
       <nav className="space-y-1">
         {nav.map((item) => {
-          const active =
-            pathname === item.href || pathname.startsWith(`${item.href}/`);
+          const active = isNavItemActive(pathname, item.href);
           const Icon = item.icon;
           return (
             <Link
               key={item.href}
               href={item.href}
+              onClick={() => onNavigate?.()}
+              aria-current={active ? "page" : undefined}
               className={cn(
-                "group flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors",
-                "hover:bg-[rgba(219,253,107,0.08)]",
+                "sidebar-nav-link flex min-h-[2.25rem] items-center gap-3 rounded-[10px] px-3 py-2 no-underline",
                 active
-                  ? "bg-[rgba(219,253,107,0.12)] text-secondary shadow-[inset_0_0_0_1px_rgba(219,253,107,0.20)]"
-                  : "text-[rgba(244,253,217,0.75)]"
+                  ? "nav-item-active"
+                  : "text-tp-muted hover:bg-[var(--color-accent-muted)]"
               )}
             >
-              <Icon className={cn("h-5 w-5", active ? "text-accent" : "")} />
-              <span>{item.label}</span>
+              <Icon
+                className={cn(
+                  "size-5 shrink-0",
+                  active ? "text-[var(--color-accent)]" : "text-tp-muted"
+                )}
+                strokeWidth={2}
+              />
+              <span className="min-w-0">{item.label}</span>
             </Link>
           );
         })}
@@ -68,24 +87,30 @@ export function SidebarNav({ role }: { role: ProfileRole | null }) {
         {role === "admin" ? (
           <Link
             href="/dashboard/users"
+            onClick={() => onNavigate?.()}
+            aria-current={usersActive ? "page" : undefined}
             className={cn(
-              "group mt-2 flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors",
-              "hover:bg-[rgba(219,253,107,0.08)]",
-              pathname.startsWith("/dashboard/users")
-                ? "bg-[rgba(219,253,107,0.12)] text-secondary shadow-[inset_0_0_0_1px_rgba(219,253,107,0.20)]"
-                : "text-[rgba(244,253,217,0.75)]"
+              "sidebar-nav-link mt-2 flex min-h-[2.25rem] items-center gap-3 rounded-[10px] px-3 py-2 no-underline",
+              usersActive
+                ? "nav-item-active"
+                : "text-tp-muted hover:bg-[var(--color-accent-muted)]"
             )}
           >
-            <Users className="h-5 w-5" />
-            <span>Users</span>
+            <Users
+              className={cn(
+                "size-5 shrink-0",
+                usersActive ? "text-[var(--color-accent)]" : "text-tp-muted"
+              )}
+              strokeWidth={2}
+            />
+            <span className="min-w-0">Users</span>
           </Link>
         ) : null}
       </nav>
 
-      <div className="mt-auto pt-4 text-xs text-[rgba(244,253,217,0.5)]">
+      <div className="mt-auto pt-4 text-xs text-tp-muted">
         {role ? `Role: ${role}` : ""}
       </div>
     </aside>
   );
 }
-

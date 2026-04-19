@@ -11,10 +11,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={queryClient}>
       {children}
       <Toaster
-        theme="dark"
+        theme="system"
         richColors
         toastOptions={{
-          className: "glass-panel border-accent-border",
+          className: "glass-strong rounded-xl text-tp-primary",
         }}
       />
     </QueryClientProvider>

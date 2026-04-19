@@ -1,17 +1,21 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { GraduationCap, LogIn } from "lucide-react";
+import { LogIn } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { TrainingPlannerLogo } from "@/components/brand/training-planner-logo";
+import { OAuthButtons } from "@/components/auth/oauth-buttons";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const schema = z.object({
@@ -21,9 +25,16 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-export function LoginForm({ nextPath }: { nextPath: string }) {
+export function LoginForm({
+  nextPath,
+  variant = "signin",
+}: {
+  nextPath: string;
+  variant?: "signin" | "signup";
+}) {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
+  const isSignup = variant === "signup";
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -34,9 +45,44 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
     setSubmitting(true);
     try {
       const supabase = createSupabaseBrowserClient();
+      const origin = window.location.origin;
+
+      if (isSignup) {
+        const { data, error } = await supabase.auth.signUp({
+          email: values.email,
+          password: values.password,
+          options: {
+            emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
+          },
+        });
+        if (error) {
+          toast.error(error.message);
+          return;
+        }
+        if (data.session) {
+          const { error: refreshError } = await supabase.auth.refreshSession();
+          if (refreshError) {
+            toast.error(refreshError.message);
+            return;
+          }
+          toast.success("Account created.");
+          router.push(nextPath);
+          router.refresh();
+          return;
+        }
+        toast.success("Check your email for a confirmation link.");
+        return;
+      }
+
       const { error } = await supabase.auth.signInWithPassword(values);
       if (error) {
         toast.error(error.message);
+        return;
+      }
+
+      const { error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError) {
+        toast.error(refreshError.message);
         return;
       }
 
@@ -44,7 +90,7 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
       router.push(nextPath);
       router.refresh();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to sign in.");
+      toast.error(e instanceof Error ? e.message : "Something went wrong.");
     } finally {
       setSubmitting(false);
     }
@@ -56,26 +102,35 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
     formState: { errors },
   } = form;
 
+  const nextQuery = `?next=${encodeURIComponent(nextPath)}`;
+
   return (
-    <Card className="glass-panel w-full border-accent-border/70 bg-[rgba(35,39,61,0.65)] shadow-glow">
-      <CardHeader className="space-y-2">
-        <div className="flex items-center gap-2 text-secondary">
-          <GraduationCap className="h-5 w-5 text-accent" />
-          <span className="text-sm font-medium tracking-wide text-secondary">
-            Training Planner
-          </span>
+    <Card className="login-auth-card glass-panel--login relative z-[1] w-full glass">
+      <CardHeader className="space-y-4">
+        <div className="login-auth-logo-wrap flex justify-center pb-1">
+          <TrainingPlannerLogo variant="auth" priority />
         </div>
-        <CardTitle className="text-xl font-semibold text-secondary">
-          Sign in
+        <CardTitle className="login-auth-title text-tp-primary">
+          {isSignup ? "Create account" : "Sign in"}
         </CardTitle>
-        <p className="text-sm text-[rgba(244,253,217,0.7)]">
-          Use your Supabase email/password account.
+        <p className="login-auth-subtitle text-tp-secondary">
+          {isSignup
+            ? "Use Google or email. New accounts get an instructor profile automatically."
+            : "Continue with Google, or sign in with your email and password."}
         </p>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-6">
+        <OAuthButtons nextPath={nextPath} />
+        <div className="relative flex items-center gap-3">
+          <Separator className="flex-1 bg-border" />
+          <span className="shrink-0 text-xs uppercase tracking-wide text-tp-muted">
+            or email
+          </span>
+          <Separator className="flex-1 bg-border" />
+        </div>
         <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-[rgba(244,253,217,0.85)]">
+            <Label htmlFor="email" className="login-auth-label text-tp-secondary">
               Email
             </Label>
             <Input
@@ -83,7 +138,7 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
               type="email"
               placeholder="you@example.com"
               autoComplete="email"
-              className="border-accent-border/70 bg-[rgba(28,31,51,0.35)] text-secondary placeholder:text-[rgba(244,253,217,0.35)]"
+              className="login-auth-input"
               {...register("email")}
             />
             {errors.email?.message ? (
@@ -92,33 +147,71 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password" className="text-[rgba(244,253,217,0.85)]">
+            <Label htmlFor="password" className="login-auth-label text-tp-secondary">
               Password
             </Label>
             <Input
               id="password"
               type="password"
-              autoComplete="current-password"
-              className="border-accent-border/70 bg-[rgba(28,31,51,0.35)] text-secondary"
+              autoComplete={isSignup ? "new-password" : "current-password"}
+              className="login-auth-input"
               {...register("password")}
             />
             {errors.password?.message ? (
               <p className="text-xs text-negative">{errors.password.message}</p>
+            ) : null}
+            {!isSignup ? (
+              <div className="flex justify-end">
+                <Link
+                  href="/forgot-password"
+                  className="login-auth-forgot font-medium text-tp-accent-label underline-offset-4 hover:underline"
+                >
+                  Forgot password?
+                </Link>
+              </div>
             ) : null}
           </div>
 
           <Button
             type="submit"
             disabled={submitting}
-            className="w-full"
+            className="login-auth-submit w-full"
             size="lg"
           >
-            <LogIn className="mr-2 h-5 w-5" />
-            {submitting ? "Signing in…" : "Sign in"}
+            <LogIn className="mr-2 h-5 w-5 text-primary-foreground" />
+            {submitting
+              ? isSignup
+                ? "Creating account…"
+                : "Signing in…"
+              : isSignup
+                ? "Sign up with email"
+                : "Sign in"}
           </Button>
         </form>
+        <p className="login-auth-switch text-center text-tp-secondary">
+          {isSignup ? (
+            <>
+              Already have an account?{" "}
+              <Link
+                href={`/login${nextQuery}`}
+                className="font-medium text-tp-accent-label underline-offset-4 hover:underline"
+              >
+                Sign in
+              </Link>
+            </>
+          ) : (
+            <>
+              Need an account?{" "}
+              <Link
+                href={`/signup${nextQuery}`}
+                className="font-medium text-tp-accent-label underline-offset-4 hover:underline"
+              >
+                Sign up
+              </Link>
+            </>
+          )}
+        </p>
       </CardContent>
     </Card>
   );
 }
-

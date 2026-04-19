@@ -1,7 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createSupabaseMiddlewareClient } from "@/lib/supabase/middleware";
 
-const AUTH_ROUTES = ["/login"];
+/** Auth pages that signed-in users should leave (not reset-password: recovery session). */
+const AUTH_ROUTES_REDIRECT_WHEN_AUTHENTICATED = ["/login", "/signup", "/forgot-password"];
 const DASHBOARD_PREFIX = "/dashboard";
 
 export async function middleware(request: NextRequest) {
@@ -11,7 +12,9 @@ export async function middleware(request: NextRequest) {
   const user = data.user;
 
   const { pathname } = request.nextUrl;
-  const isAuthRoute = AUTH_ROUTES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  const isAuthRoute = AUTH_ROUTES_REDIRECT_WHEN_AUTHENTICATED.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`)
+  );
   const isDashboardRoute =
     pathname === DASHBOARD_PREFIX || pathname.startsWith(`${DASHBOARD_PREFIX}/`);
 
@@ -46,6 +49,12 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/login", "/dashboard/:path*"],
+  matcher: [
+    "/login",
+    "/signup",
+    "/forgot-password",
+    "/reset-password",
+    "/dashboard/:path*",
+  ],
 };
 

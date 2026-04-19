@@ -24,7 +24,7 @@ end $$;
 insert into public.subcompetences (id, name, description, color, icon)
 values
   (gen_random_uuid(), 'Analysis & Design', 'UML, ERD, use cases, wireframes, system architecture', '#7C6AF7', 'PenTool'),
-  (gen_random_uuid(), 'Development', 'WinForms, MAUI, ASP.NET Core, EF Core, SQL Server, JWT', '#DBFD6B', 'Code2'),
+  (gen_random_uuid(), 'Development', 'WinForms, MAUI, ASP.NET Core, EF Core, SQL Server, JWT', '#00d4ff', 'Code2'),
   (gen_random_uuid(), 'Testing', 'Unit testing, integration testing, xUnit, test case design', '#00a878', 'ShieldCheck'),
   (gen_random_uuid(), 'Transversal', 'Documentation, communication, time management, professionalism', '#FB923C', 'Layers')
 on conflict (name) do update

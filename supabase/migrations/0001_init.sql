@@ -2,7 +2,18 @@
 
 create extension if not exists "pgcrypto";
 
--- Helpers
+-- Profiles (mirror of auth.users)
+create table if not exists public.profiles (
+  id uuid references auth.users on delete cascade primary key,
+  full_name text,
+  role text not null check (role in ('admin','instructor')) default 'instructor',
+  avatar_url text,
+  created_at timestamptz default now()
+);
+
+alter table public.profiles enable row level security;
+
+-- Helpers (after profiles: SQL functions validate referenced relations at creation time)
 create or replace function public.is_admin()
 returns boolean
 language sql
@@ -28,17 +39,6 @@ as $$
       and p.role in ('admin','instructor')
   );
 $$;
-
--- Profiles (mirror of auth.users)
-create table if not exists public.profiles (
-  id uuid references auth.users on delete cascade primary key,
-  full_name text,
-  role text not null check (role in ('admin','instructor')) default 'instructor',
-  avatar_url text,
-  created_at timestamptz default now()
-);
-
-alter table public.profiles enable row level security;
 
 -- Any signed-in user can read all profiles (for "created by" display + admin user mgmt UI)
 create policy "profiles_select_authenticated"
