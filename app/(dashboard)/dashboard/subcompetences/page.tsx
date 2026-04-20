@@ -3,7 +3,7 @@ import { GlassCard } from "@/components/shared/glass-card";
 
 export default function SubcompetencesPage() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-[30px]">
       <PageHeader
         title="Subcompetences"
         subtitle="Macro-competences used to color and tag plans, phases, and exercises."

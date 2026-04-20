@@ -8,7 +8,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { TrainingPlannerLogo } from "@/components/brand/training-planner-logo";
+import { ThemedLogo } from "@/components/brand/themed-logo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -65,7 +65,11 @@ export function ForgotPasswordForm() {
     <Card className="w-full glass">
       <CardHeader className="space-y-4">
         <div className="flex justify-center pb-1">
-          <TrainingPlannerLogo variant="stacked" priority />
+          <ThemedLogo
+            variant="authFull"
+            priority
+            className="h-auto w-[200px]"
+          />
         </div>
         <CardTitle className="text-2xl font-bold text-tp-primary">
           Forgot password

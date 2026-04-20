@@ -8,14 +8,14 @@ import { Button } from "@/components/ui/button";
 type Theme = "light" | "dark";
 
 function readTheme(): Theme {
-  if (typeof document === "undefined") return "dark";
-  return document.documentElement.getAttribute("data-theme") === "light"
-    ? "light"
-    : "dark";
+  if (typeof document === "undefined") return "light";
+  return document.documentElement.getAttribute("data-theme") === "dark"
+    ? "dark"
+    : "light";
 }
 
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>("dark");
+  const [theme, setTheme] = useState<Theme>("light");
 
   useEffect(() => {
     setTheme(readTheme());
@@ -23,12 +23,12 @@ export function ThemeToggle() {
 
   const applyTheme = useCallback((next: Theme) => {
     const root = document.documentElement;
-    if (next === "light") {
-      root.setAttribute("data-theme", "light");
-      localStorage.setItem("tp-theme", "light");
+    if (next === "dark") {
+      root.setAttribute("data-theme", "dark");
+      localStorage.setItem("tp-theme", "dark");
     } else {
       root.removeAttribute("data-theme");
-      localStorage.setItem("tp-theme", "dark");
+      localStorage.setItem("tp-theme", "light");
     }
     setTheme(next);
   }, []);
@@ -47,9 +47,9 @@ export function ThemeToggle() {
       aria-label={theme === "light" ? "Switch to dark theme" : "Switch to light theme"}
     >
       {theme === "light" ? (
-        <Moon className="h-5 w-5" />
+        <Sun className="h-[25px] w-[25px]" />
       ) : (
-        <Sun className="h-5 w-5" />
+        <Moon className="h-[25px] w-[25px]" />
       )}
     </Button>
   );

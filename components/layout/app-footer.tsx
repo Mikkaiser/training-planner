@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { TrainingPlannerLogo } from "@/components/brand/training-planner-logo";
+import { ThemedLogo } from "@/components/brand/themed-logo";
 
 export function AppFooter() {
   const year = new Date().getFullYear();
@@ -13,7 +13,7 @@ export function AppFooter() {
           className="flex items-center transition-opacity hover:opacity-90"
           aria-label="Training Planner home"
         >
-          <TrainingPlannerLogo variant="footer" />
+          <ThemedLogo variant="footerMark" />
         </Link>
         <p className="text-center text-xs text-tp-muted sm:text-right">
           © {year} Training Planner

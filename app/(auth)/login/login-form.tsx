@@ -9,7 +9,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { TrainingPlannerLogo } from "@/components/brand/training-planner-logo";
+import { ThemedLogo } from "@/components/brand/themed-logo";
 import { OAuthButtons } from "@/components/auth/oauth-buttons";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -108,7 +108,11 @@ export function LoginForm({
     <Card className="login-auth-card glass-panel--login relative z-[1] w-full glass">
       <CardHeader className="space-y-4">
         <div className="login-auth-logo-wrap flex justify-center pb-1">
-          <TrainingPlannerLogo variant="auth" priority />
+          <ThemedLogo
+            variant="authFull"
+            priority
+            className="h-auto w-[200px]"
+          />
         </div>
         <CardTitle className="login-auth-title text-tp-primary">
           {isSignup ? "Create account" : "Sign in"}

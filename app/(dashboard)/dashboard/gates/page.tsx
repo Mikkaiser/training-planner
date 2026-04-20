@@ -3,7 +3,7 @@ import { GlassCard } from "@/components/shared/glass-card";
 
 export default function GatesPage() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-[30px]">
       <PageHeader
         title="Gates"
         subtitle="Block gates and phase gates with assessments."

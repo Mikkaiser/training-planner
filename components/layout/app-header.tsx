@@ -6,7 +6,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-import { TrainingPlannerLogo } from "@/components/brand/training-planner-logo";
+import { ThemedLogo } from "@/components/brand/themed-logo";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -58,7 +58,7 @@ export function AppHeader({ fullName, email, avatarUrl, role }: Props) {
 
   return (
     <header className="app-header-bar sticky top-0 z-40">
-      <div className="mx-auto flex h-14 max-w-screen-2xl items-center gap-3 px-4">
+      <div className="mx-auto flex h-[70px] max-w-[1400px] items-center gap-3 px-[45px]">
         <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
           <SheetTrigger
             render={
@@ -67,11 +67,11 @@ export function AppHeader({ fullName, email, avatarUrl, role }: Props) {
                 size="icon"
                 className="md:hidden border-border bg-transparent"
               >
-                <Menu className="h-5 w-5" />
+                <Menu className="h-[25px] w-[25px]" />
               </Button>
             }
           />
-          <SheetContent side="left" className="w-72 p-0 text-tp-primary">
+          <SheetContent side="left" className="w-[360px] p-0 text-tp-primary">
             <SidebarNav
               role={role}
               onNavigate={() => setMobileNavOpen(false)}
@@ -84,7 +84,7 @@ export function AppHeader({ fullName, email, avatarUrl, role }: Props) {
           className="flex shrink-0 items-center py-1"
           aria-label="Training Planner home"
         >
-          <TrainingPlannerLogo variant="header" />
+          <ThemedLogo variant="headerMark" priority />
         </Link>
 
         <div className="min-w-0 flex-1" />
@@ -95,10 +95,10 @@ export function AppHeader({ fullName, email, avatarUrl, role }: Props) {
           <DropdownMenuTrigger
             className={cn(
               buttonVariants({ variant: "outline", size: "default" }),
-              "h-10 gap-3 border-border bg-[var(--color-surface-raised)] px-3 text-tp-primary backdrop-blur-md hover:bg-[var(--color-accent-muted)]"
+              "hover-tint h-[50px] gap-3 border-border bg-[var(--color-surface-raised)] px-4 text-tp-primary backdrop-blur-md"
             )}
           >
-            <Avatar className="h-6 w-6">
+            <Avatar className="my-1 h-9 w-9 flex-shrink-0">
               <AvatarImage
                 src={avatarUrl ?? undefined}
                 alt={fullName ?? "User"}
@@ -107,7 +107,7 @@ export function AppHeader({ fullName, email, avatarUrl, role }: Props) {
                 {initials}
               </AvatarFallback>
             </Avatar>
-            <span className="hidden text-sm md:inline">
+            <span className="hidden text-[19px] md:inline">
               {fullName ?? email ?? "Account"}
             </span>
           </DropdownMenuTrigger>
@@ -126,7 +126,7 @@ export function AppHeader({ fullName, email, avatarUrl, role }: Props) {
                 onClick={signOut}
                 className="cursor-pointer focus:bg-[var(--color-accent-muted)]"
               >
-                <LogOut className="mr-2 h-5 w-5 text-primary" />
+                <LogOut className="mr-2 h-[25px] w-[25px] text-primary" />
                 Sign out
               </DropdownMenuItem>
             </DropdownMenuGroup>

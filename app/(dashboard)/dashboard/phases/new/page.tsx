@@ -3,7 +3,7 @@ import { GlassCard } from "@/components/shared/glass-card";
 
 export default function NewPhasePage() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-[30px]">
       <PageHeader
         title="New Phase"
         subtitle="Define a phase template with topics and gates."

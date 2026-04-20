@@ -18,7 +18,7 @@ export function GlassCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className={cn(variantClass[variant], "p-4", className)}>
+    <div className={cn(variantClass[variant], "p-[18px]", className)}>
       {children}
     </div>
   );

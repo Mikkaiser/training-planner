@@ -7,9 +7,10 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { z } from "zod";
 
-import { TrainingPlannerLogo } from "@/components/brand/training-planner-logo";
+import { ThemedLogo } from "@/components/brand/themed-logo";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,7 +33,7 @@ type FormValues = z.infer<typeof schema>;
 function AuthBrandRow() {
   return (
     <div className="flex justify-center pb-1">
-      <TrainingPlannerLogo variant="stacked" priority className="max-w-[200px]" />
+      <ThemedLogo variant="authFull" priority className="h-auto w-[200px]" />
     </div>
   );
 }
@@ -59,7 +60,7 @@ export function ResetPasswordForm() {
     }
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (_event: AuthChangeEvent, session: Session | null) => {
         if (session) markReady();
       }
     );

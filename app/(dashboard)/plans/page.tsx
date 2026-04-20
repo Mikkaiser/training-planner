@@ -3,7 +3,7 @@ import { GlassCard } from "@/components/shared/glass-card";
 
 export default function PlansPage() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-[30px]">
       <PageHeader
         title="Training Plans"
         subtitle="Create and manage visual roadmaps for WorldSkills training."

@@ -1,8 +1,9 @@
 import type { Config } from "tailwindcss";
+import defaultTheme from "tailwindcss/defaultTheme";
 
 /** Tokens in app/globals.css; theme via data-theme on <html>. */
 const config: Config = {
-  darkMode: ["class"],
+  darkMode: ["class", '[data-theme="dark"]'],
   content: [
     "./app/**/*.{ts,tsx}",
     "./components/**/*.{ts,tsx}",
@@ -10,11 +11,20 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      spacing: {
+        ...defaultTheme.spacing,
+        "1": "0.3125rem",
+        "2": "0.625rem",
+        "3": "0.9375rem",
+        "4": "1.25rem",
+        "6": "1.875rem",
+        "8": "2.5rem",
+        "10": "3.125rem",
+        "12": "3.75rem",
+        "16": "5rem",
+      },
       fontFamily: {
-        sans: ["var(--font-comfortaa)", "ui-sans-serif", "system-ui", "sans-serif"],
-        heading: ["var(--font-poppins)", "ui-sans-serif", "sans-serif"],
-        comfortaa: ["var(--font-comfortaa)", "ui-sans-serif", "sans-serif"],
-        poppins: ["var(--font-poppins)", "ui-sans-serif", "sans-serif"],
+        sans: ["Roboto", "system-ui", "sans-serif"],
       },
       fontSize: {
         "2xs": "11px",
@@ -34,17 +44,17 @@ const config: Config = {
 
         background: "var(--color-base)",
         foreground: "var(--color-text-primary)",
-        card: "rgba(9, 14, 26, 0.6)",
+        card: "var(--color-surface-raised)",
         "card-foreground": "var(--color-text-primary)",
-        popover: "rgba(9, 14, 26, 0.8)",
+        popover: "var(--color-surface-raised)",
         "popover-foreground": "var(--color-text-primary)",
         primary: {
           DEFAULT: "var(--color-accent)",
-          foreground: "#090e1a",
+          foreground: "#ffffff",
         },
         secondary: {
           DEFAULT: "var(--color-accent-muted)",
-          foreground: "var(--color-accent)",
+          foreground: "var(--color-text-accent)",
         },
         muted: {
           DEFAULT: "var(--color-accent-muted)",
@@ -59,11 +69,11 @@ const config: Config = {
           foreground: "var(--color-text-primary)",
         },
         border: "var(--color-border)",
-        input: "rgba(0, 212, 255, 0.12)",
-        ring: "rgba(0, 212, 255, 0.35)",
+        input: "var(--color-border)",
+        ring: "rgba(37, 99, 235, 0.45)",
       },
       boxShadow: {
-        glow: "0 0 0 1px rgba(0, 212, 255, 0.15), 0 8px 30px rgba(0, 212, 255, 0.08)",
+        glow: "0 0 0 1px rgba(37, 99, 235, 0.12), 0 8px 30px rgba(37, 99, 235, 0.06)",
         cta: "var(--cta-shadow)",
         "cta-hover": "var(--cta-shadow-hover)",
       },

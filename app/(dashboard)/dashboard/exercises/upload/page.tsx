@@ -3,7 +3,7 @@ import { GlassCard } from "@/components/shared/glass-card";
 
 export default function UploadExercisePage() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-[30px]">
       <PageHeader
         title="Upload Exercise"
         subtitle="Attach PDF or DOCX exercises to topics."

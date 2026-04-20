@@ -3,7 +3,7 @@ import { GlassCard } from "@/components/shared/glass-card";
 
 export default function UsersPage() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-[30px]">
       <PageHeader title="Users" subtitle="Admin-only: manage instructor/admin roles." />
       <GlassCard>
         <div className="text-sm text-tp-secondary">

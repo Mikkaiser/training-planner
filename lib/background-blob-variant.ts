@@ -9,8 +9,10 @@ export type BlobFloatAnimation = "blobFloat1" | "blobFloat2" | "blobFloat3";
 
 export type BlobSpec = {
   size: number;
-  /** rgba() string — dark-mode baseline; light mode applies 0.6× alpha via CSS */
-  color: string;
+  /** rgba() string for light mode */
+  colorLight: string;
+  /** rgba() string for dark mode */
+  colorDark: string;
   /** Position of blob center */
   left: string;
   top: string;
@@ -24,7 +26,8 @@ export const BLOB_VARIANT_SPECS: Record<BlobVariant, BlobSpec[]> = {
   login: [
     {
       size: 700,
-      color: "rgba(0,212,255,0.16)",
+      colorLight: "rgba(105,0,255,0.08)",
+      colorDark: "rgba(105,0,255,0.12)",
       left: "40%",
       top: "-15%",
       blur: 100,
@@ -33,7 +36,8 @@ export const BLOB_VARIANT_SPECS: Record<BlobVariant, BlobSpec[]> = {
     },
     {
       size: 500,
-      color: "rgba(0,168,120,0.10)",
+      colorLight: "rgba(82,255,186,0.10)",
+      colorDark: "rgba(82,255,186,0.06)",
       left: "75%",
       top: "60%",
       blur: 90,
@@ -42,7 +46,8 @@ export const BLOB_VARIANT_SPECS: Record<BlobVariant, BlobSpec[]> = {
     },
     {
       size: 350,
-      color: "rgba(0,212,255,0.08)",
+      colorLight: "rgba(105,0,255,0.05)",
+      colorDark: "rgba(105,0,255,0.07)",
       left: "-5%",
       top: "70%",
       blur: 80,
@@ -52,57 +57,52 @@ export const BLOB_VARIANT_SPECS: Record<BlobVariant, BlobSpec[]> = {
   ],
   dashboard: [
     {
-      size: 600,
-      color: "rgba(0,212,255,0.12)",
-      left: "-5%",
-      top: "-10%",
-      blur: 80,
+      size: 650,
+      colorLight: "rgba(105,0,255,0.07)",
+      colorDark: "rgba(37,99,235,0.14)",
+      left: "-10%",
+      top: "-15%",
+      blur: 90,
       animation: "blobFloat1",
-      durationSec: 18,
+      durationSec: 20,
     },
     {
       size: 500,
-      color: "rgba(0,168,120,0.09)",
-      left: "-5%",
+      colorLight: "rgba(82,255,186,0.10)",
+      colorDark: "rgba(82,255,186,0.06)",
+      left: "75%",
       top: "65%",
-      blur: 80,
+      blur: 85,
       animation: "blobFloat2",
-      durationSec: 22,
+      durationSec: 24,
     },
     {
       size: 400,
-      color: "rgba(0,212,255,0.07)",
+      colorLight: "rgba(179,215,255,0.40)",
+      colorDark: "rgba(37,99,235,0.08)",
       left: "35%",
-      top: "40%",
-      blur: 90,
+      top: "30%",
+      blur: 70,
       animation: "blobFloat3",
-      durationSec: 26,
+      durationSec: 28,
     },
     {
       size: 300,
-      color: "rgba(0,168,120,0.06)",
+      colorLight: "rgba(105,0,255,0.05)",
+      colorDark: "rgba(37,99,235,0.10)",
       left: "80%",
       top: "5%",
-      blur: 70,
+      blur: 80,
       animation: "blobFloat1",
-      durationSec: 20,
-      reverse: true,
-    },
-    {
-      size: 320,
-      color: "rgba(0,212,255,0.05)",
-      left: "15%",
-      top: "70%",
-      blur: 75,
-      animation: "blobFloat2",
-      durationSec: 24,
+      durationSec: 22,
       reverse: true,
     },
   ],
   gantt: [
     {
       size: 550,
-      color: "rgba(0,212,255,0.13)",
+      colorLight: "rgba(105,0,255,0.09)",
+      colorDark: "rgba(37,99,235,0.16)",
       left: "-15%",
       top: "-20%",
       blur: 90,
@@ -111,7 +111,8 @@ export const BLOB_VARIANT_SPECS: Record<BlobVariant, BlobSpec[]> = {
     },
     {
       size: 500,
-      color: "rgba(0,168,120,0.08)",
+      colorLight: "rgba(82,255,186,0.08)",
+      colorDark: "rgba(82,255,186,0.05)",
       left: "80%",
       top: "75%",
       blur: 85,
@@ -120,7 +121,8 @@ export const BLOB_VARIANT_SPECS: Record<BlobVariant, BlobSpec[]> = {
     },
     {
       size: 280,
-      color: "rgba(0,212,255,0.06)",
+      colorLight: "rgba(105,0,255,0.06)",
+      colorDark: "rgba(37,99,235,0.10)",
       left: "85%",
       top: "-5%",
       blur: 70,
@@ -129,7 +131,8 @@ export const BLOB_VARIANT_SPECS: Record<BlobVariant, BlobSpec[]> = {
     },
     {
       size: 250,
-      color: "rgba(0,168,120,0.05)",
+      colorLight: "rgba(82,255,186,0.05)",
+      colorDark: "rgba(82,255,186,0.03)",
       left: "-8%",
       top: "80%",
       blur: 70,
@@ -141,7 +144,8 @@ export const BLOB_VARIANT_SPECS: Record<BlobVariant, BlobSpec[]> = {
   management: [
     {
       size: 500,
-      color: "rgba(0,212,255,0.07)",
+      colorLight: "rgba(105,0,255,0.07)",
+      colorDark: "rgba(37,99,235,0.14)",
       left: "-10%",
       top: "-15%",
       blur: 100,
@@ -150,7 +154,8 @@ export const BLOB_VARIANT_SPECS: Record<BlobVariant, BlobSpec[]> = {
     },
     {
       size: 400,
-      color: "rgba(0,168,120,0.05)",
+      colorLight: "rgba(82,255,186,0.05)",
+      colorDark: "rgba(82,255,186,0.03)",
       left: "75%",
       top: "70%",
       blur: 100,
@@ -161,7 +166,8 @@ export const BLOB_VARIANT_SPECS: Record<BlobVariant, BlobSpec[]> = {
   gates: [
     {
       size: 550,
-      color: "rgba(0,212,255,0.10)",
+      colorLight: "rgba(105,0,255,0.08)",
+      colorDark: "rgba(37,99,235,0.14)",
       left: "-5%",
       top: "-10%",
       blur: 85,
@@ -170,7 +176,8 @@ export const BLOB_VARIANT_SPECS: Record<BlobVariant, BlobSpec[]> = {
     },
     {
       size: 400,
-      color: "rgba(251,54,64,0.07)",
+      colorLight: "rgba(255,96,96,0.10)",
+      colorDark: "rgba(255,96,96,0.10)",
       left: "70%",
       top: "65%",
       blur: 90,
@@ -179,7 +186,8 @@ export const BLOB_VARIANT_SPECS: Record<BlobVariant, BlobSpec[]> = {
     },
     {
       size: 350,
-      color: "rgba(0,212,255,0.06)",
+      colorLight: "rgba(105,0,255,0.06)",
+      colorDark: "rgba(37,99,235,0.10)",
       left: "80%",
       top: "5%",
       blur: 75,
@@ -188,7 +196,8 @@ export const BLOB_VARIANT_SPECS: Record<BlobVariant, BlobSpec[]> = {
     },
     {
       size: 300,
-      color: "rgba(251,54,64,0.05)",
+      colorLight: "rgba(255,96,96,0.08)",
+      colorDark: "rgba(255,96,96,0.08)",
       left: "10%",
       top: "75%",
       blur: 80,

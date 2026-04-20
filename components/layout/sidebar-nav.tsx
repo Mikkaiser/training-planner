@@ -12,7 +12,7 @@ import {
   Users,
 } from "lucide-react";
 
-import { TrainingPlannerLogo } from "@/components/brand/training-planner-logo";
+import { ThemedLogo } from "@/components/brand/themed-logo";
 import type { ProfileRole } from "@/types";
 import { cn } from "@/lib/utils";
 
@@ -45,14 +45,18 @@ export function SidebarNav({
   const usersActive = isNavItemActive(pathname, "/dashboard/users");
 
   return (
-    <aside className="relative z-10 flex h-full flex-col p-4">
+    <aside className="relative z-10 flex h-full flex-col px-4 py-6">
       <Link
         href="/dashboard"
         onClick={() => onNavigate?.()}
-        className="mb-5 flex flex-col items-center rounded-lg px-1 text-center transition-opacity hover:opacity-90"
+        className="mb-7 flex flex-col items-center rounded-lg px-1 text-center transition-opacity hover:opacity-90"
         aria-label="Training Planner home"
       >
-        <TrainingPlannerLogo variant="sidebar" />
+        <ThemedLogo
+          variant="sidebarFull"
+          priority
+          className="h-auto w-[160px]"
+        />
       </Link>
 
       <nav className="space-y-1">
@@ -66,15 +70,15 @@ export function SidebarNav({
               onClick={() => onNavigate?.()}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "sidebar-nav-link flex min-h-[2.25rem] items-center gap-3 rounded-[10px] px-3 py-2 no-underline",
+                "sidebar-nav-link flex items-center gap-3 rounded-[10px] no-underline",
                 active
                   ? "nav-item-active"
-                  : "text-tp-muted hover:bg-[var(--color-accent-muted)]"
+                  : "text-tp-muted"
               )}
             >
               <Icon
                 className={cn(
-                  "size-5 shrink-0",
+                  "size-[22px] shrink-0",
                   active ? "text-[var(--color-accent)]" : "text-tp-muted"
                 )}
                 strokeWidth={2}
@@ -90,15 +94,15 @@ export function SidebarNav({
             onClick={() => onNavigate?.()}
             aria-current={usersActive ? "page" : undefined}
             className={cn(
-              "sidebar-nav-link mt-2 flex min-h-[2.25rem] items-center gap-3 rounded-[10px] px-3 py-2 no-underline",
+              "sidebar-nav-link mt-2 flex items-center gap-3 rounded-[10px] no-underline",
               usersActive
                 ? "nav-item-active"
-                : "text-tp-muted hover:bg-[var(--color-accent-muted)]"
+                : "text-tp-muted"
             )}
           >
             <Users
               className={cn(
-                "size-5 shrink-0",
+                "size-[22px] shrink-0",
                 usersActive ? "text-[var(--color-accent)]" : "text-tp-muted"
               )}
               strokeWidth={2}
@@ -108,9 +112,7 @@ export function SidebarNav({
         ) : null}
       </nav>
 
-      <div className="mt-auto pt-4 text-xs text-tp-muted">
-        {role ? `Role: ${role}` : ""}
-      </div>
+      <div className="mt-auto pt-4" />
     </aside>
   );
 }

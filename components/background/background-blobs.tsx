@@ -5,6 +5,7 @@ import {
   type BlobSpec,
   type BlobVariant,
 } from "@/lib/background-blob-variant";
+import { useEffect, useState } from "react";
 
 function animationClassName(spec: BlobSpec): string {
   switch (spec.animation) {
@@ -21,6 +22,17 @@ function animationClassName(spec: BlobSpec): string {
 
 export function BackgroundBlobs({ variant }: { variant: BlobVariant }) {
   const specs = BLOB_VARIANT_SPECS[variant];
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const read = () => setIsDark(root.getAttribute("data-theme") === "dark");
+    read();
+
+    const observer = new MutationObserver(read);
+    observer.observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <div
@@ -37,7 +49,7 @@ export function BackgroundBlobs({ variant }: { variant: BlobVariant }) {
             left: spec.left,
             top: spec.top,
             transform: "translate(-50%, -50%)",
-            backgroundColor: spec.color,
+            backgroundColor: isDark ? spec.colorDark : spec.colorLight,
             filter: `blur(${spec.blur}px)`,
             animationDuration: `${spec.durationSec}s`,
             animationDirection: spec.reverse ? "reverse" : "normal",

@@ -3,7 +3,7 @@ import { GlassCard } from "@/components/shared/glass-card";
 
 export default function NewSubcompetencePage() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-[30px]">
       <PageHeader
         title="New Subcompetence"
         subtitle="Add a macro-competence for tagging and colors."

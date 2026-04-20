@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-import "./globals.css";
-import { BackgroundVariantProvider } from "@/components/background/background-variant-context";
-import { fontComfortaa, fontPoppins } from "@/lib/fonts";
+import "@/app/globals.css";
 import { Providers } from "@/components/providers";
 
 export const metadata: Metadata = {
@@ -24,7 +22,7 @@ export const metadata: Metadata = {
 };
 
 const themeInitScript = `
-(function(){try{var t=localStorage.getItem('tp-theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}})();
+(function(){try{var t=localStorage.getItem('tp-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();
 `;
 
 export default function RootLayout({
@@ -36,19 +34,15 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${fontComfortaa.variable} ${fontPoppins.variable} h-full antialiased`}
+      className="h-full antialiased"
     >
       <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="icon" href="/training-planner-logomark-dark-mode.png" />
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body
-        className={`${fontComfortaa.className} flex min-h-full flex-col bg-transparent text-foreground`}
-      >
-        <BackgroundVariantProvider>
-          <div className="app-content-layer flex min-h-full flex-1 flex-col">
-            <Providers>{children}</Providers>
-          </div>
-        </BackgroundVariantProvider>
+      <body className="flex min-h-full flex-col bg-transparent text-foreground">
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

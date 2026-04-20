@@ -70,12 +70,15 @@ export function OAuthButtons({
       type="button"
       variant="outline"
       size="lg"
-      className={cn("w-full", className)}
+      className={cn(
+        "google-oauth-button w-full border text-[15px] font-semibold",
+        className
+      )}
       disabled={loading}
       onClick={() => void signInWithGoogle()}
       aria-label="Continue with Google"
     >
-      <GoogleGlyph className="size-4" />
+      <GoogleGlyph className="size-5" />
       {loading ? "Redirecting…" : "Continue with Google"}
     </Button>
   );
