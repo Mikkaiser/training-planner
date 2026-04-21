@@ -19,22 +19,19 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { PLAN_COLORS, type PlanColorKey } from "@/lib/constants/planColors";
+import { subcompetenceChipStyle } from "@/lib/constants/subcompetenceTokens";
+import { useIsDark } from "@/lib/use-is-dark";
 import type {
-  Block,
-  Gate,
   Phase,
+  GateType,
   Subcompetence,
 } from "@/lib/training-plans/types";
-
-const gateSchema = z.object({
-  name: z.string().min(1, "Gate name is required."),
-  gate_type: z.enum(["block_gate", "phase_gate"]),
-  pass_threshold: z.coerce.number().min(0).max(100).nullable(),
-});
 
 const blockSchema = z.object({
   name: z.string().min(1, "Block name is required."),
   subcompetence_id: z.string().nullable(),
+  gate_pass_threshold: z.coerce.number().min(0).max(100).nullable(),
+  gate_type: z.enum(["block_gate", "phase_gate"]),
 });
 
 const createPhaseSchema = z.object({
@@ -42,7 +39,6 @@ const createPhaseSchema = z.object({
   duration_weeks: z.coerce.number().int().min(1, "Duration is required."),
   subcompetence_ids: z.array(z.string()).min(1, "Pick at least one subcompetence."),
   blocks: z.array(blockSchema).default([]),
-  gates: z.array(gateSchema).default([]),
   newSubcompetence: z
     .object({
       enabled: z.boolean().default(false),
@@ -54,51 +50,6 @@ const createPhaseSchema = z.object({
 });
 
 type CreatePhaseValues = z.infer<typeof createPhaseSchema>;
-
-function chipStyle(color: string | null | undefined) {
-  if (!color) return {};
-  const c = String(color).trim();
-  const lc = c.toLowerCase();
-
-  // Default: CSS handles bg/border via color-mix(); we only provide overrides for known problematic colors.
-  const style: Record<string, string> = { ["--subcompetence-color"]: c };
-
-  // In dark mode we want full-color text with subtle tint only (no light-mode overrides).
-  if (typeof document !== "undefined") {
-    const isDark = document.documentElement.getAttribute("data-theme") === "dark";
-    if (isDark) return style as React.CSSProperties;
-  }
-
-  // Analysis & Design (#7C6AF7)
-  if (lc === "#7c6af7") {
-    style["--subcompetence-bg"] = "rgba(124,106,247,0.14)";
-    style["--subcompetence-border"] = "rgba(124,106,247,0.45)";
-    style["--subcompetence-fg"] = "#5b47e0";
-  }
-
-  // Development (#DBFD6B) — too light in light mode, darken fg/bg/border
-  if (lc === "#dbfd6b") {
-    style["--subcompetence-bg"] = "rgba(150,180,0,0.12)";
-    style["--subcompetence-border"] = "rgba(150,180,0,0.40)";
-    style["--subcompetence-fg"] = "#5a6e00";
-  }
-
-  // Testing (#00a878)
-  if (lc === "#00a878") {
-    style["--subcompetence-bg"] = "rgba(0,168,120,0.12)";
-    style["--subcompetence-border"] = "rgba(0,168,120,0.40)";
-    style["--subcompetence-fg"] = "#007a58";
-  }
-
-  // Transversal (#FB923C)
-  if (lc === "#fb923c") {
-    style["--subcompetence-bg"] = "rgba(251,146,60,0.12)";
-    style["--subcompetence-border"] = "rgba(251,146,60,0.40)";
-    style["--subcompetence-fg"] = "#c45e00";
-  }
-
-  return style as React.CSSProperties;
-}
 
 export function PhasePickerPopover({
   existingPhases,
@@ -122,6 +73,7 @@ export function PhasePickerPopover({
   /** Active plan color — used to tint phase cards inside the popover. */
   planColor?: PlanColorKey;
 }) {
+  const isDark = useIsDark();
   const planTokens = PLAN_COLORS[planColor];
   const popoverTintStyle: React.CSSProperties = {
     ["--plan-tint" as string]: planTokens.bg,
@@ -149,8 +101,14 @@ export function PhasePickerPopover({
       name: "",
       duration_weeks: 4,
       subcompetence_ids: [],
-      blocks: [{ name: "Block 1", subcompetence_id: null }],
-      gates: [],
+      blocks: [
+        {
+          name: "Block 1",
+          subcompetence_id: null,
+          gate_pass_threshold: 70,
+          gate_type: "phase_gate",
+        },
+      ],
       newSubcompetence: {
         enabled: false,
         name: "",
@@ -164,10 +122,6 @@ export function PhasePickerPopover({
   const { fields: blockFields, append: addBlock, remove: removeBlock } = useFieldArray({
     control: form.control,
     name: "blocks",
-  });
-  const { fields: gateFields, append: addGate, remove: removeGate } = useFieldArray({
-    control: form.control,
-    name: "gates",
   });
 
   const values = form.watch();
@@ -237,42 +191,51 @@ export function PhasePickerPopover({
       }
 
       if (parsed.blocks.length) {
-        const { error } = await supabase.from("topics").insert(
-          parsed.blocks.map((b, idx) => ({
+        for (let idx = 0; idx < parsed.blocks.length; idx += 1) {
+          const b = parsed.blocks[idx];
+          const isLast = idx === parsed.blocks.length - 1;
+          const gateType = isLast ? "phase_gate" : "block_gate";
+          const gateName = `${b.name.trim() || `Block ${idx + 1}`} Gate`;
+
+          const gateInsert = await supabase
+            .from("gates")
+            .insert({
+              phase_id: phaseId,
+              name: gateName,
+              description: null,
+              gate_type: gateType,
+              pass_threshold: b.gate_pass_threshold,
+            })
+            .select("id")
+            .single();
+          if (gateInsert.error) throw gateInsert.error;
+
+          const gateId = gateInsert.data?.id as string;
+          const topicInsert = await supabase.from("topics").insert({
             phase_id: phaseId,
             subcompetence_id: b.subcompetence_id,
+            gate_id: gateId,
             name: b.name.trim(),
             description: null,
             order_index: idx + 1,
-          }))
-        );
-        if (error) throw error;
-      }
-
-      if (parsed.gates.length) {
-        const { error } = await supabase.from("gates").insert(
-          parsed.gates.map((g) => ({
-            phase_id: phaseId,
-            name: g.name.trim(),
-            description: null,
-            gate_type: g.gate_type,
-            pass_threshold: g.pass_threshold,
-          }))
-        );
-        if (error) throw error;
+          });
+          if (topicInsert.error) throw topicInsert.error;
+        }
       }
 
       const scMap = new Map(subcompetences.map((s) => [s.id, s]));
       const selectedSc = scIds.map((id) => scMap.get(id)).filter(Boolean) as Subcompetence[];
-      const blocks: Block[] = parsed.blocks.map((b, idx) => ({
+      const blocksWithGates = parsed.blocks.map((b, idx) => ({
         name: b.name,
         order_index: idx + 1,
         subcompetence_id: b.subcompetence_id,
-      }));
-      const gates: Gate[] = parsed.gates.map((g) => ({
-        name: g.name,
-        gate_type: g.gate_type,
-        pass_threshold: g.pass_threshold,
+        gate: {
+          name: `${b.name} Gate`,
+          gate_type: (idx === parsed.blocks.length - 1
+            ? "phase_gate"
+            : "block_gate") as GateType,
+          pass_threshold: b.gate_pass_threshold,
+        },
       }));
 
       const phase: Phase = {
@@ -282,8 +245,7 @@ export function PhasePickerPopover({
         duration_weeks: (phaseRow.duration_weeks as number | null) ?? null,
         order_index: (phaseRow.order_index as number | null) ?? null,
         subcompetences: selectedSc,
-        blocks,
-        gates,
+        blocks: blocksWithGates,
       };
 
       await onCreated(phase);
@@ -370,7 +332,7 @@ export function PhasePickerPopover({
                             <span
                               key={s.id}
                               className="subcompetence-chip px-2 py-0.5 text-xs"
-                              style={chipStyle(s.color)}
+                              style={subcompetenceChipStyle(s.color, isDark)}
                             >
                               {s.name}
                             </span>
@@ -378,7 +340,7 @@ export function PhasePickerPopover({
                         </div>
                         <div className="mt-2 flex gap-3 text-xs text-tp-muted">
                           <span>{p.blocks.length} blocks</span>
-                          <span>{p.gates.length} gates</span>
+                        <span>{p.blocks.length} gates</span>
                         </div>
                       </div>
                       <div className="shrink-0">
@@ -447,7 +409,7 @@ export function PhasePickerPopover({
                           "subcompetence-chip px-2 py-1 text-xs transition-opacity",
                           selected ? "" : "opacity-50 hover:opacity-75"
                         )}
-                        style={chipStyle(s.color)}
+                        style={subcompetenceChipStyle(s.color, isDark)}
                       >
                         {s.name}
                       </button>
@@ -460,7 +422,7 @@ export function PhasePickerPopover({
                   </p>
                 ) : null}
 
-                <div className="mt-3 rounded-xl border border-border bg-[rgba(255,255,255,0.02)] p-3">
+                <div className="mt-3 rounded-xl border border-border bg-[var(--color-surface)] p-3">
                   <label className="flex items-center gap-2 text-xs text-tp-secondary">
                     <input
                       type="checkbox"
@@ -524,7 +486,21 @@ export function PhasePickerPopover({
                     type="button"
                     size="sm"
                     variant="outline"
-                    onClick={() => addBlock({ name: `Block ${blockFields.length + 1}`, subcompetence_id: null })}
+                    onClick={() => {
+                      const nextLen = blockFields.length + 1;
+                      // Default: last block is phase gate; earlier blocks are block gates.
+                      const nextBlocks = values.blocks.map((b, i) => ({
+                        ...b,
+                        gate_type: i === values.blocks.length - 1 ? "block_gate" : b.gate_type,
+                      }));
+                      form.setValue("blocks", nextBlocks, { shouldValidate: true });
+                      addBlock({
+                        name: `Block ${nextLen}`,
+                        subcompetence_id: null,
+                        gate_pass_threshold: 70,
+                        gate_type: "phase_gate",
+                      });
+                    }}
                   >
                     Add block
                   </Button>
@@ -571,83 +547,55 @@ export function PhasePickerPopover({
                           })}
                         </select>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
 
-              <div className="rounded-2xl border border-border p-3">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm font-semibold text-tp-primary">Gates</div>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() =>
-                      addGate({
-                        name: `Gate ${gateFields.length + 1}`,
-                        gate_type: "phase_gate",
-                        pass_threshold: 70,
-                      })
-                    }
-                  >
-                    Add gate
-                  </Button>
-                </div>
-                <div className="mt-3 space-y-3">
-                  {gateFields.map((f, idx) => (
-                    <div key={f.id} className="rounded-xl border border-border p-3">
-                      <div className="flex items-center justify-between">
-                        <div className="text-xs font-medium text-tp-secondary">
-                          Gate {idx + 1}
+                      <div className="mt-3 rounded-xl border border-border bg-[var(--color-surface)] p-3">
+                        <div className="text-xs font-semibold text-tp-primary">
+                          Gate
                         </div>
-                        <button
-                          type="button"
-                          className="rounded-md p-1 text-negative/90 hover:bg-negative/10"
-                          onClick={() => removeGate(idx)}
-                          aria-label="Remove gate"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                      <Input className="mt-2" placeholder="Gate name" {...form.register(`gates.${idx}.name`)} />
-                      <div className="mt-2 grid grid-cols-2 gap-3">
-                        <div>
-                          <Label className="text-xs font-medium text-tp-secondary">
-                            Type
-                          </Label>
-                          <div className="mt-1 flex gap-2">
-                            {(["block_gate", "phase_gate"] as const).map((t) => {
-                              const active = values.gates[idx]?.gate_type === t;
-                              return (
-                                <button
-                                  key={t}
-                                  type="button"
-                                  onClick={() => form.setValue(`gates.${idx}.gate_type`, t)}
-                                  className={cn(
-                                    "rounded-full border px-2 py-1 text-xs",
-                                    active
-                                      ? "border-border bg-[var(--color-accent-muted)] text-tp-primary"
-                                      : "hover-tint border-border/70 text-tp-secondary"
-                                  )}
-                                >
-                                  {t}
-                                </button>
-                              );
-                            })}
+                        <div className="mt-2 grid grid-cols-2 gap-3">
+                          <div>
+                            <Label className="text-xs font-medium text-tp-secondary">
+                              Type
+                            </Label>
+                            <div className="mt-1 flex gap-2">
+                              {(["block_gate", "phase_gate"] as const).map((t) => {
+                                const isLast = idx === blockFields.length - 1;
+                                const active = isLast
+                                  ? t === "phase_gate"
+                                  : t === "block_gate";
+                                return (
+                                  <button
+                                    key={t}
+                                    type="button"
+                                    disabled
+                                    className={cn(
+                                      "rounded-full border px-2 py-1 text-xs",
+                                      active
+                                        ? "border-border bg-[var(--color-accent-muted)] text-tp-primary"
+                                        : "border-border/70 text-tp-secondary opacity-50"
+                                    )}
+                                  >
+                                    {t}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                            <div className="mt-1 text-[11px] text-tp-muted">
+                              Auto: last block is <span className="font-semibold">phase_gate</span>, others are <span className="font-semibold">block_gate</span>.
+                            </div>
                           </div>
-                        </div>
-                        <div>
-                          <Label className="text-xs font-medium text-tp-secondary">
-                            Pass threshold %
-                          </Label>
-                          <Input
-                            className="mt-1"
-                            type="number"
-                            min={0}
-                            max={100}
-                            {...form.register(`gates.${idx}.pass_threshold`)}
-                          />
+                          <div>
+                            <Label className="text-xs font-medium text-tp-secondary">
+                              Pass threshold %
+                            </Label>
+                            <Input
+                              className="mt-1"
+                              type="number"
+                              min={0}
+                              max={100}
+                              {...form.register(`blocks.${idx}.gate_pass_threshold`)}
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>

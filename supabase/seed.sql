@@ -76,27 +76,26 @@ values
   ('b1000000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000002', 2, 4)
 on conflict do nothing;
 
--- 7) Seed a gate at the end of the Foundation phase
+-- 7) Seed 3 block gates + 1 phase gate for Foundation phase (fixed IDs)
 insert into public.gates (id, phase_id, name, description, gate_type, pass_threshold)
-select
-  gen_random_uuid(),
-  'a1000000-0000-0000-0000-000000000001',
-  'Foundation Gate',
-  'Competitor must demonstrate core OOP, basic SQL, and WinForms form completion',
-  'phase_gate',
-  70
-where not exists (
-  select 1
-  from public.gates g
-  where g.phase_id = 'a1000000-0000-0000-0000-000000000001'
-    and g.name = 'Foundation Gate'
-);
+values
+  ('c1000000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000001', 'Block Gate 1', null, 'block_gate', 70),
+  ('c1000000-0000-0000-0000-000000000002', 'a1000000-0000-0000-0000-000000000001', 'Block Gate 2', null, 'block_gate', 70),
+  ('c1000000-0000-0000-0000-000000000003', 'a1000000-0000-0000-0000-000000000001', 'Block Gate 3', null, 'block_gate', 70),
+  ('c1000000-0000-0000-0000-000000000004', 'a1000000-0000-0000-0000-000000000001', 'Foundation Gate', 'Competitor must demonstrate core OOP, basic SQL, and WinForms form completion', 'phase_gate', 70)
+on conflict (id) do update set
+  phase_id = excluded.phase_id,
+  name = excluded.name,
+  description = excluded.description,
+  gate_type = excluded.gate_type,
+  pass_threshold = excluded.pass_threshold;
 
--- 8) Seed sample topics for Foundation phase
-insert into public.topics (phase_id, subcompetence_id, name, description, order_index)
+-- 8) Seed sample topics for Foundation phase (each topic has a gate_id)
+insert into public.topics (phase_id, subcompetence_id, gate_id, name, description, order_index)
 select
   'a1000000-0000-0000-0000-000000000001',
   id,
+  'c1000000-0000-0000-0000-000000000001'::uuid,
   'OOP Fundamentals',
   'Classes, inheritance, polymorphism, encapsulation in C#',
   1
@@ -109,10 +108,11 @@ where name = 'Development'
       and t.name = 'OOP Fundamentals'
   );
 
-insert into public.topics (phase_id, subcompetence_id, name, description, order_index)
+insert into public.topics (phase_id, subcompetence_id, gate_id, name, description, order_index)
 select
   'a1000000-0000-0000-0000-000000000001',
   id,
+  'c1000000-0000-0000-0000-000000000002'::uuid,
   'Use Case Modelling',
   'Actors, use case diagrams, include/extend relationships',
   2
@@ -125,10 +125,11 @@ where name = 'Analysis & Design'
       and t.name = 'Use Case Modelling'
   );
 
-insert into public.topics (phase_id, subcompetence_id, name, description, order_index)
+insert into public.topics (phase_id, subcompetence_id, gate_id, name, description, order_index)
 select
   'a1000000-0000-0000-0000-000000000001',
   id,
+  'c1000000-0000-0000-0000-000000000003'::uuid,
   'SQL Server Basics',
   'DDL, DML, SELECT, JOINs, basic stored procedures',
   3

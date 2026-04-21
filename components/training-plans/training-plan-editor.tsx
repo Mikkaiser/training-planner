@@ -49,8 +49,11 @@ import {
   resolvePlanColor,
   type PlanColorKey,
 } from "@/lib/constants/planColors";
+import { subcompetenceChipStyle } from "@/lib/constants/subcompetenceTokens";
+import { useIsDark } from "@/lib/use-is-dark";
 import { getSubcompetenceIcon } from "@/lib/training-plans/icons";
 import type {
+  GateType,
   Phase,
   PlanDraft,
   PlanPhaseRef,
@@ -61,48 +64,6 @@ import { useTrainingPlanSave } from "@/lib/training-plans/use-training-plan-auto
 import { cn } from "@/lib/utils";
 
 type Orientation = "horizontal" | "vertical";
-
-function chipStyle(color: string | null | undefined) {
-  if (!color) return {};
-  const c = String(color).trim();
-  const lc = c.toLowerCase();
-
-  const style: Record<string, string> = { ["--subcompetence-color"]: c };
-
-  // Keep dark mode chips subtle (no light-mode overrides)
-  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
-  if (isDark) return style as React.CSSProperties;
-
-  // Analysis & Design (#7C6AF7)
-  if (lc === "#7c6af7") {
-    style["--subcompetence-bg"] = "rgba(124,106,247,0.14)";
-    style["--subcompetence-border"] = "rgba(124,106,247,0.45)";
-    style["--subcompetence-fg"] = "#5b47e0";
-  }
-
-  // Development (#DBFD6B)
-  if (lc === "#dbfd6b") {
-    style["--subcompetence-bg"] = "rgba(150,180,0,0.12)";
-    style["--subcompetence-border"] = "rgba(150,180,0,0.40)";
-    style["--subcompetence-fg"] = "#5a6e00";
-  }
-
-  // Testing (#00a878)
-  if (lc === "#00a878") {
-    style["--subcompetence-bg"] = "rgba(0,168,120,0.12)";
-    style["--subcompetence-border"] = "rgba(0,168,120,0.40)";
-    style["--subcompetence-fg"] = "#007a58";
-  }
-
-  // Transversal (#FB923C)
-  if (lc === "#fb923c") {
-    style["--subcompetence-bg"] = "rgba(251,146,60,0.12)";
-    style["--subcompetence-border"] = "rgba(251,146,60,0.40)";
-    style["--subcompetence-fg"] = "#c45e00";
-  }
-
-  return style as React.CSSProperties;
-}
 
 function StatusPills({
   value,
@@ -200,6 +161,7 @@ function SortablePhaseCard({
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: item.phase_id });
+  const isDark = useIsDark();
 
   return (
     <div
@@ -253,7 +215,7 @@ function SortablePhaseCard({
               <span
                 key={s.id}
                 className="subcompetence-chip px-2 py-0.5 text-xs"
-                style={chipStyle(s.color)}
+                style={subcompetenceChipStyle(s.color, isDark)}
               >
                 {s.name}
               </span>
@@ -262,7 +224,7 @@ function SortablePhaseCard({
 
           <div className="mt-2 flex items-center gap-3 text-xs text-tp-muted">
             <span>{item.phase.blocks.length} blocks</span>
-            <span>{item.phase.gates.length} gates</span>
+            <span>{item.phase.blocks.length} gates</span>
             <button
               type="button"
               onClick={onToggleExpanded}
@@ -296,28 +258,57 @@ function SortablePhaseCard({
                       {item.phase.blocks
                         .slice()
                         .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0))
-                        .map((b) => {
+                        .map((b, bi, arr) => {
                           const sc = item.phase.subcompetences.find(
                             (s) => s.id === b.subcompetence_id
                           );
                           const { Icon, colorLight, colorDark } =
                             getSubcompetenceIcon(sc);
+                          const isPhaseGate =
+                            bi === arr.length - 1 && b.gate.gate_type === "phase_gate";
+                          const GateIcon = isPhaseGate ? ShieldCheck : Shield;
                           return (
-                            <div
-                              key={`${item.phase_id}-blk-${b.id ?? b.order_index}`}
-                              className="flex items-center gap-2 text-xs text-tp-secondary"
-                            >
-                              <Icon
-                                size={16}
-                                className="shrink-0 dark:hidden"
-                                style={{ color: colorLight }}
-                              />
-                              <Icon
-                                size={16}
-                                className="hidden shrink-0 dark:block"
-                                style={{ color: colorDark }}
-                              />
-                              <span className="truncate">{b.name}</span>
+                            <div key={`${item.phase_id}-blk-${b.id ?? b.order_index}`}>
+                              <div className="flex items-center gap-2 text-xs text-tp-secondary">
+                                <Icon
+                                  size={16}
+                                  className="shrink-0 dark:hidden"
+                                  style={{ color: colorLight }}
+                                />
+                                <Icon
+                                  size={16}
+                                  className="hidden shrink-0 dark:block"
+                                  style={{ color: colorDark }}
+                                />
+                                <span className="truncate">{b.name}</span>
+                              </div>
+
+                              <div className="mt-1 flex items-center justify-between gap-3 pl-6 text-[11px] text-tp-muted">
+                                <span className="flex min-w-0 items-center gap-2">
+                                  <GateIcon
+                                    size={14}
+                                    className="shrink-0"
+                                    style={{
+                                      color: isPhaseGate
+                                        ? "var(--color-positive)"
+                                        : "var(--color-accent)",
+                                    }}
+                                  />
+                                  <span className="truncate">{b.gate.name}</span>
+                                </span>
+                                {typeof b.gate.pass_threshold === "number" ? (
+                                  <span
+                                    className={cn(
+                                      "shrink-0 rounded-full border px-2 py-0.5 text-tp-primary",
+                                      isPhaseGate
+                                        ? "border-[var(--color-positive-border)] bg-[var(--color-positive-bg)]"
+                                        : "border-[var(--color-border-hover)] bg-[var(--color-accent-muted)]"
+                                    )}
+                                  >
+                                    {b.gate.pass_threshold}%
+                                  </span>
+                                ) : null}
+                              </div>
                             </div>
                           );
                         })}
@@ -325,49 +316,7 @@ function SortablePhaseCard({
                   </div>
                 ) : null}
 
-                {item.phase.gates.length ? (
-                  <div>
-                    <div className="text-xs font-semibold text-tp-primary">Gates</div>
-                    <div className="mt-2 flex flex-col gap-1.5">
-                      {item.phase.gates.map((g, gi) => {
-                        const isPhase = g.gate_type === "phase_gate";
-                        const GateIcon = isPhase ? ShieldCheck : Shield;
-                        return (
-                          <div
-                            key={`${item.phase_id}-gate-${g.id ?? gi}`}
-                            className="flex items-center justify-between gap-3 text-xs text-tp-secondary"
-                          >
-                            <span className="flex min-w-0 items-center gap-2">
-                              <GateIcon
-                                size={16}
-                                className="shrink-0"
-                                style={{
-                                  color: isPhase
-                                    ? "var(--color-positive)"
-                                    : "var(--color-accent)",
-                                }}
-                              />
-                              <span className="truncate">{g.name}</span>
-                            </span>
-                            <span
-                              className={cn(
-                                "shrink-0 rounded-full border px-2 py-0.5",
-                                isPhase
-                                  ? "border-[rgba(82,255,186,0.40)] bg-[rgba(82,255,186,0.10)] text-tp-primary"
-                                  : "border-[rgba(0,212,255,0.55)] bg-[rgba(0,212,255,0.10)] text-tp-primary"
-                              )}
-                            >
-                              {isPhase ? "phase" : "block"}
-                              {typeof g.pass_threshold === "number"
-                                ? ` · ${g.pass_threshold}%`
-                                : ""}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ) : null}
+                {/* Gates are shown inline under each block now. */}
               </div>
             </div>
           </div>
@@ -411,6 +360,7 @@ export function TrainingPlanEditor({ planId }: { planId?: string }) {
   const router = useRouter();
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+  const isDark = useIsDark();
 
   const [orientation, setOrientation] = useState<Orientation>("horizontal");
   const [draft, setDraft] = useState<PlanDraft>({
@@ -466,7 +416,7 @@ export function TrainingPlanEditor({ planId }: { planId?: string }) {
       const { data, error } = await supabase
         .from("phases")
         .select(
-          "id,name,description,duration_weeks,order_index, phase_subcompetences(subcompetence_id, subcompetences(id,name,description,color,icon)), topics(id,name,description,order_index,subcompetence_id), gates(id,name,description,gate_type,pass_threshold)"
+          "id,name,description,duration_weeks,order_index, phase_subcompetences(subcompetence_id, subcompetences(id,name,description,color,icon)), topics(id,name,description,order_index,subcompetence_id, gate:gates!topics_gate_id_fkey(id,name,description,gate_type,pass_threshold))"
         )
         .order("created_at", { ascending: true });
       if (error) throw error;
@@ -484,6 +434,13 @@ export function TrainingPlanEditor({ planId }: { planId?: string }) {
           description: string | null;
           order_index: number;
           subcompetence_id: string | null;
+          gate: {
+            id: string;
+            name: string;
+            description: string | null;
+            gate_type: "phase_gate" | "block_gate";
+            pass_threshold: number | null;
+          } | null;
         }>;
         const blocks = topics.map((t) => ({
           id: t.id,
@@ -491,21 +448,19 @@ export function TrainingPlanEditor({ planId }: { planId?: string }) {
           description: t.description,
           order_index: t.order_index,
           subcompetence_id: t.subcompetence_id,
-        }));
-
-        const gRows = (p["gates"] ?? []) as unknown as Array<{
-          id: string;
-          name: string;
-          description: string | null;
-          gate_type: "phase_gate" | "block_gate";
-          pass_threshold: number | null;
-        }>;
-        const gates = gRows.map((g) => ({
-          id: g.id,
-          name: g.name,
-          description: g.description,
-          gate_type: g.gate_type,
-          pass_threshold: g.pass_threshold,
+          gate: t.gate
+            ? {
+                id: t.gate.id,
+                name: t.gate.name,
+                description: t.gate.description,
+                gate_type: t.gate.gate_type,
+                pass_threshold: t.gate.pass_threshold,
+              }
+            : {
+                name: `${t.name} Gate`,
+                gate_type: "block_gate" as GateType,
+                pass_threshold: 70,
+              },
         }));
 
         const phase: Phase = {
@@ -516,7 +471,6 @@ export function TrainingPlanEditor({ planId }: { planId?: string }) {
           order_index: (p["order_index"] as number | null) ?? null,
           subcompetences: scs,
           blocks,
-          gates,
         };
         return phase;
       }) as Phase[];
@@ -709,13 +663,10 @@ export function TrainingPlanEditor({ planId }: { planId?: string }) {
         <button
           type="button"
           className="tp-plan-cancel-btn"
-          onClick={() => {
-            if (auto.planId) router.push(`/dashboard/plans/${auto.planId}`);
-            else router.push("/dashboard/plans");
-          }}
+          onClick={() => router.push("/dashboard/plans")}
         >
           <ChevronLeft className="h-4 w-4" />
-          Cancel
+          Back
         </button>
       </div>
 
@@ -949,8 +900,9 @@ export function TrainingPlanEditor({ planId }: { planId?: string }) {
                           const frac = totalWeeks ? dur / totalWeeks : 1 / Math.max(phaseRefs.length, 1);
                           const grow = Math.max(frac, 0.08);
                           const accent = r.phase.subcompetences[0]?.color ?? "var(--color-accent)";
-                          const blockGates = r.phase.gates.filter((g) => g.gate_type === "block_gate");
-                          const phaseGate = r.phase.gates.find((g) => g.gate_type === "phase_gate");
+                          const phaseGate = r.phase.blocks[r.phase.blocks.length - 1]?.gate?.gate_type === "phase_gate"
+                            ? r.phase.blocks[r.phase.blocks.length - 1].gate
+                            : undefined;
                           return (
                             <motion.div
                               key={r.phase_id}
@@ -1000,7 +952,7 @@ export function TrainingPlanEditor({ planId }: { planId?: string }) {
                                       <span
                                         key={s.id}
                                         className="subcompetence-chip max-w-full truncate px-2 py-0.5 text-[11px]"
-                                        style={chipStyle(s.color)}
+                                        style={subcompetenceChipStyle(s.color, isDark)}
                                         title={s.name}
                                       >
                                         {s.name}
@@ -1015,26 +967,9 @@ export function TrainingPlanEditor({ planId }: { planId?: string }) {
                                     </span>
                                     <span className="inline-flex items-center gap-1">
                                       <Shield size={14} />
-                                      {r.phase.gates.length} gates
+                                      {r.phase.blocks.length} gates
                                     </span>
                                   </div>
-
-                                  {blockGates.length > 0 ? (
-                                    <div className="mt-1 flex items-end justify-between border-t border-[var(--color-accent)]/15 pt-1">
-                                      {blockGates.map((g, gi) => (
-                                        <div
-                                          key={`${r.phase_id}-bg-${gi}`}
-                                          className="flex flex-col items-center gap-0.5"
-                                          title={g.name}
-                                        >
-                                          <span className="text-[9px] font-semibold leading-none text-[var(--color-accent)]/80">
-                                            G{gi + 1}
-                                          </span>
-                                          <span className="h-1.5 w-[2px] rounded-full bg-[var(--color-accent)]/70" />
-                                        </div>
-                                      ))}
-                                    </div>
-                                  ) : null}
 
                                   {phaseGate ? (
                                     <div className="pointer-events-none absolute inset-y-0 right-0 w-[2px] bg-[var(--color-accent)]" />
@@ -1085,10 +1020,7 @@ export function TrainingPlanEditor({ planId }: { planId?: string }) {
                                 <div className="tp-phase-block flex cursor-grab gap-3 p-4 active:cursor-grabbing">
                                   <div className="flex flex-col items-center gap-2">
                                     <div className="h-full w-[3px] rounded-full" style={{ background: accent }} />
-                                    <div
-                                      className="flex h-7 w-7 items-center justify-center rounded-full border border-border text-xs font-semibold text-tp-primary"
-                                      style={{ background: "rgba(255,255,255,0.12)" }}
-                                    >
+                                    <div className="flex h-7 w-7 items-center justify-center rounded-full border border-border bg-[var(--color-surface)] text-xs font-semibold text-tp-primary">
                                       {idx + 1}
                                     </div>
                                   </div>

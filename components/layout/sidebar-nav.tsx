@@ -3,12 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  BookOpen,
-  FileText,
   Layers,
   LayoutDashboard,
   Map,
-  ShieldCheck,
   Users,
 } from "lucide-react";
 
@@ -20,9 +17,6 @@ const nav = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/plans", label: "Plans", icon: Map },
   { href: "/dashboard/phases", label: "Phases", icon: Layers },
-  { href: "/dashboard/subcompetences", label: "Subcompetences", icon: BookOpen },
-  { href: "/dashboard/exercises", label: "Exercises", icon: FileText },
-  { href: "/dashboard/gates", label: "Gates", icon: ShieldCheck },
 ] as const;
 
 /** Only one item active: `/dashboard` matches the home route only, not nested paths. */

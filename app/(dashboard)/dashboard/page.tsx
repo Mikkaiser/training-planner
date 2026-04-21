@@ -84,15 +84,6 @@ export default function DashboardHomePage() {
             >
               New Phase
             </Link>
-            <Link
-              href="/dashboard/subcompetences/new"
-              className={cn(
-                buttonVariants({ variant: "default", size: "default" }),
-                "h-[55px] w-full justify-center rounded-[13px] text-[18px] font-semibold"
-              )}
-            >
-              New Subcompetence
-            </Link>
           </div>
         </GlassCard>
       </div>

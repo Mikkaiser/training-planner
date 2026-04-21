@@ -29,8 +29,12 @@ export function getSubcompetenceIcon(
   const name = (sc?.name ?? "").toLowerCase();
   const color = (sc?.color ?? "").toLowerCase();
 
-  if (name.includes("development") || color === "#dbfd6b") {
-    return { Icon: Code2, colorLight: "#5a6e00", colorDark: "#DBFD6B" };
+  if (
+    name.includes("development") ||
+    color === "#22c55e" ||
+    color === "#dbfd6b"
+  ) {
+    return { Icon: Code2, colorLight: "#166534", colorDark: "#22c55e" };
   }
   if (name.includes("analysis") || name.includes("design") || color === "#7c6af7") {
     return { Icon: PenTool, colorLight: "#5b47e0", colorDark: "#7C6AF7" };

@@ -134,7 +134,7 @@ export function LoginForm({
         </div>
         <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
           <div className="space-y-2">
-            <Label htmlFor="email" className="login-auth-label text-tp-secondary">
+            <Label htmlFor="email" className="tp-plan-label">
               Email
             </Label>
             <Input
@@ -142,7 +142,7 @@ export function LoginForm({
               type="email"
               placeholder="you@example.com"
               autoComplete="email"
-              className="login-auth-input"
+              className="login-auth-input glass-input"
               {...register("email")}
             />
             {errors.email?.message ? (
@@ -151,14 +151,14 @@ export function LoginForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password" className="login-auth-label text-tp-secondary">
+            <Label htmlFor="password" className="tp-plan-label">
               Password
             </Label>
             <Input
               id="password"
               type="password"
               autoComplete={isSignup ? "new-password" : "current-password"}
-              className="login-auth-input"
+              className="login-auth-input glass-input"
               {...register("password")}
             />
             {errors.password?.message ? (
@@ -179,7 +179,7 @@ export function LoginForm({
           <Button
             type="submit"
             disabled={submitting}
-            className="login-auth-submit w-full"
+            className="tp-plan-save-btn login-auth-submit w-full"
             size="lg"
           >
             <LogIn className="mr-2 h-5 w-5 text-primary-foreground" />

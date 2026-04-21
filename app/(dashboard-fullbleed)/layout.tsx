@@ -6,10 +6,14 @@ import BackgroundBlobs from "@/components/layout/BackgroundBlobs";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { ProfileRole } from "@/types";
 
-/** Always read fresh session + profile (role) from Supabase, not a static shell cache. */
+/**
+ * Sibling layout to `(dashboard)` that skips the padded max-width inner
+ * container, letting pages (e.g. the plan roadmap) go full-bleed with their
+ * own height:100vh layout.
+ */
 export const dynamic = "force-dynamic";
 
-export default async function DashboardLayout({
+export default async function DashboardFullbleedLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -77,11 +81,10 @@ export default async function DashboardLayout({
           style={{
             flex: 1,
             minHeight: 0,
-            overflowY: "auto",
             display: "flex",
             flexDirection: "column",
+            overflow: "hidden",
           }}
-          className="mx-auto w-full max-w-[1400px] px-[45px] py-[40px]"
         >
           {children}
         </div>
@@ -89,4 +92,3 @@ export default async function DashboardLayout({
     </div>
   );
 }
-

@@ -21,6 +21,7 @@ import { toast } from "sonner";
 
 import { PLAN_COLORS, resolvePlanColor } from "@/lib/constants/planColors";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { PlanListSkeleton } from "@/components/shared/skeletons";
 import { cn } from "@/lib/utils";
 
 /**
@@ -167,18 +168,23 @@ export function useTrainingPlans() {
 
 async function deletePlan(planId: string) {
   const supabase = getSupabaseBrowserClient();
-  // Remove plan/phase links first to keep the timeline consistent with RLS.
-  const { error: linkErr } = await supabase
-    .from("training_plan_phases")
-    .delete()
-    .eq("training_plan_id", planId);
-  if (linkErr) throw linkErr;
-
-  const { error } = await supabase
+  // training_plan_phases cascades from training_plans.id, so the junction
+  // rows clean themselves up. We still need `.select()` here so Supabase
+  // returns the affected rows — without it, RLS-blocked deletes look like
+  // success (no error + 0 rows), which is exactly the "delete didn't stick"
+  // bug. Admin role is required by the `del_admin` policy on training_plans.
+  const { data, error } = await supabase
     .from("training_plans")
     .delete()
-    .eq("id", planId);
+    .eq("id", planId)
+    .select("id");
+
   if (error) throw error;
+  if (!data || data.length === 0) {
+    throw new Error(
+      "Plan not deleted. Only the instructor who created the plan or an admin can delete it."
+    );
+  }
 }
 
 export function PlansList() {
@@ -201,13 +207,7 @@ export function PlansList() {
   });
 
   if (isLoading) {
-    return (
-      <div className="plan-grid">
-        {[0, 1, 2].map((i) => (
-          <div key={i} className="plan-card-skeleton" aria-hidden />
-        ))}
-      </div>
-    );
+    return <PlanListSkeleton />;
   }
 
   if (isError) {
@@ -250,7 +250,7 @@ export function PlansList() {
 
 function PlansEmptyState() {
   return (
-    <div className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-border/60 bg-[rgba(255,255,255,0.35)] p-10 text-center backdrop-blur-md dark:bg-[rgba(24,22,22,0.45)]">
+    <div className="glass-panel glass-panel--subtle flex min-h-[320px] flex-col items-center justify-center p-10 text-center">
       <MapIcon className="h-12 w-12 text-[var(--color-accent)] opacity-40" />
       <div className="mt-4 text-lg font-semibold text-tp-primary">
         No training plans yet
@@ -260,7 +260,7 @@ function PlansEmptyState() {
       </div>
       <Link
         href="/dashboard/plans/new"
-        className="mt-5 inline-flex items-center gap-2 rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-white shadow-cta hover:bg-[var(--color-accent-hover,var(--color-accent))]"
+        className="mt-5 inline-flex items-center gap-2 rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-primary-foreground shadow-cta hover:bg-[var(--color-accent-hover,var(--color-accent))]"
       >
         <Plus className="h-4 w-4" />
         New Training Plan
@@ -478,26 +478,29 @@ function StatusBadge({
   status: string;
   planColor: keyof typeof PLAN_COLORS;
 }) {
-  const tokens = PLAN_COLORS[planColor];
-  let bg = tokens.chip;
-  let border = tokens.chipBorder;
-  let text = tokens.chipText;
+  const label = status.charAt(0).toUpperCase() + status.slice(1);
 
   if (status === "active") {
-    bg = "rgba(34,197,94,0.12)";
-    border = "rgba(34,197,94,0.40)";
-    text = "#15803d";
-  } else if (status === "completed") {
-    bg = "rgba(107,114,128,0.12)";
-    border = "rgba(107,114,128,0.40)";
-    text = "#374151";
+    return (
+      <span className="badge-status-active shrink-0 text-[11px]">{label}</span>
+    );
+  }
+  if (status === "completed") {
+    return (
+      <span className="badge-status-neutral shrink-0 text-[11px]">{label}</span>
+    );
   }
 
-  const label = status.charAt(0).toUpperCase() + status.slice(1);
+  // Default/draft — tinted with the plan color so the card reads cohesively.
+  const tokens = PLAN_COLORS[planColor];
   return (
     <span
       className="shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold"
-      style={{ background: bg, borderColor: border, color: text }}
+      style={{
+        background: tokens.chip,
+        borderColor: tokens.chipBorder,
+        color: tokens.chipText,
+      }}
     >
       {label}
     </span>

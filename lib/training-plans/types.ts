@@ -28,6 +28,10 @@ export type Block = {
   subcompetence_id: string | null;
 };
 
+export type BlockWithGate = Block & {
+  gate: Gate;
+};
+
 export type Phase = {
   id: string;
   name: string;
@@ -35,8 +39,7 @@ export type Phase = {
   duration_weeks: number | null;
   order_index: number | null;
   subcompetences: Subcompetence[];
-  blocks: Block[];
-  gates: Gate[];
+  blocks: BlockWithGate[];
 };
 
 export type PlanDraft = {

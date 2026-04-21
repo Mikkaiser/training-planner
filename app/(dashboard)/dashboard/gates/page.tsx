@@ -1,5 +1,5 @@
 import { PageHeader } from "@/components/layout/page-header";
-import { GlassCard } from "@/components/shared/glass-card";
+import { GatesManager } from "@/components/gates/gates-manager";
 
 export default function GatesPage() {
   return (
@@ -8,12 +8,7 @@ export default function GatesPage() {
         title="Gates"
         subtitle="Block gates and phase gates with assessments."
       />
-      <GlassCard>
-        <div className="text-sm text-tp-secondary">
-          Gates list (grouped by phase) + assessment uploads will live here.
-        </div>
-      </GlassCard>
+      <GatesManager />
     </div>
   );
 }
-

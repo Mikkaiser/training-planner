@@ -1,0 +1,401 @@
+---
+description: Only use in tasks involving changes in the frontend - Training Planner complete design system — tokens, theming, glassmorphism, light/dark mode
+alwaysApply: false
+---
+# Training Planner Design System
+
+## ABSOLUTE RULES — never violate these
+
+- Never use hardcoded hex or rgba() color values in component files
+- Never define [data-theme="dark"] blocks outside globals.css
+- Never use prefers-color-scheme media queries
+- Never write background: white, background: black, color: black, color: white
+- Never reproduce glass rgba() values inline — use CSS classes
+- Never create new CSS variables outside globals.css
+- Never add dark mode styles inside .tsx or .ts files
+- Dark mode is handled globally in globals.css only
+
+---
+
+## CSS VARIABLES — always reference these
+
+### Text
+- var(--color-text-primary)    → #111827 light / #EAF2EF dark
+- var(--color-text-secondary)  → #374151 light / rgba(234,242,239,0.65) dark
+- var(--color-text-muted)      → #6B7280 light / rgba(234,242,239,0.40) dark
+- var(--color-text-accent)     → #1d4ed8 light / #60a5fa dark
+
+### Accent
+- var(--color-accent)          → #2563EB both modes
+- var(--color-accent-hover)    → #1d4ed8 both modes
+- var(--color-accent-muted)    → rgba(37,99,235,0.09) light / rgba(37,99,235,0.12) dark
+- var(--color-border)          → rgba(37,99,235,0.10) light / rgba(37,99,235,0.16) dark
+- var(--color-border-hover)    → rgba(37,99,235,0.22) light / rgba(37,99,235,0.32) dark
+- var(--color-border-subtle)   → rgba(37,99,235,0.06) light / rgba(37,99,235,0.10) dark
+
+### Surfaces
+- var(--color-base)            → #EAF2EF light / #181616 dark
+- var(--color-surface)         → #f7fbff light / #2D2B2B dark
+- var(--color-surface-raised)  → #ffffff light / #1f1d1d dark
+
+### Semantic
+- var(--color-positive)        → #1a8a5a light / #52FFBA dark
+- var(--color-positive-bg)     → rgba(82,255,186,0.18) light / rgba(82,255,186,0.10) dark
+- var(--color-positive-border) → rgba(82,255,186,0.40) light / rgba(82,255,186,0.25) dark
+- var(--color-negative)        → #d63a3a light / #FF6060 dark
+- var(--color-negative-bg)     → rgba(255,96,96,0.12) light / rgba(255,96,96,0.10) dark
+- var(--color-negative-border) → rgba(255,96,96,0.30) light / rgba(255,96,96,0.25) dark
+
+### Buttons and interaction
+- var(--cta-shadow)
+- var(--cta-shadow-hover)
+- var(--btn-primary-hover-bg)
+- var(--btn-primary-hover-shadow)
+- var(--btn-ghost-hover-bg)
+- var(--btn-ghost-hover-border)
+- var(--btn-ghost-hover-fg)
+- var(--nav-hover-bg)
+- var(--nav-hover-fg)
+- var(--hover-tint-bg)
+- var(--sidebar-bg)
+- var(--sidebar-border)
+- var(--stat-number-color)
+
+---
+
+## TAILWIND UTILITY CLASSES — use instead of hardcoded colors
+
+- text-tp-primary       → var(--color-text-primary)
+- text-tp-secondary     → var(--color-text-secondary)
+- text-tp-muted         → var(--color-text-muted)
+- text-tp-accent-label  → var(--color-text-accent)
+- glass                 → glass-panel class
+- glass-strong          → glass-panel--strong class
+- glass-subtle          → glass-panel--subtle class
+
+---
+
+## CSS CLASSES — always use, never reproduce inline
+
+### Glass surfaces
+- glass-panel           → icy blue tinted glass, light mode default
+- glass-panel--strong   → stronger opacity, sidebar and modals
+- glass-panel--subtle   → lighter opacity, background areas
+- glass-panel--login    → login card glass
+- glass-input           → form input glass styling
+- glass-tooltip         → tooltip/popover glass styling
+
+### Badges and chips
+- badge-status-active   → green, active status
+- badge-status-draft    → blue, draft status
+- badge-status-completed → blue, completed status
+- badge-status-error    → red, error status
+- subcompetence-chip    → uses --sc-bg, --sc-border, --sc-fg variables
+
+### Layout
+- app-header-bar        → header topbar glass
+- sidebar-nav-link      → nav item base styles
+- nav-item-active       → active nav item styles
+- hover-tint            → generic interactive hover transition
+- modal-backdrop        → modal overlay backdrop
+
+### Plan editor
+- tp-plan-left          → left form panel
+- tp-plan-right         → right canvas panel
+- tp-plan-left-header   → sticky panel header
+- tp-plan-phase-card    → phase card in left panel
+- tp-plan-status-pill   → status toggle pill
+- tp-add-phase-btn      → Add Phase button
+- tp-plan-save-btn      → Save button
+- tp-plan-color-swatch  → color picker swatch
+- tp-plan-toggle-btn    → horizontal/vertical toggle
+- tp-phase-block        → Gantt phase block
+
+### Plan detail
+- plan-detail-header    → page header bar
+- plan-roadmap-column   → left roadmap column
+- plan-detail-column    → right detail column
+- plan-detail-legend    → competitor legend bar
+- plan-phase-section    → phase group
+- plan-block-row        → block row in roadmap
+- plan-gate-row         → gate row in roadmap
+- plan-progress-dot     → competitor progress dot
+- plan-status-chip      → gate pass/fail chip
+
+### Skeleton
+- skeleton-shimmer      → shimmer animation base
+- skeleton-card         → card-shaped skeleton
+
+---
+
+## PLAN COLORS — import from lib/constants/planColors
+
+Never hardcode plan color hex values in components.
+Always use PLAN_COLORS[plan.color].border / .bg / .accent / .glow etc.
+
+Available keys: red, blue, yellow, green, purple, orange
+
+Each key provides: label, border, bg, bgStrong, chip, chipBorder, chipText, accent, accentHover, glow
+
+Set as CSS custom properties on the plan root element:
+- --plan-accent
+- --plan-accent-hover
+- --plan-border
+- --plan-bg
+- --plan-bg-strong
+- --plan-chip
+- --plan-chip-border
+- --plan-chip-text
+- --plan-glow
+- --plan-tint
+- --plan-tint-strong
+- --plan-card-glow
+
+---
+
+## SUBCOMPETENCE COLORS — import from lib/constants/subcompetenceTokens
+
+Never hardcode subcompetence rgba() values inline.
+Use getSubcompetenceTokens(color, isDark) and set --sc-bg, --sc-border, --sc-fg on the component root.
+
+### Light mode values
+
+Analysis & Design #7C6AF7
+  bg: rgba(124,106,247,0.12)
+  border: rgba(124,106,247,0.40)
+  fg: #5b47e0
+
+Development #DBFD6B — WARNING: raw color is invisible on light backgrounds
+  bg: rgba(150,180,0,0.12)
+  border: rgba(150,180,0,0.40)
+  fg: #5a6e00
+  — this is dark olive, derived by darkening #DBFD6B until
+    it reaches 4.5:1 contrast ratio on white/icy blue surfaces.
+    It is the only accessible text representation of the lime
+    color on light backgrounds. Never substitute it with the
+    raw #DBFD6B or any lighter yellow-green value in light mode.
+    In dark mode the raw #DBFD6B is used directly since contrast
+    is reversed and the lime reads clearly on dark surfaces.
+
+Testing #00a878
+  bg: rgba(0,168,120,0.12)
+  border: rgba(0,168,120,0.40)
+  fg: #007a58
+
+Transversal #FB923C
+  bg: rgba(251,146,60,0.12)
+  border: rgba(251,146,60,0.40)
+  fg: #c45e00
+
+### Dark mode values
+
+Analysis & Design #7C6AF7
+  bg: rgba(124,106,247,0.12)
+  border: rgba(124,106,247,0.30)
+  fg: #a78bfa
+
+Development #DBFD6B — raw color IS readable on dark backgrounds
+  bg: rgba(219,253,107,0.10)
+  border: rgba(219,253,107,0.28)
+  fg: #DBFD6B  full color fine in dark mode
+
+Testing #00a878
+  bg: rgba(0,168,120,0.10)
+  border: rgba(0,168,120,0.28)
+  fg: #00a878
+
+Transversal #FB923C
+  bg: rgba(251,146,60,0.10)
+  border: rgba(251,146,60,0.28)
+  fg: #fb923c
+
+---
+
+## LIGHT MODE RULES
+
+### Surface hierarchy — each layer must be visually distinct
+
+Layer 0 — Page background
+  var(--color-base) → #EAF2EF mint cream
+  Blobs animate on top of this layer
+
+Layer 1 — Glass panels, sidebar, main panels
+  class: glass-panel
+  rgba(179,215,255,0.45) icy blue tint plus blur
+  border: rgba(37,99,235,0.20)
+
+Layer 2 — Raised surfaces, cards inside panels, inputs
+  rgba(255,255,255,0.60) to rgba(255,255,255,0.80)
+  Whiter than glass panel to create depth
+
+Layer 3 — Elevated elements, dropdowns, tooltips, popovers
+  rgba(255,255,255,0.92) or var(--color-surface-raised)
+  Most opaque layer, clearly above everything
+
+### Text contrast — WCAG AA minimum 4.5:1
+
+- Headings: var(--color-text-primary) → #111827
+- Body: var(--color-text-secondary) → #374151
+- Muted: var(--color-text-muted) → #6B7280
+- Accent: var(--color-text-accent) → #1d4ed8
+
+Never in light mode:
+- White or near-white text
+- rgba(255,255,255,0.X) as text color
+- Light gray above #9CA3AF as body text
+- Raw #DBFD6B as text color
+
+### Interactive states
+
+Active nav item:
+  background rgba(37,99,235,0.12), color #1d4ed8, font-weight 600
+
+Inactive nav hover:
+  background rgba(37,99,235,0.07), color #374151
+
+Primary button:
+  background #2563EB, color #ffffff
+  box-shadow var(--cta-shadow)
+  hover bg var(--btn-primary-hover-bg)
+
+Ghost button:
+  background var(--color-accent-muted)
+  border rgba(37,99,235,0.20)
+  color #2563EB
+  hover var(--btn-ghost-hover-bg)
+
+### Glassmorphism requirements
+
+- Blobs MUST be present and visible — they provide the blur source
+- Every glass surface MUST have semi-transparent background, backdropFilter blur() AND -webkit-backdropFilter blur(), visible border at 0.15–0.25 opacity, box-shadow for depth
+- Glass surfaces MUST NOT have background transparent, background opaque color, overflow hidden on parent clipping blur, transform or filter on parent which breaks backdrop-filter
+
+---
+
+## DARK MODE RULES
+
+### Surface hierarchy
+
+Layer 0 — Page background
+  var(--color-base) → #181616 carbon black
+  Purple/violet blobs at low opacity
+
+Layer 1 — Glass panels
+  class: glass-panel
+  rgba(24,22,22,0.60) plus blur
+  border: rgba(37,99,235,0.22)
+
+Layer 2 — Raised surfaces
+  rgba(255,255,255,0.04) to rgba(255,255,255,0.06)
+  Slightly lighter than panel
+
+Layer 3 — Elevated elements
+  rgba(24,22,22,0.92)
+  Most opaque layer
+
+### Text contrast
+
+- Primary: var(--color-text-primary) → #EAF2EF
+- Secondary: var(--color-text-secondary) → rgba(234,242,239,0.65)
+- Muted: var(--color-text-muted) → rgba(234,242,239,0.40)
+- Accent: var(--color-text-accent) → #60a5fa
+
+Never in dark mode:
+- Dark text like #111827, #374151, #6B7280 — invisible
+- Pure black #000000
+- rgba(0,0,0,...) as text color
+
+### Interactive states
+
+Active nav item:
+  background rgba(37,99,235,0.12), color #60a5fa, font-weight 600
+
+Inactive nav hover:
+  background rgba(37,99,235,0.12), color rgba(234,242,239,0.70)
+
+Primary button:
+  background #2563EB same as light
+  box-shadow var(--cta-shadow) stronger glow
+
+Stat numbers:
+  text-shadow 0 0 12px rgba(37,99,235,0.35)
+  Only stat numbers get glow — never body text
+
+### Glassmorphism requirements
+
+- Blobs are purple/violet tinted and must be visible through panels
+- Glass border opacity slightly higher than light mode: 0.22 vs 0.20
+- Never add white backgrounds — max rgba(255,255,255,0.06) for Layer 2
+- Anything more opaque kills glass depth
+- Regular body text never gets glow
+
+---
+
+## THEME TOGGLE IMPLEMENTATION
+
+- Toggle: set/remove data-theme="dark" on document.documentElement
+- Persist: localStorage key "tp-theme"
+- Anti-flash: read localStorage in head before first paint
+- Icon: Sun for light active, Moon for dark active, both from lucide-react
+- After toggling all surfaces must switch — if any surface does not switch it has a hardcoded color, find and fix it
+
+---
+
+## FORBIDDEN PATTERNS — never generate these
+
+- color: #111827                    → use var(--color-text-primary)
+- color: #374151                    → use var(--color-text-secondary)
+- color: #6B7280                    → use var(--color-text-muted)
+- color: #2563eb inline             → use var(--color-accent)
+- color: #1d4ed8 inline             → use var(--color-accent-hover)
+- background: rgba(37,99,235,...)   → use CSS variable
+- background: rgba(179,215,255,...) → use glass-panel class
+- background: rgba(24,22,22,...)    → use glass-panel class
+- background: white                 → use var(--color-surface-raised)
+- background: black                 → use var(--color-base)
+- color: white                      → use var(--color-text-primary)
+- color: black                      → use var(--color-text-primary)
+- prefers-color-scheme              → never, use data-theme only
+- [data-theme="dark"] in tsx/ts     → move to globals.css
+
+---
+
+## WHERE HARDCODED VALUES ARE ALLOWED
+
+- globals.css — single source of truth
+- lib/constants/planColors.ts — plan color definitions
+- lib/constants/subcompetenceTokens.ts — subcompetence tokens
+- Nowhere else
+
+---
+
+## SKELETON LOADING
+
+- Always use class skeleton-shimmer from globals.css
+- Never recreate shimmer animation inline
+- Use skeleton-card for card-shaped placeholders
+- Page-level skeletons live in components/shared/skeletons/
+- Show skeleton when TanStack Query isLoading is true
+- Swap entire content area for skeleton — never conditional inline skeletons except for detail panels loaded after click
+
+---
+
+## VERIFICATION CHECKLIST
+
+- Toggle dark mode — no text disappears
+- Toggle light mode — no text disappears
+- Glass panels show blur in both modes
+- Background blobs visible through panels in both modes
+- Development chip uses #5a6e00 in light mode
+- Development chip uses #DBFD6B in dark mode
+- Active nav readable in both modes
+- Primary buttons readable in both modes
+- All badge/chip variants readable in both modes
+- Stat numbers visible in both modes
+- Input placeholders visible in both modes
+- No element has same color as its background
+- No hardcoded hex in any tsx or ts file outside constants
+- grep for #2563 in components/ returns zero results
+- grep for #111827 in components/ returns zero results
+- grep for rgba(179,215 in components/ returns zero results
+- grep for rgba(24,22,22 in components/ returns zero results
