@@ -13,6 +13,7 @@ import {
   Info,
   Layers,
   Loader2,
+  Save,
   Shield,
   ShieldCheck,
   X,
@@ -56,7 +57,7 @@ import type {
   Subcompetence,
   TrainingPlanStatus,
 } from "@/lib/training-plans/types";
-import { useTrainingPlanAutoSave } from "@/lib/training-plans/use-training-plan-autosave";
+import { useTrainingPlanSave } from "@/lib/training-plans/use-training-plan-autosave";
 import { cn } from "@/lib/utils";
 
 type Orientation = "horizontal" | "vertical";
@@ -148,20 +149,11 @@ function SaveIndicator({
 }) {
   if (state === "idle") return null;
 
-  if (!canSave && state === "dirty") {
-    return (
-      <div className="flex items-center gap-2 text-[12px] text-tp-muted">
-        <span className="h-2 w-2 animate-pulse rounded-full bg-[var(--color-accent)]/70" />
-        Unsaved — fill required fields
-      </div>
-    );
-  }
-
   if (state === "dirty") {
     return (
       <div className="flex items-center gap-2 text-[12px] text-tp-muted">
         <span className="h-2 w-2 animate-pulse rounded-full bg-[var(--color-accent)]" />
-        Unsaved changes
+        {canSave ? "Unsaved changes" : "Fill required fields to save"}
       </div>
     );
   }
@@ -170,7 +162,7 @@ function SaveIndicator({
     return (
       <div className="flex items-center gap-2 text-[12px] text-tp-muted">
         <Loader2 className="h-[14px] w-[14px] animate-spin" />
-        Saving...
+        Saving…
       </div>
     );
   }
@@ -444,7 +436,7 @@ export function TrainingPlanEditor({ planId }: { planId?: string }) {
     },
   });
 
-  const auto = useTrainingPlanAutoSave({
+  const auto = useTrainingPlanSave({
     draft,
     createdBy: profileId ?? "",
     enabled: Boolean(profileId),
@@ -610,63 +602,84 @@ export function TrainingPlanEditor({ planId }: { planId?: string }) {
     return `Week ${start}-${end}`;
   };
 
-  async function ensurePlanId() {
-    if (auto.planId) return auto.planId;
-    const id = await auto.ensureSaved();
-    setDraft((d) => ({ ...d, id }));
-    return id;
-  }
-
-  async function upsertPlanPhases(next: PlanPhaseRef[]) {
-    const id = await ensurePlanId();
-    const rows = recomputeOffsets(next).map((r) => ({
-      training_plan_id: id,
-      phase_id: r.phase_id,
-      order_index: r.order_index,
-      start_offset_weeks: r.start_offset_weeks,
-    }));
-    const { error } = await supabase
-      .from("training_plan_phases")
-      .upsert(rows, { onConflict: "training_plan_id,phase_id" });
-    if (error) throw error;
-  }
-
-  async function addExistingPhase(phase: Phase) {
-    await ensurePlanId();
+  function addExistingPhase(phase: Phase) {
     if (phaseRefs.some((p) => p.phase_id === phase.id)) return;
     const next = recomputeOffsets([
       ...phaseRefs,
-      { phase_id: phase.id, order_index: phaseRefs.length + 1, start_offset_weeks: 0, phase },
+      {
+        phase_id: phase.id,
+        order_index: phaseRefs.length + 1,
+        start_offset_weeks: 0,
+        phase,
+      },
     ]);
     setPhaseRefs(next);
-    await upsertPlanPhases(next);
+    auto.markExternalDirty();
   }
 
-  async function removePhase(phaseId: string) {
-    if (!auto.planId) {
-      setPhaseRefs((cur) => cur.filter((p) => p.phase_id !== phaseId));
-      return;
-    }
-    const id = auto.planId;
-    const next = recomputeOffsets(phaseRefs.filter((p) => p.phase_id !== phaseId));
+  function removePhase(phaseId: string) {
+    const next = recomputeOffsets(
+      phaseRefs.filter((p) => p.phase_id !== phaseId)
+    );
     setPhaseRefs(next);
-    const { error } = await supabase
-      .from("training_plan_phases")
-      .delete()
-      .eq("training_plan_id", id)
-      .eq("phase_id", phaseId);
-    if (error) throw error;
-    await upsertPlanPhases(next);
+    auto.markExternalDirty();
   }
 
-  async function onReorder(activeId: string, overId: string) {
+  function onReorder(activeId: string, overId: string) {
     const oldIndex = phaseRefs.findIndex((p) => p.phase_id === activeId);
     const newIndex = phaseRefs.findIndex((p) => p.phase_id === overId);
     if (oldIndex < 0 || newIndex < 0 || oldIndex === newIndex) return;
     const moved = arrayMove(phaseRefs, oldIndex, newIndex);
     const next = recomputeOffsets(moved);
     setPhaseRefs(next);
-    await upsertPlanPhases(next);
+    auto.markExternalDirty();
+  }
+
+  async function reconcilePhases(planIdToUse: string) {
+    const desired = recomputeOffsets(phaseRefs);
+    const desiredIds = new Set(desired.map((r) => r.phase_id));
+
+    const { data: existing, error: existingErr } = await supabase
+      .from("training_plan_phases")
+      .select("phase_id")
+      .eq("training_plan_id", planIdToUse);
+    if (existingErr) throw existingErr;
+
+    const toDelete = ((existing ?? []) as Array<{ phase_id: string }>)
+      .map((r) => r.phase_id)
+      .filter((id) => !desiredIds.has(id));
+
+    if (toDelete.length) {
+      const { error } = await supabase
+        .from("training_plan_phases")
+        .delete()
+        .eq("training_plan_id", planIdToUse)
+        .in("phase_id", toDelete);
+      if (error) throw error;
+    }
+
+    if (desired.length) {
+      const rows = desired.map((r) => ({
+        training_plan_id: planIdToUse,
+        phase_id: r.phase_id,
+        order_index: r.order_index,
+        start_offset_weeks: r.start_offset_weeks,
+      }));
+      const { error } = await supabase
+        .from("training_plan_phases")
+        .upsert(rows, { onConflict: "training_plan_id,phase_id" });
+      if (error) throw error;
+    }
+  }
+
+  async function handleSave() {
+    try {
+      const id = await auto.save();
+      await reconcilePhases(id);
+      auto.markExternalClean();
+    } catch {
+      // Error surface is driven by the hook's state/errorMessage.
+    }
   }
 
   const planColorTokens = PLAN_COLORS[draft.color];
@@ -711,13 +724,40 @@ export function TrainingPlanEditor({ planId }: { planId?: string }) {
           <div className="tp-plan-left-header">
             <div className="min-w-0">
               <div className="tp-plan-left-header-title">Plan details</div>
-              <div className="tp-plan-left-header-subtitle">Auto-save</div>
+              <div className="tp-plan-left-header-subtitle">
+                {auto.state === "dirty" ? "Unsaved changes" : "Manual save"}
+              </div>
             </div>
-            <SaveIndicator
-              state={auto.state}
-              canSave={auto.canSave}
-              errorMessage={auto.errorMessage}
-            />
+            <div className="flex items-center gap-3">
+              <SaveIndicator
+                state={auto.state}
+                canSave={auto.canSave}
+                errorMessage={auto.errorMessage}
+              />
+              <button
+                type="button"
+                onClick={() => void handleSave()}
+                disabled={!auto.canSave || auto.state === "saving"}
+                className="tp-plan-save-btn"
+                title={
+                  !auto.canSave
+                    ? "Fill in the plan name (min 3 chars) and start date."
+                    : undefined
+                }
+              >
+                {auto.state === "saving" ? (
+                  <>
+                    <Loader2 className="h-[14px] w-[14px] animate-spin" />
+                    Saving…
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-[14px] w-[14px]" />
+                    Save
+                  </>
+                )}
+              </button>
+            </div>
           </div>
 
           <div className="tp-plan-left-body">

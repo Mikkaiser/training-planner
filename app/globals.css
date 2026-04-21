@@ -1004,6 +1004,37 @@
     background: var(--plan-accent-hover, #1d4ed8) !important;
   }
 
+  .tp-plan-save-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 0;
+    border-radius: 8px;
+    padding: 7px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    background: var(--plan-accent, #2563eb);
+    color: #fff;
+    box-shadow: 0 0 14px var(--plan-glow, rgba(37, 99, 235, 0.22));
+    transition: background 150ms ease, box-shadow 150ms ease, opacity 150ms ease,
+      transform 100ms ease;
+    cursor: pointer;
+  }
+
+  .tp-plan-save-btn:hover:not(:disabled) {
+    background: var(--plan-accent-hover, #1d4ed8);
+  }
+
+  .tp-plan-save-btn:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+
+  .tp-plan-save-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
   .tp-plan-color-swatches {
     display: flex;
     align-items: center;

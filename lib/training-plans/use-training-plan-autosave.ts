@@ -5,9 +5,19 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { PlanDraft } from "@/lib/training-plans/types";
 
-export type AutoSaveState = "idle" | "dirty" | "saving" | "saved" | "error";
+export type SaveState = "idle" | "dirty" | "saving" | "saved" | "error";
 
-export function useTrainingPlanAutoSave({
+/**
+ * Manual-save hook for the training plan editor.
+ *
+ * The previous iteration auto-saved on every change, which caused surprising
+ * writes and intermittent crashes. Now the editor drives persistence via an
+ * explicit Save button — this hook only:
+ *   1. Tracks dirty state by hashing the draft.
+ *   2. Exposes a `save()` entry point that performs the INSERT/UPDATE.
+ *   3. Reports the last save outcome (saved / error + message) to the UI.
+ */
+export function useTrainingPlanSave({
   draft,
   createdBy,
   enabled,
@@ -20,17 +30,16 @@ export function useTrainingPlanAutoSave({
 }) {
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
 
-  const [state, setState] = useState<AutoSaveState>("idle");
+  const [state, setState] = useState<SaveState>("idle");
   const [planId, setPlanId] = useState<string | null>(draft.id ?? null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const lastSavedHashRef = useRef<string>("");
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const retryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedResetRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const inFlightRef = useRef<Promise<string> | null>(null);
+  const externalDirtyRef = useRef<boolean>(false);
 
-  const canSave = enabled && draft.name.trim().length >= 3 && Boolean(draft.start_date);
+  const canSave =
+    enabled && draft.name.trim().length >= 3 && Boolean(draft.start_date);
 
   const hash = useMemo(() => {
     return JSON.stringify({
@@ -50,10 +59,27 @@ export function useTrainingPlanAutoSave({
     planId,
   ]);
 
-  async function persist(): Promise<string> {
+  useEffect(() => {
+    if (state === "saving") return;
+    const isDirty =
+      externalDirtyRef.current || hash !== lastSavedHashRef.current;
+    setState(isDirty ? "dirty" : "idle");
+    // state is intentionally excluded to avoid feedback loops.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hash]);
+
+  useEffect(() => {
+    return () => {
+      if (savedResetRef.current) clearTimeout(savedResetRef.current);
+    };
+  }, []);
+
+  async function save(): Promise<string> {
+    if (!canSave) throw new Error("missing_required_fields");
     setState("saving");
     setErrorMessage(null);
     try {
+      let id = planId ?? "";
       if (!planId) {
         const { data, error } = await supabase
           .from("training_plans")
@@ -67,23 +93,10 @@ export function useTrainingPlanAutoSave({
           })
           .select("id")
           .single();
-
         if (error) throw error;
-        const id = data.id as string;
+        id = data.id as string;
         setPlanId(id);
         onFirstSave?.(id);
-        lastSavedHashRef.current = JSON.stringify({
-          id,
-          name: draft.name,
-          description: draft.description,
-          status: draft.status,
-          start_date: draft.start_date,
-          color: draft.color,
-        });
-        setState("saved");
-        if (savedResetRef.current) clearTimeout(savedResetRef.current);
-        savedResetRef.current = setTimeout(() => setState("idle"), 2000);
-        return id;
       } else {
         const { error } = await supabase
           .from("training_plans")
@@ -95,90 +108,59 @@ export function useTrainingPlanAutoSave({
             color: draft.color,
           })
           .eq("id", planId);
-
         if (error) throw error;
       }
 
-      lastSavedHashRef.current = hash;
+      lastSavedHashRef.current = JSON.stringify({
+        id,
+        name: draft.name,
+        description: draft.description,
+        status: draft.status,
+        start_date: draft.start_date,
+        color: draft.color,
+      });
+      externalDirtyRef.current = false;
       setState("saved");
-      setErrorMessage(null);
       if (savedResetRef.current) clearTimeout(savedResetRef.current);
       savedResetRef.current = setTimeout(() => setState("idle"), 2000);
-      return planId ?? "";
+      return id;
     } catch (err) {
       const msg =
-        err && typeof err === "object" && "message" in err && typeof (err as { message?: unknown }).message === "string"
+        err &&
+        typeof err === "object" &&
+        "message" in err &&
+        typeof (err as { message?: unknown }).message === "string"
           ? String((err as { message: string }).message)
-          : "Autosave failed.";
-      // Helpful during dev: the UI shows "Save failed" but we want the real cause.
+          : "Save failed.";
       // eslint-disable-next-line no-console
-      console.error("Training plan autosave failed:", err);
+      console.error("Training plan save failed:", err);
       setErrorMessage(msg);
       setState("error");
-      if (retryRef.current) clearTimeout(retryRef.current);
-      retryRef.current = setTimeout(() => {
-        void persist().catch(() => {
-          // Swallow: background retry should never crash the page.
-        });
-      }, 2000);
-      // Re-throw so callers like ensureSaved() can handle failures,
-      // but callers MUST catch to avoid unhandled runtime errors.
-      throw err instanceof Error ? err : new Error("autosave_failed");
+      throw err instanceof Error ? err : new Error("save_failed");
     }
   }
-
-  useEffect(() => {
-    if (!canSave) {
-      setState(hash !== lastSavedHashRef.current ? "dirty" : "idle");
-      return;
-    }
-
-    if (hash === lastSavedHashRef.current) {
-      if (state === "dirty") setState("idle");
-      return;
-    }
-
-    setState("dirty");
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      void persist().catch(() => {
-        // Swallow: autosave is best-effort and represented via UI state.
-      });
-    }, 800);
-
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hash, canSave]);
-
-  useEffect(() => {
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      if (retryRef.current) clearTimeout(retryRef.current);
-      if (savedResetRef.current) clearTimeout(savedResetRef.current);
-    };
-  }, []);
 
   return {
     planId,
     state,
     canSave,
     errorMessage,
-    async ensureSaved(): Promise<string> {
-      if (planId) return planId;
-      if (!canSave) throw new Error("missing_required_fields");
-      if (inFlightRef.current) return inFlightRef.current;
-      inFlightRef.current = persist()
-        .finally(() => {
-          inFlightRef.current = null;
-        }) as Promise<string>;
-      return inFlightRef.current;
-    },
+    save,
+    /** Call after loading server state to treat the current draft as clean. */
     markSavedHash(hashToUse: string) {
       lastSavedHashRef.current = hashToUse;
+      externalDirtyRef.current = false;
       setState("idle");
+    },
+    /** Mark dirty due to side state (e.g. phases list) that isn't in `draft`. */
+    markExternalDirty() {
+      externalDirtyRef.current = true;
+      setState((cur) => (cur === "saving" ? cur : "dirty"));
+    },
+    /** Clear external-dirty flag after an external save (e.g. phases save). */
+    markExternalClean() {
+      externalDirtyRef.current = false;
+      if (hash === lastSavedHashRef.current) setState("idle");
     },
   };
 }
-
