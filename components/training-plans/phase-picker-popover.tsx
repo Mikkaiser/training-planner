@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { PLAN_COLORS, type PlanColorKey } from "@/lib/constants/planColors";
 import type {
   Block,
   Gate,
@@ -108,6 +109,7 @@ export function PhasePickerPopover({
   createdBy,
   planPhaseCount,
   triggerClassName,
+  planColor = "blue",
 }: {
   existingPhases: Phase[];
   existingDisabledIds: Set<string>;
@@ -117,7 +119,25 @@ export function PhasePickerPopover({
   createdBy: string;
   planPhaseCount: number;
   triggerClassName?: string;
+  /** Active plan color — used to tint phase cards inside the popover. */
+  planColor?: PlanColorKey;
 }) {
+  const planTokens = PLAN_COLORS[planColor];
+  const popoverTintStyle: React.CSSProperties = {
+    ["--plan-tint" as string]: planTokens.bg,
+    ["--plan-tint-strong" as string]: planTokens.bgStrong,
+    ["--plan-chip-border" as string]: planTokens.chipBorder,
+    ["--plan-border" as string]: planTokens.border,
+    ["--plan-accent" as string]: planTokens.accent,
+    ["--plan-glow" as string]: planTokens.glow,
+  };
+  // Only the color tokens are passed as inline style; base/hover surface colors
+  // come from the `.tp-phase-picker-existing-card` rule in globals.css, which is
+  // dark-mode aware.
+  const existingCardStyle: React.CSSProperties = {
+    borderColor: planTokens.chipBorder,
+    borderLeft: `3px solid ${planTokens.border}`,
+  };
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
   const [tab, setTab] = useState<"existing" | "create">("existing");
   const [query, setQuery] = useState("");
@@ -287,7 +307,7 @@ export function PhasePickerPopover({
         Add Phase
         <ChevronDown className="h-4 w-4 opacity-80" />
       </PopoverTrigger>
-      <PopoverContent className="p-0">
+      <PopoverContent className="p-0" style={popoverTintStyle}>
         <div className="border-b border-border px-4 py-3">
           <div className="text-sm font-semibold text-tp-primary">Add a phase</div>
           <div className="mt-2 flex gap-2">
@@ -335,11 +355,10 @@ export function PhasePickerPopover({
                     disabled={disabled}
                     onClick={() => void onAddExisting(p)}
                     className={cn(
-                      "w-full rounded-xl border border-border px-3 py-2 text-left transition-colors",
-                      disabled
-                        ? "cursor-not-allowed opacity-60"
-                        : "hover-tint"
+                      "tp-phase-picker-existing-card w-full rounded-xl border px-3 py-2 text-left transition-colors",
+                      disabled && "cursor-not-allowed opacity-60"
                     )}
+                    style={existingCardStyle}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">

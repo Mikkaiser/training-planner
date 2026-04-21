@@ -814,6 +814,7 @@ export function TrainingPlanEditor({ planId }: { planId?: string }) {
                     subcompetences={subcompetences}
                     createdBy={profileId}
                     planPhaseCount={phaseRefs.length}
+                    planColor={draft.color}
                     onAddExisting={addExistingPhase}
                     onCreated={async (phase) => {
                       await addExistingPhase(phase);

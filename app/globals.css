@@ -1056,30 +1056,88 @@
   }
 
   .tp-plan-phase-card {
-    background: rgba(255, 255, 255, 0.78);
+    background: color-mix(
+      in srgb,
+      var(--plan-tint-strong, rgba(59, 130, 246, 0.12)) 40%,
+      rgba(255, 255, 255, 0.80) 60%
+    );
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border-color: rgba(37, 99, 235, 0.14);
+    border-color: var(--plan-chip-border, rgba(37, 99, 235, 0.30));
+    border-left: 3px solid var(--plan-border, #3b82f6);
     color: var(--color-text-primary);
     transition:
-      background 150ms ease,
-      border-color 150ms ease,
+      background 200ms ease,
+      border-color 200ms ease,
       box-shadow 150ms ease;
   }
 
   .tp-plan-phase-card:hover {
-    background: rgba(255, 255, 255, 0.88);
-    border-color: rgba(37, 99, 235, 0.26);
+    background: color-mix(
+      in srgb,
+      var(--plan-tint-strong, rgba(59, 130, 246, 0.16)) 50%,
+      rgba(255, 255, 255, 0.92) 50%
+    );
+    border-color: var(--plan-border, rgba(37, 99, 235, 0.45));
+    box-shadow: 0 4px 14px var(--plan-glow, rgba(37, 99, 235, 0.12));
   }
 
   [data-theme="dark"] .tp-plan-phase-card {
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(139, 51, 255, 0.16);
+    background: color-mix(
+      in srgb,
+      var(--plan-tint-strong, rgba(59, 130, 246, 0.18)) 35%,
+      rgba(255, 255, 255, 0.05) 65%
+    );
+    border-color: var(--plan-chip-border, rgba(139, 51, 255, 0.24));
+    border-left: 3px solid var(--plan-border, #3b82f6);
   }
 
   [data-theme="dark"] .tp-plan-phase-card:hover {
-    background: rgba(255, 255, 255, 0.09);
-    border-color: rgba(139, 51, 255, 0.28);
+    background: color-mix(
+      in srgb,
+      var(--plan-tint-strong, rgba(59, 130, 246, 0.24)) 45%,
+      rgba(255, 255, 255, 0.08) 55%
+    );
+    border-color: var(--plan-border, rgba(139, 51, 255, 0.42));
+    box-shadow: 0 4px 14px var(--plan-glow, rgba(139, 51, 255, 0.18));
+  }
+
+  /* Existing-phase buttons inside the Add Phase popover. */
+  .tp-phase-picker-existing-card {
+    background: color-mix(
+      in srgb,
+      var(--plan-tint-strong, rgba(59, 130, 246, 0.12)) 40%,
+      rgba(255, 255, 255, 0.80) 60%
+    );
+    color: var(--color-text-primary);
+    transition: background 200ms ease, border-color 200ms ease,
+      box-shadow 150ms ease, transform 150ms ease;
+  }
+
+  .tp-phase-picker-existing-card:hover:not(:disabled) {
+    background: color-mix(
+      in srgb,
+      var(--plan-tint-strong, rgba(59, 130, 246, 0.18)) 55%,
+      rgba(255, 255, 255, 0.92) 45%
+    );
+    box-shadow: 0 4px 14px var(--plan-glow, rgba(37, 99, 235, 0.15));
+  }
+
+  [data-theme="dark"] .tp-phase-picker-existing-card {
+    background: color-mix(
+      in srgb,
+      var(--plan-tint-strong, rgba(59, 130, 246, 0.20)) 40%,
+      rgba(255, 255, 255, 0.05) 60%
+    );
+  }
+
+  [data-theme="dark"] .tp-phase-picker-existing-card:hover:not(:disabled) {
+    background: color-mix(
+      in srgb,
+      var(--plan-tint-strong, rgba(59, 130, 246, 0.26)) 55%,
+      rgba(255, 255, 255, 0.08) 45%
+    );
+    box-shadow: 0 4px 14px var(--plan-glow, rgba(139, 51, 255, 0.22));
   }
 
   /* Left panel scrollbar */
