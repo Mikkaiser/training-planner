@@ -39,6 +39,42 @@ export function BlockGateCard({
   const gate = block.gate;
   const GateIcon = gate.gate_type === "phase_gate" ? ShieldCheck : Shield;
 
+  if (isPhaseMilestone && gate.gate_type === "phase_gate") {
+    return (
+      <motion.div
+        layout
+        role="button"
+        tabIndex={0}
+        onClick={() => selectBlock(block.id)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            selectBlock(block.id);
+          }
+        }}
+        data-selected={selected ? "true" : undefined}
+        className="plan-phase-gate-card"
+        style={
+          {
+            ["--plan-border" as string]: tokens.border,
+            ["--plan-accent" as string]: tokens.accent,
+          } as React.CSSProperties
+        }
+      >
+        <span className="plan-phase-gate-card__icon" aria-hidden>
+          <ShieldCheck size={18} />
+        </span>
+        <div className="plan-phase-gate-card__text">
+          <span className="plan-phase-gate-card__label">PHASE GATE</span>
+          <span className="plan-phase-gate-card__name">{gate.name}</span>
+        </div>
+        {typeof gate.pass_threshold === "number" ? (
+          <span className="plan-phase-gate-card__threshold">{gate.pass_threshold}%</span>
+        ) : null}
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div
       layout
@@ -58,6 +94,7 @@ export function BlockGateCard({
         {
           // CSS custom property consumed by `globals.css` (not part of `CSSProperties` index signature).
           ["--sc-left" as string]: leftBorder,
+          ["--subcompetence-color" as string]: leftBorder,
         } as React.CSSProperties
       }
     >
@@ -113,10 +150,9 @@ export function BlockGateCard({
         <div className="plan-block-gate-card__gate-head">
           <span
             className="plan-block-gate-card__gate-icon"
-            style={{ color: tokens.accent }}
             aria-hidden
           >
-            <GateIcon size={15} />
+            <GateIcon size={13} />
           </span>
           <span className="plan-block-gate-card__gate-name">{gate.name}</span>
           {typeof gate.pass_threshold === "number" ? (

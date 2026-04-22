@@ -5,11 +5,14 @@ import { motion } from "framer-motion";
 
 import { BlockGateCard } from "@/components/plan-detail/block-gate-card";
 import { usePlanDetailContext } from "@/components/plan-detail/plan-detail-context";
+import { getSubcompetenceTokens } from "@/lib/constants/subcompetence-tokens";
 import { phaseAveragePercent } from "@/lib/plan-detail/progress";
 import type { PhaseWithChildren } from "@/lib/plan-detail/types";
+import { useIsDark } from "@/lib/use-is-dark";
 
 export function PhaseSection({ phase }: { phase: PhaseWithChildren }) {
   const { detail, tokens } = usePlanDetailContext();
+  const isDark = useIsDark();
   const avg = phaseAveragePercent(detail, phase.id);
 
   return (
@@ -55,15 +58,32 @@ export function PhaseSection({ phase }: { phase: PhaseWithChildren }) {
       </div>
 
       <div className="plan-phase-section__body">
-        {phase.blocks.map((block, idx) => (
-          <BlockGateCard
-            key={block.id}
-            block={block}
-            isPhaseMilestone={
-              idx === phase.blocks.length - 1 && block.gate.gate_type === "phase_gate"
-            }
-          />
-        ))}
+        {phase.blocks.map((block, idx) => {
+          const isLast = idx === phase.blocks.length - 1;
+          const scTokens = getSubcompetenceTokens(block.subcompetence?.color ?? null, isDark);
+          const connectorColor = scTokens.fg || tokens.border;
+
+          return (
+            <div key={block.id} className="plan-block-gate-stack">
+              <BlockGateCard
+                block={block}
+                isPhaseMilestone={isLast && block.gate.gate_type === "phase_gate"}
+              />
+              {!isLast ? (
+                <div
+                  className="plan-block-gate-connector"
+                  style={
+                    {
+                      // Used by globals.css for the connector gradient.
+                      ["--subcompetence-color" as string]: connectorColor,
+                    } as React.CSSProperties
+                  }
+                  aria-hidden
+                />
+              ) : null}
+            </div>
+          );
+        })}
       </div>
     </section>
   );
