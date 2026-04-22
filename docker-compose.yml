@@ -1,0 +1,19 @@
+name: training-planner
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: training-planner-next:latest
+    container_name: training-planner-web
+    restart: always
+    env_file:
+      - .env
+    networks:
+      - training-planner-network
+
+networks:
+  training-planner-network:
+    external: true
+    name: training-planner-network
