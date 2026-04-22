@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import {
   PLAN_COLORS,
   type PlanColorKey,
-} from "@/lib/constants/planColors";
+} from "@/lib/constants/plan-colors";
 import {
   getSignedUrl,
   type AllowedFileType,

@@ -1,55 +1,18 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  Check,
-  ChevronDown,
-  Plus,
-  Trash2,
-} from "lucide-react";
-import { useMemo, useState } from "react";
-import { useFieldArray, useForm } from "react-hook-form";
-import type { Resolver } from "react-hook-form";
-import { z } from "zod";
+import { ChevronDown, Plus } from "lucide-react";
+import { useState } from "react";
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { buttonVariants } from "@/components/ui/button";
+import { PhasePickerCreateTab } from "@/components/training-plans/phase-picker-create-tab";
+import { PhasePickerExistingTab } from "@/components/training-plans/phase-picker-existing-tab";
 import { cn } from "@/lib/utils";
-import { getSupabaseBrowserClient } from "@/lib/supabase/client";
-import { PLAN_COLORS, type PlanColorKey } from "@/lib/constants/planColors";
-import { subcompetenceChipStyle } from "@/lib/constants/subcompetenceTokens";
-import { useIsDark } from "@/lib/use-is-dark";
+import { PLAN_COLORS, type PlanColorKey } from "@/lib/constants/plan-colors";
 import type {
   Phase,
-  GateType,
   Subcompetence,
 } from "@/lib/training-plans/types";
-
-const blockSchema = z.object({
-  name: z.string().min(1, "Block name is required."),
-  subcompetence_id: z.string().nullable(),
-  gate_pass_threshold: z.coerce.number().min(0).max(100).nullable(),
-  gate_type: z.enum(["block_gate", "phase_gate"]),
-});
-
-const createPhaseSchema = z.object({
-  name: z.string().min(1, "Phase name is required."),
-  duration_weeks: z.coerce.number().int().min(1, "Duration is required."),
-  subcompetence_ids: z.array(z.string()).min(1, "Pick at least one subcompetence."),
-  blocks: z.array(blockSchema).default([]),
-  newSubcompetence: z
-    .object({
-      enabled: z.boolean().default(false),
-      name: z.string().optional(),
-      color: z.string().optional(),
-      icon: z.string().optional(),
-    })
-    .default({ enabled: false }),
-});
-
-type CreatePhaseValues = z.infer<typeof createPhaseSchema>;
 
 export function PhasePickerPopover({
   existingPhases,
@@ -73,14 +36,19 @@ export function PhasePickerPopover({
   /** Active plan color — used to tint phase cards inside the popover. */
   planColor?: PlanColorKey;
 }) {
-  const isDark = useIsDark();
   const planTokens = PLAN_COLORS[planColor];
   const popoverTintStyle: React.CSSProperties = {
+    // CSS custom properties consumed by `globals.css` (not part of `CSSProperties` index signature).
     ["--plan-tint" as string]: planTokens.bg,
+    // CSS custom properties consumed by `globals.css` (not part of `CSSProperties` index signature).
     ["--plan-tint-strong" as string]: planTokens.bgStrong,
+    // CSS custom properties consumed by `globals.css` (not part of `CSSProperties` index signature).
     ["--plan-chip-border" as string]: planTokens.chipBorder,
+    // CSS custom properties consumed by `globals.css` (not part of `CSSProperties` index signature).
     ["--plan-border" as string]: planTokens.border,
+    // CSS custom properties consumed by `globals.css` (not part of `CSSProperties` index signature).
     ["--plan-accent" as string]: planTokens.accent,
+    // CSS custom properties consumed by `globals.css` (not part of `CSSProperties` index signature).
     ["--plan-glow" as string]: planTokens.glow,
   };
   // Only the color tokens are passed as inline style; base/hover surface colors
@@ -90,171 +58,14 @@ export function PhasePickerPopover({
     borderColor: planTokens.chipBorder,
     borderLeft: `3px solid ${planTokens.border}`,
   };
-  const supabase = useMemo(() => getSupabaseBrowserClient(), []);
   const [tab, setTab] = useState<"existing" | "create">("existing");
   const [query, setQuery] = useState("");
   const [creating, setCreating] = useState(false);
 
-  const form = useForm<CreatePhaseValues>({
-    resolver: zodResolver(createPhaseSchema) as unknown as Resolver<CreatePhaseValues>,
-    defaultValues: {
-      name: "",
-      duration_weeks: 4,
-      subcompetence_ids: [],
-      blocks: [
-        {
-          name: "Block 1",
-          subcompetence_id: null,
-          gate_pass_threshold: 70,
-          gate_type: "phase_gate",
-        },
-      ],
-      newSubcompetence: {
-        enabled: false,
-        name: "",
-        color: "var(--color-text-accent)",
-        icon: "dot",
-      },
-    },
-    mode: "onChange",
-  });
-
-  const { fields: blockFields, append: addBlock, remove: removeBlock } = useFieldArray({
-    control: form.control,
-    name: "blocks",
-  });
-
-  const values = form.watch();
-  const newSc =
-    values.newSubcompetence ?? ({
-      enabled: false,
-      name: "",
-      color: "var(--color-text-accent)",
-      icon: "dot",
-    } as const);
-
   const filtered = existingPhases.filter((p) =>
     p.name.toLowerCase().includes(query.trim().toLowerCase())
   );
-
-  async function createAndAdd() {
-    setCreating(true);
-    try {
-      const parsed = createPhaseSchema.parse(form.getValues());
-
-      let scIds = parsed.subcompetence_ids.slice();
-
-      // Optional inline new subcompetence
-      if (parsed.newSubcompetence.enabled) {
-        const name = (parsed.newSubcompetence.name ?? "").trim();
-        const color = parsed.newSubcompetence.color ?? "var(--color-text-accent)";
-        const icon = parsed.newSubcompetence.icon ?? "dot";
-        if (name.length >= 2) {
-          const { data, error } = await supabase
-            .from("subcompetences")
-            .insert({
-              name,
-              description: null,
-              color,
-              icon,
-              created_by: createdBy,
-            })
-            .select("id,name,description,color,icon")
-            .single();
-          if (error) throw error;
-          scIds = [data.id as string, ...scIds];
-        }
-      }
-
-      const { data: phaseRow, error: phaseErr } = await supabase
-        .from("phases")
-        .insert({
-          name: parsed.name.trim(),
-          description: null,
-          duration_weeks: parsed.duration_weeks,
-          order_index: planPhaseCount + 1,
-          created_by: createdBy,
-        })
-        .select("id,name,description,duration_weeks,order_index")
-        .single();
-      if (phaseErr) throw phaseErr;
-      const phaseId = phaseRow.id as string;
-
-      if (scIds.length) {
-        const { error } = await supabase.from("phase_subcompetences").insert(
-          scIds.map((id) => ({
-            phase_id: phaseId,
-            subcompetence_id: id,
-          }))
-        );
-        if (error) throw error;
-      }
-
-      if (parsed.blocks.length) {
-        for (let idx = 0; idx < parsed.blocks.length; idx += 1) {
-          const b = parsed.blocks[idx];
-          const isLast = idx === parsed.blocks.length - 1;
-          const gateType = isLast ? "phase_gate" : "block_gate";
-          const gateName = `${b.name.trim() || `Block ${idx + 1}`} Gate`;
-
-          const gateInsert = await supabase
-            .from("gates")
-            .insert({
-              phase_id: phaseId,
-              name: gateName,
-              description: null,
-              gate_type: gateType,
-              pass_threshold: b.gate_pass_threshold,
-            })
-            .select("id")
-            .single();
-          if (gateInsert.error) throw gateInsert.error;
-
-          const gateId = gateInsert.data?.id as string;
-          const topicInsert = await supabase.from("topics").insert({
-            phase_id: phaseId,
-            subcompetence_id: b.subcompetence_id,
-            gate_id: gateId,
-            name: b.name.trim(),
-            description: null,
-            order_index: idx + 1,
-          });
-          if (topicInsert.error) throw topicInsert.error;
-        }
-      }
-
-      const scMap = new Map(subcompetences.map((s) => [s.id, s]));
-      const selectedSc = scIds.map((id) => scMap.get(id)).filter(Boolean) as Subcompetence[];
-      const blocksWithGates = parsed.blocks.map((b, idx) => ({
-        name: b.name,
-        order_index: idx + 1,
-        subcompetence_id: b.subcompetence_id,
-        gate: {
-          name: `${b.name} Gate`,
-          gate_type: (idx === parsed.blocks.length - 1
-            ? "phase_gate"
-            : "block_gate") as GateType,
-          pass_threshold: b.gate_pass_threshold,
-        },
-      }));
-
-      const phase: Phase = {
-        id: phaseId,
-        name: phaseRow.name as string,
-        description: (phaseRow.description as string | null) ?? null,
-        duration_weeks: (phaseRow.duration_weeks as number | null) ?? null,
-        order_index: (phaseRow.order_index as number | null) ?? null,
-        subcompetences: selectedSc,
-        blocks: blocksWithGates,
-      };
-
-      await onCreated(phase);
-      form.reset();
-      setTab("existing");
-    } finally {
-      setCreating(false);
-    }
-  }
+  const onQueryChange = (value: string) => setQuery(value);
 
   return (
     <Popover>
@@ -301,319 +112,24 @@ export function PhasePickerPopover({
         </div>
 
         {tab === "existing" ? (
-          <div className="max-h-[420px] overflow-y-auto p-3">
-            <Input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search phases…"
-            />
-            <div className="mt-3 space-y-2">
-              {filtered.map((p) => {
-                const disabled = existingDisabledIds.has(p.id);
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    disabled={disabled}
-                    onClick={() => void onAddExisting(p)}
-                    className={cn(
-                      "tp-phase-picker-existing-card w-full rounded-xl border px-3 py-2 text-left transition-colors",
-                      disabled && "cursor-not-allowed opacity-60"
-                    )}
-                    style={existingCardStyle}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="truncate text-sm font-medium text-tp-primary">
-                          {p.name}
-                        </div>
-                        <div className="mt-1 flex flex-wrap gap-1.5">
-                          {p.subcompetences.slice(0, 4).map((s) => (
-                            <span
-                              key={s.id}
-                              className="subcompetence-chip px-2 py-0.5 text-xs"
-                              style={subcompetenceChipStyle(s.color, isDark)}
-                            >
-                              {s.name}
-                            </span>
-                          ))}
-                        </div>
-                        <div className="mt-2 flex gap-3 text-xs text-tp-muted">
-                          <span>{p.blocks.length} blocks</span>
-                        <span>{p.blocks.length} gates</span>
-                        </div>
-                      </div>
-                      <div className="shrink-0">
-                        {disabled ? (
-                          <span className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs text-tp-secondary">
-                            <Check className="h-3.5 w-3.5" />
-                            Added
-                          </span>
-                        ) : (
-                          <span className="rounded-full border border-border px-2 py-0.5 text-xs text-tp-secondary">
-                            {p.duration_weeks ?? "—"}w
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          <PhasePickerExistingTab
+            query={query}
+            onQueryChange={onQueryChange}
+            filtered={filtered}
+            existingDisabledIds={existingDisabledIds}
+            existingCardStyle={existingCardStyle}
+            onAddExisting={onAddExisting}
+          />
         ) : (
-          <div className="max-h-[520px] overflow-y-auto p-3">
-            <div className="space-y-4">
-              <div>
-                <Label className="text-sm font-medium text-tp-secondary">
-                  Phase name <span className="text-negative">*</span>
-                </Label>
-                <Input className="mt-2" {...form.register("name")} />
-                {form.formState.errors.name?.message ? (
-                  <p className="mt-1 text-xs text-negative">
-                    {form.formState.errors.name.message}
-                  </p>
-                ) : null}
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium text-tp-secondary">
-                  Duration (weeks) <span className="text-negative">*</span>
-                </Label>
-                <Input
-                  className="mt-2"
-                  type="number"
-                  min={1}
-                  {...form.register("duration_weeks")}
-                />
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium text-tp-secondary">
-                  Subcompetences <span className="text-negative">*</span>
-                </Label>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {subcompetences.map((s) => {
-                    const selected = values.subcompetence_ids.includes(s.id);
-                    return (
-                      <button
-                        key={s.id}
-                        type="button"
-                        onClick={() => {
-                          const next = selected
-                            ? values.subcompetence_ids.filter((x) => x !== s.id)
-                            : [...values.subcompetence_ids, s.id];
-                          form.setValue("subcompetence_ids", next, { shouldValidate: true });
-                        }}
-                        className={cn(
-                          "subcompetence-chip px-2 py-1 text-xs transition-opacity",
-                          selected ? "" : "opacity-50 hover:opacity-75"
-                        )}
-                        style={subcompetenceChipStyle(s.color, isDark)}
-                      >
-                        {s.name}
-                      </button>
-                    );
-                  })}
-                </div>
-                {form.formState.errors.subcompetence_ids?.message ? (
-                  <p className="mt-1 text-xs text-negative">
-                    {String(form.formState.errors.subcompetence_ids.message)}
-                  </p>
-                ) : null}
-
-                <div className="mt-3 rounded-xl border border-border bg-[var(--color-surface)] p-3">
-                  <label className="flex items-center gap-2 text-xs text-tp-secondary">
-                    <input
-                      type="checkbox"
-                      checked={newSc.enabled}
-                      onChange={(e) =>
-                        form.setValue("newSubcompetence.enabled", e.target.checked)
-                      }
-                    />
-                    New subcompetence
-                  </label>
-                  {newSc.enabled ? (
-                    <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
-                      <div className="md:col-span-2">
-                        <Label className="text-xs font-medium text-tp-secondary">
-                          Name
-                        </Label>
-                        <Input
-                          className="mt-1"
-                          {...form.register("newSubcompetence.name")}
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs font-medium text-tp-secondary">
-                          Color
-                        </Label>
-                        <input
-                          type="color"
-                          className="mt-1 h-10 w-full cursor-pointer rounded-lg border border-border bg-transparent"
-                          value={newSc.color ?? "var(--color-text-accent)"}
-                          onChange={(e) =>
-                            form.setValue("newSubcompetence.color", e.target.value)
-                          }
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs font-medium text-tp-secondary">
-                          Icon
-                        </Label>
-                        <select
-                          className="glass-input mt-1 h-10 w-full rounded-lg px-2 text-sm text-tp-primary"
-                          value={newSc.icon ?? "dot"}
-                          onChange={(e) =>
-                            form.setValue("newSubcompetence.icon", e.target.value)
-                          }
-                        >
-                          <option value="dot">Dot</option>
-                          <option value="code">Code</option>
-                          <option value="flask">Flask</option>
-                          <option value="puzzle">Puzzle</option>
-                        </select>
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-border p-3">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm font-semibold text-tp-primary">Blocks</div>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      const nextLen = blockFields.length + 1;
-                      // Default: last block is phase gate; earlier blocks are block gates.
-                      const nextBlocks = values.blocks.map((b, i) => ({
-                        ...b,
-                        gate_type: i === values.blocks.length - 1 ? "block_gate" : b.gate_type,
-                      }));
-                      form.setValue("blocks", nextBlocks, { shouldValidate: true });
-                      addBlock({
-                        name: `Block ${nextLen}`,
-                        subcompetence_id: null,
-                        gate_pass_threshold: 70,
-                        gate_type: "phase_gate",
-                      });
-                    }}
-                  >
-                    Add block
-                  </Button>
-                </div>
-                <div className="mt-3 space-y-3">
-                  {blockFields.map((f, idx) => (
-                    <div key={f.id} className="rounded-xl border border-border p-3">
-                      <div className="flex items-center justify-between">
-                        <div className="text-xs font-medium text-tp-secondary">
-                          Block {idx + 1}
-                        </div>
-                        <button
-                          type="button"
-                          className="rounded-md p-1 text-negative/90 hover:bg-negative/10"
-                          onClick={() => removeBlock(idx)}
-                          aria-label="Remove block"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                      <Input className="mt-2" placeholder="Block name" {...form.register(`blocks.${idx}.name`)} />
-                      <div className="mt-2">
-                        <Label className="text-xs font-medium text-tp-secondary">
-                          Macro-competence
-                        </Label>
-                        <select
-                          className="glass-input mt-1 h-10 w-full rounded-lg px-2 text-sm text-tp-primary"
-                          value={values.blocks[idx]?.subcompetence_id ?? ""}
-                          onChange={(e) =>
-                            form.setValue(
-                              `blocks.${idx}.subcompetence_id`,
-                              e.target.value || null
-                            )
-                          }
-                        >
-                          <option value="">—</option>
-                          {values.subcompetence_ids.map((id) => {
-                            const sc = subcompetences.find((s) => s.id === id);
-                            return sc ? (
-                              <option key={sc.id} value={sc.id}>
-                                {sc.name}
-                              </option>
-                            ) : null;
-                          })}
-                        </select>
-                      </div>
-
-                      <div className="mt-3 rounded-xl border border-border bg-[var(--color-surface)] p-3">
-                        <div className="text-xs font-semibold text-tp-primary">
-                          Gate
-                        </div>
-                        <div className="mt-2 grid grid-cols-2 gap-3">
-                          <div>
-                            <Label className="text-xs font-medium text-tp-secondary">
-                              Type
-                            </Label>
-                            <div className="mt-1 flex gap-2">
-                              {(["block_gate", "phase_gate"] as const).map((t) => {
-                                const isLast = idx === blockFields.length - 1;
-                                const active = isLast
-                                  ? t === "phase_gate"
-                                  : t === "block_gate";
-                                return (
-                                  <button
-                                    key={t}
-                                    type="button"
-                                    disabled
-                                    className={cn(
-                                      "rounded-full border px-2 py-1 text-xs",
-                                      active
-                                        ? "border-border bg-[var(--color-accent-muted)] text-tp-primary"
-                                        : "border-border/70 text-tp-secondary opacity-50"
-                                    )}
-                                  >
-                                    {t}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                            <div className="mt-1 text-[11px] text-tp-muted">
-                              Auto: last block is <span className="font-semibold">phase_gate</span>, others are <span className="font-semibold">block_gate</span>.
-                            </div>
-                          </div>
-                          <div>
-                            <Label className="text-xs font-medium text-tp-secondary">
-                              Pass threshold %
-                            </Label>
-                            <Input
-                              className="mt-1"
-                              type="number"
-                              min={0}
-                              max={100}
-                              {...form.register(`blocks.${idx}.gate_pass_threshold`)}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <Button
-                type="button"
-                size="lg"
-                className="w-full"
-                disabled={creating}
-                onClick={() => void createAndAdd()}
-              >
-                {creating ? "Creating…" : "Create & Add to Plan"}
-              </Button>
-            </div>
-          </div>
+          <PhasePickerCreateTab
+            subcompetences={subcompetences}
+            createdBy={createdBy}
+            planPhaseCount={planPhaseCount}
+            creating={creating}
+            onCreatingChange={setCreating}
+            onCreated={onCreated}
+            onCreatedDone={() => setTab("existing")}
+          />
         )}
       </PopoverContent>
     </Popover>

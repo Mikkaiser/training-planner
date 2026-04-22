@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { PLAN_COLORS, resolvePlanColor } from "@/lib/constants/plan-colors";
 import { PlanDetailHeader } from "@/components/plan-detail/plan-detail-header";
 import { PlanDetailProvider } from "@/components/plan-detail/plan-detail-context";
 import { SelectionProvider } from "@/components/plan-detail/selection-context";
@@ -10,7 +11,6 @@ import { DetailColumn } from "@/components/plan-detail/detail-column";
 import { AddCompetitorDialog } from "@/components/plan-detail/add-competitor-dialog";
 import { PlanDetailSkeleton } from "@/components/shared/skeletons";
 import { usePlanDetail } from "@/lib/plan-detail/use-plan-detail";
-import { PLAN_COLORS, resolvePlanColor } from "@/lib/constants/planColors";
 
 export function PlanDetailView({ planId }: { planId: string }) {
   const { data, isLoading, isError, error } = usePlanDetail(planId);
@@ -45,13 +45,21 @@ export function PlanDetailView({ planId }: { planId: string }) {
               overflow: "hidden",
               position: "relative",
               zIndex: 1,
+              // CSS custom properties consumed by `globals.css` (not part of `CSSProperties` index signature).
               ["--plan-accent" as string]: tokens.accent,
+              // CSS custom properties consumed by `globals.css` (not part of `CSSProperties` index signature).
               ["--plan-border" as string]: tokens.border,
+              // CSS custom properties consumed by `globals.css` (not part of `CSSProperties` index signature).
               ["--plan-bg" as string]: tokens.bg,
+              // CSS custom properties consumed by `globals.css` (not part of `CSSProperties` index signature).
               ["--plan-bg-strong" as string]: tokens.bgStrong,
+              // CSS custom properties consumed by `globals.css` (not part of `CSSProperties` index signature).
               ["--plan-chip" as string]: tokens.chip,
+              // CSS custom properties consumed by `globals.css` (not part of `CSSProperties` index signature).
               ["--plan-chip-border" as string]: tokens.chipBorder,
+              // CSS custom properties consumed by `globals.css` (not part of `CSSProperties` index signature).
               ["--plan-chip-text" as string]: tokens.chipText,
+              // CSS custom properties consumed by `globals.css` (not part of `CSSProperties` index signature).
               ["--plan-glow" as string]: tokens.glow,
             } as React.CSSProperties
           }

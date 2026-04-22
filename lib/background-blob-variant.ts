@@ -220,7 +220,7 @@ export function resolveDashboardBlobVariant(pathname: string): BlobVariant {
 
   if (path === "/dashboard") return "dashboard";
 
-  const planMatch = /^\/dashboard\/plans\/([^/]+)$/.exec(path);
+  const planMatch = /^\/plans\/([^/]+)$/.exec(path);
   if (planMatch) {
     const segment = planMatch[1];
     if (segment !== "new") return "gantt";
@@ -231,8 +231,8 @@ export function resolveDashboardBlobVariant(pathname: string): BlobVariant {
   }
 
   if (
-    path.startsWith("/dashboard/plans") ||
-    path.startsWith("/dashboard/phases") ||
+    path.startsWith("/plans") ||
+    path.startsWith("/phases") ||
     path.startsWith("/dashboard/subcompetences") ||
     path.startsWith("/dashboard/exercises") ||
     path.startsWith("/dashboard/users")

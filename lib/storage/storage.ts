@@ -26,25 +26,27 @@ const MIME_MAP: Record<AllowedFileType, string[]> = {
 };
 
 /** Build a comma-separated accept="..." string for a file input. */
-export function buildAcceptAttribute(allowed: AllowedFileType[] = DEFAULT_ALLOWED) {
+export function buildAcceptAttribute(
+  allowed: AllowedFileType[] = DEFAULT_ALLOWED
+): string {
   const exts = allowed.map((t) => `.${t}`);
   const mimes = allowed.flatMap((t) => MIME_MAP[t]);
   return [...exts, ...mimes].join(",");
 }
 
 /** Human-readable list used in validation errors ("PDF, DOCX, or ZIP"). */
-export function describeAllowed(allowed: AllowedFileType[] = DEFAULT_ALLOWED) {
+export function describeAllowed(allowed: AllowedFileType[] = DEFAULT_ALLOWED): string {
   const upper = allowed.map((t) => t.toUpperCase());
   if (upper.length === 1) return upper[0];
   if (upper.length === 2) return `${upper[0]} or ${upper[1]}`;
   return `${upper.slice(0, -1).join(", ")}, or ${upper[upper.length - 1]}`;
 }
 
-export function sanitizeFileName(name: string) {
+export function sanitizeFileName(name: string): string {
   return name.replace(/[^a-zA-Z0-9._-]/g, "_");
 }
 
-export function buildObjectPath(folder: string, fileName: string) {
+export function buildObjectPath(folder: string, fileName: string): string {
   return `${folder}/${Date.now()}_${sanitizeFileName(fileName)}`;
 }
 
@@ -89,7 +91,7 @@ type UploadOptions = {
 /**
  * Upload a file to a private bucket and return its object path + a fresh
  * short-lived signed URL. Validates extension + size client-side. Throws a
- * friendly Error on any failure (raw Supabase messages are console-logged).
+ * friendly Error on failure (raw Supabase messages are console-logged).
  */
 export async function uploadFile(
   bucket: StorageBucket,
@@ -104,7 +106,11 @@ export async function uploadFile(
     throw new Error(invalid.message);
   }
 
-  const type = getFileType(file) as AllowedFileType;
+  // `validateFile()` guarantees `getFileType(file)` is non-null and allowed.
+  const type = getFileType(file);
+  if (!type) {
+    throw new Error(`Only ${describeAllowed(allowed)} files are allowed.`);
+  }
   const path = buildObjectPath(folder, file.name);
   const supabase = getSupabaseBrowserClient();
 
@@ -182,7 +188,7 @@ export async function deleteFile(
   }
 }
 
-function translateUploadError(raw: string) {
+function translateUploadError(raw: string): string {
   const msg = raw.toLowerCase();
   if (msg.includes("exceeded the maximum") || msg.includes("payload too large")) {
     return "File too large. Maximum size is 20MB.";
@@ -203,7 +209,12 @@ type XhrUploadArgs = {
   onProgress: (percent: number) => void;
 };
 
-function xhrUpload({ url, accessToken, file, onProgress }: XhrUploadArgs) {
+function xhrUpload({
+  url,
+  accessToken,
+  file,
+  onProgress,
+}: XhrUploadArgs): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("POST", url, true);
@@ -227,6 +238,7 @@ function xhrUpload({ url, accessToken, file, onProgress }: XhrUploadArgs) {
       } else {
         let msg = xhr.responseText;
         try {
+          // Supabase Storage errors are JSON with `{ message?: string }`.
           const parsed = JSON.parse(xhr.responseText) as { message?: string };
           msg = parsed.message ?? msg;
         } catch {

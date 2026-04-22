@@ -6,7 +6,7 @@ import {
   PLAN_COLORS,
   type PlanColorKey,
   type PlanColorTokens,
-} from "@/lib/constants/planColors";
+} from "@/lib/constants/plan-colors";
 import type { PlanDetail } from "@/lib/plan-detail/types";
 
 type PlanDetailContextValue = {

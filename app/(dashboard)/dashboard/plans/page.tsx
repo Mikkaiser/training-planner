@@ -1,7 +1,7 @@
 import { PageHeader } from "@/components/layout/page-header";
 import { PlansList } from "@/components/training-plans/plans-list";
 
-export default function PlansPage() {
+export default function DashboardPlansPage() {
   return (
     <div className="space-y-[30px]">
       <PageHeader
@@ -14,3 +14,4 @@ export default function PlansPage() {
     </div>
   );
 }
+

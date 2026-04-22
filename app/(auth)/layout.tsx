@@ -1,5 +1,5 @@
 import { AuthFooter } from "@/components/layout/auth-footer";
-import BackgroundBlobs from "@/components/layout/BackgroundBlobs";
+import BackgroundBlobs from "@/components/layout/background-blobs";
 
 export default function AuthLayout({
   children,

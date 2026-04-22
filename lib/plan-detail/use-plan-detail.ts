@@ -2,8 +2,9 @@
 
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import type { UseQueryResult } from "@tanstack/react-query";
 
-import { resolvePlanColor } from "@/lib/constants/planColors";
+import { resolvePlanColor } from "@/lib/constants/plan-colors";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { Subcompetence } from "@/lib/training-plans/types";
 import {
@@ -98,6 +99,7 @@ async function fetchPlanDetail(planId: string): Promise<PlanDetail> {
   if (attemptsRes.error) throw attemptsRes.error;
   if (subsRes.error) throw subsRes.error;
 
+  // Supabase result typing is broader than this function needs; we constrain it here.
   const tpp = (tppRes.data ?? []) as RawTrainingPlanPhase[];
   const phaseIds = tpp.map((r) => r.phase_id);
 
@@ -108,7 +110,11 @@ async function fetchPlanDetail(planId: string): Promise<PlanDetail> {
           .from("phases")
           .select("id,name,description,order_index,duration_weeks")
           .in("id", phaseIds)
-      : Promise.resolve({ data: [] as RawPhase[], error: null }),
+      : Promise.resolve({
+          // Empty fallback preserves the expected `data` item shape.
+          data: [] as RawPhase[],
+          error: null,
+        }),
     phaseIds.length
       ? supabase
           .from("topics")
@@ -117,13 +123,19 @@ async function fetchPlanDetail(planId: string): Promise<PlanDetail> {
           )
           .in("phase_id", phaseIds)
           .order("order_index", { ascending: true, nullsFirst: false })
-      : Promise.resolve({ data: [] as RawTopic[], error: null }),
+      : Promise.resolve({
+          // Empty fallback preserves the expected `data` item shape.
+          data: [] as RawTopic[],
+          error: null,
+        }),
   ]);
 
   if (phasesRes.error) throw phasesRes.error;
   if (topicsRes.error) throw topicsRes.error;
 
+  // Supabase result typing is broader than this function needs; we constrain it here.
   const phasesRaw = (phasesRes.data ?? []) as RawPhase[];
+  // Supabase join alias `gate:...` is known at query time but not inferred here.
   const topicsRaw = (topicsRes.data ?? []) as RawTopicWithGate[];
 
   // Fetch exercises + gate_assessments in parallel (depend on blockIds/gateIds).
@@ -139,7 +151,11 @@ async function fetchPlanDetail(planId: string): Promise<PlanDetail> {
           )
           .in("topic_id", blockIds)
           .order("created_at", { ascending: false })
-      : Promise.resolve({ data: [] as Exercise[], error: null }),
+      : Promise.resolve({
+          // Empty fallback preserves the expected `data` item shape.
+          data: [] as Exercise[],
+          error: null,
+        }),
     gateIds.length
       ? supabase
           .from("gate_assessments")
@@ -147,7 +163,11 @@ async function fetchPlanDetail(planId: string): Promise<PlanDetail> {
             "id,gate_id,title,description,file_url,file_name,file_type"
           )
           .in("gate_id", gateIds)
-      : Promise.resolve({ data: [] as GateAssessment[], error: null }),
+      : Promise.resolve({
+          // Empty fallback preserves the expected `data` item shape.
+          data: [] as GateAssessment[],
+          error: null,
+        }),
   ]);
 
   if (exercisesRes.error) throw exercisesRes.error;
@@ -166,6 +186,7 @@ async function fetchPlanDetail(planId: string): Promise<PlanDetail> {
   });
 
   const subsById = new Map<string, Subcompetence>();
+  // Supabase result typing is broader than this function needs; we constrain it here.
   for (const sc of (subsRes.data ?? []) as Subcompetence[]) {
     subsById.set(sc.id, sc);
   }
@@ -238,10 +259,12 @@ async function fetchPlanDetail(planId: string): Promise<PlanDetail> {
 
   // Progress + attempts lookups.
   const progressByCompetitor = new Map<string, CompetitorProgress>();
+  // Supabase result typing is broader than this function needs; we constrain it here.
   for (const row of (progressRes.data ?? []) as CompetitorProgress[]) {
     progressByCompetitor.set(row.competitor_id, row);
   }
 
+  // Supabase result typing is broader than this function needs; we constrain it here.
   const attemptsSorted = [...((attemptsRes.data ?? []) as GateAttempt[])].sort(
     (a, b) => (a.created_at < b.created_at ? 1 : -1)
   );
@@ -258,6 +281,7 @@ async function fetchPlanDetail(planId: string): Promise<PlanDetail> {
   }
 
   const exercisesByBlock = new Map<string, Exercise[]>();
+  // Supabase result typing is broader than this function needs; we constrain it here.
   for (const ex of (exercisesRes.data ?? []) as Exercise[]) {
     if (!ex.topic_id) continue;
     const list = exercisesByBlock.get(ex.topic_id) ?? [];
@@ -266,6 +290,7 @@ async function fetchPlanDetail(planId: string): Promise<PlanDetail> {
   }
 
   const assessmentsByGate = new Map<string, GateAssessment[]>();
+  // Supabase result typing is broader than this function needs; we constrain it here.
   for (const a of (assessmentsRes.data ?? []) as GateAssessment[]) {
     const list = assessmentsByGate.get(a.gate_id) ?? [];
     list.push(a);
@@ -273,10 +298,15 @@ async function fetchPlanDetail(planId: string): Promise<PlanDetail> {
   }
 
   const plan: PlanDetailPlan = {
+    // `training_plans.id` is a DB primary key; it is always present when row exists.
     id: planRes.data.id as string,
+    // Nullable DB columns; enforce null instead of undefined.
     name: (planRes.data.name ?? null) as string | null,
+    // Nullable DB columns; enforce null instead of undefined.
     description: (planRes.data.description ?? null) as string | null,
-    status: ((planRes.data.status ?? "draft") as PlanDetailPlan["status"]),
+    // Supabase enum typing isn't fully inferred here; constrain to our union.
+    status: (planRes.data.status ?? "draft") as PlanDetailPlan["status"],
+    // Nullable DB columns; enforce null instead of undefined.
     start_date: (planRes.data.start_date ?? null) as string | null,
     color: resolvePlanColor(planRes.data.color),
   };
@@ -299,7 +329,7 @@ export function planDetailQueryKey(planId: string) {
   return ["plan-detail", planId] as const;
 }
 
-export function usePlanDetail(planId: string) {
+export function usePlanDetail(planId: string): UseQueryResult<PlanDetail, Error> {
   return useQuery({
     queryKey: planDetailQueryKey(planId),
     queryFn: () => fetchPlanDetail(planId),
@@ -311,9 +341,9 @@ export function usePlanDetail(planId: string) {
  * Convenience: fully flat list of blocks in plan order with their parent
  * phase id — used by the "advance to next block on gate pass" logic.
  */
-export function useFlatBlocks(detail: PlanDetail | undefined) {
+export function useFlatBlocks(detail: PlanDetail | undefined): BlockItem[] {
   return useMemo(() => {
-    if (!detail) return [] as BlockItem[];
+    if (!detail) return [];
     return detail.orderedBlockIds
       .map((id) => detail.blocksById.get(id))
       .filter((b): b is BlockItem => Boolean(b));

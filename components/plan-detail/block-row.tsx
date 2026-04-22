@@ -2,17 +2,17 @@
 
 import { motion } from "framer-motion";
 
-import { usePlanDetailContext } from "@/components/plan-detail/plan-detail-context";
-import { useSelection } from "@/components/plan-detail/selection-context";
-import { ProgressDot } from "@/components/plan-detail/progress-dot";
-import { getSubcompetenceIcon } from "@/lib/training-plans/icons";
-import { competitorBlockState } from "@/lib/plan-detail/progress";
 import {
   getSubcompetenceTokens,
   subcompetenceChipStyle,
-} from "@/lib/constants/subcompetenceTokens";
-import { useIsDark } from "@/lib/use-is-dark";
+} from "@/lib/constants/subcompetence-tokens";
+import { competitorBlockState } from "@/lib/plan-detail/progress";
 import type { BlockItem } from "@/lib/plan-detail/types";
+import { getSubcompetenceIcon } from "@/lib/training-plans/icons";
+import { useIsDark } from "@/lib/use-is-dark";
+import { usePlanDetailContext } from "@/components/plan-detail/plan-detail-context";
+import { ProgressDot } from "@/components/plan-detail/progress-dot";
+import { useSelection } from "@/components/plan-detail/selection-context";
 
 export function BlockRow({ block }: { block: BlockItem }) {
   const { detail } = usePlanDetailContext();

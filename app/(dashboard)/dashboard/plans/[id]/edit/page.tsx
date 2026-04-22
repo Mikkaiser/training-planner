@@ -1,6 +1,6 @@
 import { TrainingPlanEditor } from "@/components/training-plans/training-plan-editor";
 
-export default function TrainingPlanEditPage({
+export default function DashboardTrainingPlanEditPage({
   params,
 }: {
   params: { id: string };

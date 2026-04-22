@@ -945,7 +945,7 @@
   }
 
   /* ------------------------------------------------------------------------ */
-  /* Training plan editor (/dashboard/plans/new) design system                 */
+  /* Training plan editor (/plans/new) design system                           */
   /* ------------------------------------------------------------------------ */
 
   .tp-plan-cancelbar {
@@ -2020,7 +2020,7 @@
 }
 
 /* ==========================================================================
-   Plan detail page (/dashboard/plans/[id])
+   Plan detail page (/plans/[id])
    ========================================================================== */
 
 .plan-detail-state {

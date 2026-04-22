@@ -3,18 +3,18 @@
 import { Shield, ShieldCheck } from "lucide-react";
 import { motion } from "framer-motion";
 
-import { usePlanDetailContext } from "@/components/plan-detail/plan-detail-context";
-import { useSelection } from "@/components/plan-detail/selection-context";
-import { ProgressDot } from "@/components/plan-detail/progress-dot";
-import { CompetitorStatusChip } from "@/components/plan-detail/competitor-status-chip";
-import { getSubcompetenceIcon } from "@/lib/training-plans/icons";
-import { competitorBlockState, competitorGateState } from "@/lib/plan-detail/progress";
 import {
   getSubcompetenceTokens,
   subcompetenceChipStyle,
-} from "@/lib/constants/subcompetenceTokens";
-import { useIsDark } from "@/lib/use-is-dark";
+} from "@/lib/constants/subcompetence-tokens";
+import { competitorBlockState, competitorGateState } from "@/lib/plan-detail/progress";
 import type { BlockItem } from "@/lib/plan-detail/types";
+import { getSubcompetenceIcon } from "@/lib/training-plans/icons";
+import { useIsDark } from "@/lib/use-is-dark";
+import { usePlanDetailContext } from "@/components/plan-detail/plan-detail-context";
+import { ProgressDot } from "@/components/plan-detail/progress-dot";
+import { CompetitorStatusChip } from "@/components/plan-detail/competitor-status-chip";
+import { useSelection } from "@/components/plan-detail/selection-context";
 
 export function BlockGateCard({
   block,
@@ -54,7 +54,12 @@ export function BlockGateCard({
       data-selected={selected ? "true" : undefined}
       data-milestone={isPhaseMilestone ? "true" : undefined}
       className="plan-block-gate-card"
-      style={{ ["--sc-left" as string]: leftBorder } as React.CSSProperties}
+      style={
+        {
+          // CSS custom property consumed by `globals.css` (not part of `CSSProperties` index signature).
+          ["--sc-left" as string]: leftBorder,
+        } as React.CSSProperties
+      }
     >
       <div className="plan-block-gate-card__top">
         <span

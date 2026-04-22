@@ -67,7 +67,7 @@ export default function DashboardHomePage() {
           </div>
           <div className="mt-3 flex flex-col gap-[13px]">
             <Link
-              href="/dashboard/plans/new"
+              href="/plans/new"
               className={cn(
                 buttonVariants({ variant: "default", size: "default" }),
                 "h-[55px] w-full justify-center rounded-[13px] text-[18px] font-semibold"
@@ -76,7 +76,7 @@ export default function DashboardHomePage() {
               New Training Plan
             </Link>
             <Link
-              href="/dashboard/phases/new"
+              href="/phases/new"
               className={cn(
                 buttonVariants({ variant: "default", size: "default" }),
                 "h-[55px] w-full justify-center rounded-[13px] text-[18px] font-semibold"

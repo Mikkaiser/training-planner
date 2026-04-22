@@ -47,7 +47,7 @@ export function progressPercentForCompetitor(
   }
 
   // Fall back to the competitor's current_topic_id position within the ordered blocks
-  // so the UI still shows meaningful progress before any attempt exists.
+  // so the UI still shows meaningful progress before the first attempt exists.
   const progress = detail.progressByCompetitor.get(competitorId);
   if (!progress || !progress.current_topic_id) return 0;
   const idx = detail.orderedBlockIds.indexOf(progress.current_topic_id);

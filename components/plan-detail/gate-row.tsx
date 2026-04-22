@@ -19,7 +19,10 @@ export function GateRow({
   const Icon = gate.gate_type === "phase_gate" ? ShieldCheck : Shield;
 
   const rowStyle = blockColor
-    ? ({ ["--gate-block-color" as string]: blockColor } as React.CSSProperties)
+    ? ({
+        // CSS custom property consumed by `globals.css` (not part of `CSSProperties` index signature).
+        ["--gate-block-color" as string]: blockColor,
+      } as React.CSSProperties)
     : undefined;
 
   return (

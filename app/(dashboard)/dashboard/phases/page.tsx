@@ -1,7 +1,7 @@
 import { PageHeader } from "@/components/layout/page-header";
 import { GlassCard } from "@/components/shared/glass-card";
 
-export default function PhasesPage() {
+export default function DashboardPhasesPage() {
   return (
     <div className="space-y-[30px]">
       <PageHeader

@@ -1,8 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { Controller, useForm } from "react-hook-form";
 
 import {
   Dialog,
@@ -13,18 +11,18 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  CompetitorAvatarSwatchPicker,
+  SWATCHES,
+  type CompetitorAvatarSwatch,
+} from "@/components/plan-detail/competitor-avatar-swatch-picker";
 import { usePlanDetailContext } from "@/components/plan-detail/plan-detail-context";
-import { getSupabaseBrowserClient } from "@/lib/supabase/client";
-import { planDetailQueryKey } from "@/lib/plan-detail/use-plan-detail";
+import { useAddCompetitor } from "@/lib/hooks/use-add-competitor";
 
-const SWATCHES = [
-  "var(--avatar-swatch-1)",
-  "var(--avatar-swatch-2)",
-  "var(--avatar-swatch-3)",
-  "var(--avatar-swatch-4)",
-  "var(--avatar-swatch-5)",
-  "var(--avatar-swatch-6)",
-] as const;
+interface FormValues {
+  fullName: string;
+  avatarColor: CompetitorAvatarSwatch;
+}
 
 export function AddCompetitorDialog({
   open,
@@ -34,65 +32,19 @@ export function AddCompetitorDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const { detail, planId } = usePlanDetailContext();
-  const queryClient = useQueryClient();
 
-  const [fullName, setFullName] = useState("");
-  const [avatarColor, setAvatarColor] = useState<string>(SWATCHES[0]);
-
-  const reset = () => {
-    setFullName("");
-    setAvatarColor(SWATCHES[0]);
-  };
-
-  const mutation = useMutation({
-    mutationFn: async () => {
-      const name = fullName.trim();
-      if (!name) throw new Error("Name is required");
-
-      const supabase = getSupabaseBrowserClient();
-      const { data: authData } = await supabase.auth.getUser();
-      const uid = authData.user?.id ?? null;
-
-      const insertRes = await supabase
-        .from("competitors")
-        .insert({
-          full_name: name,
-          avatar_color: avatarColor,
-          created_by: uid,
-        })
-        .select("id")
-        .single();
-
-      if (insertRes.error) throw insertRes.error;
-
-      const firstPhase = detail.phases[0];
-      const firstBlockId = detail.orderedBlockIds[0] ?? null;
-
-      const { error: progressErr } = await supabase
-        .from("competitor_progress")
-        .insert({
-          competitor_id: insertRes.data.id,
-          training_plan_id: planId,
-          current_phase_id: firstPhase?.id ?? null,
-          current_topic_id: firstBlockId,
-          status: "not_started",
-        });
-
-      if (progressErr) throw progressErr;
-
-      return name;
+  const form = useForm<FormValues>({
+    defaultValues: {
+      fullName: "",
+      avatarColor: SWATCHES[0],
     },
-    onSuccess: (name) => {
-      toast.success(`${name} added`);
-      queryClient.invalidateQueries({ queryKey: planDetailQueryKey(planId) });
-      reset();
-      onOpenChange(false);
-    },
-    onError: (err) => {
-      const msg =
-        err instanceof Error ? err.message : "Failed to add competitor";
-      toast.error(msg);
-    },
+  });
+
+  const mutation = useAddCompetitor({
+    planId,
+    detail,
+    onClose: () => onOpenChange(false),
+    onReset: () => form.reset(),
   });
 
   return (
@@ -106,10 +58,9 @@ export function AddCompetitorDialog({
         </DialogHeader>
 
         <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            mutation.mutate();
-          }}
+          onSubmit={form.handleSubmit((values) => {
+            mutation.mutate(values);
+          })}
           className="plan-add-competitor-form"
         >
           <div>
@@ -118,35 +69,23 @@ export function AddCompetitorDialog({
             </Label>
             <Input
               id="comp-name"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
               placeholder="e.g. Fatima"
               required
               className="glass-input"
+              {...form.register("fullName")}
             />
           </div>
 
-          <div>
-            <Label className="tp-plan-label">Avatar color</Label>
-            <div className="plan-add-competitor-form__swatches">
-              {SWATCHES.map((c) => {
-                const active = avatarColor === c;
-                return (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => setAvatarColor(c)}
-                    className="plan-add-competitor-form__swatch"
-                    data-active={active ? "true" : undefined}
-                    style={{
-                      background: c,
-                    }}
-                    aria-label={`Pick ${c}`}
-                  />
-                );
-              })}
-            </div>
-          </div>
+          <Controller
+            control={form.control}
+            name="avatarColor"
+            render={({ field }) => (
+              <CompetitorAvatarSwatchPicker
+                value={field.value}
+                onChange={field.onChange}
+              />
+            )}
+          />
 
           <div className="plan-add-competitor-form__actions">
             <button

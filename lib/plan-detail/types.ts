@@ -1,4 +1,4 @@
-import type { PlanColorKey } from "@/lib/constants/planColors";
+import type { PlanColorKey } from "@/lib/constants/plan-colors";
 import type { GateType, Subcompetence } from "@/lib/training-plans/types";
 
 export type PlanDetailPlan = {

@@ -146,5 +146,6 @@ export function subcompetenceChipStyle(
   if (tokens.bg) style["--subcompetence-bg"] = tokens.bg;
   if (tokens.border) style["--subcompetence-border"] = tokens.border;
   if (tokens.fg) style["--subcompetence-fg"] = tokens.fg;
+  // The returned object is a bag of CSS custom properties consumed by globals.css.
   return style as React.CSSProperties;
 }

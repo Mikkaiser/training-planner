@@ -74,6 +74,9 @@ export function AppHeader({ fullName, email, avatarUrl, role }: Props) {
           <SheetContent side="left" className="w-[360px] p-0 text-tp-primary">
             <SidebarNav
               role={role}
+              fullName={fullName}
+              email={email}
+              avatarUrl={avatarUrl}
               onNavigate={() => setMobileNavOpen(false)}
             />
           </SheetContent>

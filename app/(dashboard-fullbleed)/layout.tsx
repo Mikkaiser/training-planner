@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 
-import { AppHeader } from "@/components/layout/app-header";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
-import BackgroundBlobs from "@/components/layout/BackgroundBlobs";
+import BackgroundBlobs from "@/components/layout/background-blobs";
+import { MobileNav } from "@/components/layout/mobile-nav";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { ProfileRole } from "@/types";
 
@@ -30,6 +30,7 @@ export default async function DashboardFullbleedLayout({
     .eq("id", user.id)
     .maybeSingle();
 
+  // Supabase `profiles.role` is validated in DB; constrain to our `ProfileRole` union.
   const role = (profile?.role ?? null) as ProfileRole | null;
 
   return (
@@ -56,7 +57,12 @@ export default async function DashboardFullbleedLayout({
         }}
         className="app-sidebar-glass hidden md:block"
       >
-        <SidebarNav role={role} />
+        <SidebarNav
+          role={role}
+          fullName={profile?.full_name ?? null}
+          email={user.email ?? null}
+          avatarUrl={profile?.avatar_url ?? null}
+        />
       </div>
 
       <main
@@ -71,11 +77,11 @@ export default async function DashboardFullbleedLayout({
           overflow: "hidden",
         }}
       >
-        <AppHeader
+        <MobileNav
+          role={role}
           fullName={profile?.full_name ?? null}
           email={user.email ?? null}
           avatarUrl={profile?.avatar_url ?? null}
-          role={role}
         />
         <div
           style={{

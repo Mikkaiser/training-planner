@@ -19,7 +19,7 @@ export function PlanDetailHeader({
   return (
     <header className="plan-detail-header">
       <div className="plan-detail-header__left">
-        <Link href="/dashboard/plans" className="plan-detail-header__back">
+        <Link href="/plans" className="plan-detail-header__back">
           <ChevronLeft size={16} />
           <span>Plans</span>
         </Link>
@@ -51,7 +51,7 @@ export function PlanDetailHeader({
           <span>Add Competitor</span>
         </button>
         <Link
-          href={`/dashboard/plans/${planId}/edit`}
+          href={`/plans/${planId}/edit`}
           className="plan-detail-header__btn plan-detail-header__btn--primary"
           style={{
             background: tokens.accent,

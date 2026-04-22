@@ -1,4 +1,4 @@
-import type { PlanColorKey } from "@/lib/constants/planColors";
+import type { PlanColorKey } from "@/lib/constants/plan-colors";
 
 export type TrainingPlanStatus = "draft" | "active" | "completed";
 

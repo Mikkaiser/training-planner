@@ -1,0 +1,258 @@
+---
+description: Training Planner coding best practices — architecture, TypeScript, performance, maintainability
+globs: ["**/*.tsx", "**/*.ts"]
+alwaysApply: true
+---
+
+# Coding Best Practices
+
+## ENFORCEMENT
+
+These rules are strict. Cursor must always follow every rule
+with no exceptions. If a rule cannot be followed due to a
+genuine technical constraint, stop and explain why before
+proceeding — do not silently deviate.
+
+## PRIORITY ORDER
+
+When tradeoffs arise, prioritize in this order:
+1. Maintainability — consistent patterns, predictable structure,
+   easy for any developer to pick up and continue
+2. Readability — clear code over clever code, self-documenting
+3. Performance — optimize where it genuinely matters, not preemptively
+
+Never sacrifice maintainability for a local convenience.
+Never introduce a one-off pattern when a consistent one exists.
+When in doubt, choose the approach that is most consistent
+with the rest of the codebase.
+
+## TYPESCRIPT
+
+- Never use `any`. Use `unknown` and narrow with type guards.
+- Type assertions (`as Type`) are allowed when the type is
+  genuinely known and cannot be inferred — always add a comment
+  explaining why the assertion is safe at that point.
+- Never use non-null assertion `!` without a comment explaining
+  why the value is guaranteed to be defined.
+
+
+  BAD:
+    const [isLoading, setIsLoading] = useState(false)
+    const [isError, setIsError] = useState(false)
+    const [isSaved, setIsSaved] = useState(false)
+
+  GOOD:
+    type SaveState = 'idle' | 'saving' | 'saved' | 'error'
+    const [saveState, setSaveState] = useState<SaveState>('idle')
+
+- Prefer type over interface for object shapes unless the type
+  needs to be extended or implemented by a class.
+- All shared types live in lib/types/ or co-located with their
+  feature in a types.ts file. Never inline complex types in JSX.
+
+---
+
+## COMPONENT DESIGN
+
+- Components stay under 150 lines. If a component exceeds this,
+  split it into smaller focused pieces.
+- One responsibility per component. If you need to describe a
+  component with "and", it should be two components.
+- Props interfaces are always defined explicitly above the component.
+  Never inline prop types in the function signature.
+- Avoid prop drilling beyond 2 levels. Use composition, context,
+  or pass data through TanStack Query instead.
+- Never pass setState functions as props. Pass handler functions
+  with descriptive names instead.
+
+  BAD: <Child setIsOpen={setIsOpen} />
+  GOOD: <Child onClose={() => setIsOpen(false)} />
+
+- Extract repeated JSX into a component after the second use.
+  Never copy-paste JSX blocks.
+- Default exports for page components and top-level layouts.
+  Named exports for everything else — components, hooks, utilities,
+  types, constants.
+
+---
+
+## STATE MANAGEMENT
+
+- TanStack Query handles all server state — data fetching,
+  caching, invalidation, and background refetching.
+- useState handles local UI state only — open/closed, selected
+  tab, hover state, form input values.
+- Never store server data in useState. Fetch it with useQuery
+  and reference it directly.
+- Never duplicate state. If a value can be derived from existing
+  state or query data, derive it — do not create a new useState.
+- useEffect is a last resort. Before using it, ask: can this be
+  derived? Can this be an event handler? Can TanStack Query
+  handle this? Only use useEffect for true side effects like
+  external subscriptions, document title updates, or third-party
+  library initialization.
+- Form state uses react-hook-form. Never manage form fields
+  with individual useState calls.
+
+---
+
+## PERFORMANCE
+
+- Never call useQuery inside a loop or conditional.
+- Memoize expensive computed values with useMemo only when
+  the computation is genuinely expensive (not for simple
+  array filters or object spreads).
+- Use useCallback only for functions passed as props to
+  memoized child components. Not by default everywhere.
+- Always use the queryKey array correctly in TanStack Query.
+  Include all variables the query depends on.
+- Prefer server components for data-only pages in Next.js.
+  Use 'use client' only when the component needs interactivity,
+  browser APIs, or hooks.
+- Images use next/image always. Never plain <img> tags.
+- Dynamic imports for heavy components not needed on initial load:
+  const HeavyComponent = dynamic(() => import('./HeavyComponent'))
+- Never block the main thread with synchronous operations in
+  event handlers. Move heavy computation to useMemo or a
+  web worker if needed.
+
+---
+
+## SUPABASE AND DATA FETCHING
+
+- All Supabase queries live in lib/hooks/ as custom TanStack
+  Query hooks. Never write raw supabase.from() calls in
+  component files.
+- Every query hook exposes: data, isLoading, error, and any
+  mutation functions needed.
+- Always handle the error state in every query. Never render
+  data without checking for errors first.
+- Mutations always invalidate the relevant query keys on success.
+- Never use Supabase realtime subscriptions unless explicitly
+  required — polling via TanStack Query refetchInterval is
+  simpler and sufficient for this app.
+- Database operations that must succeed together go in a
+  Supabase RPC function or are executed sequentially with
+  rollback logic. Never fire-and-forget related inserts.
+- Always select only the columns you need. Never use select('*')
+  in production queries.
+
+---
+
+## ERROR HANDLING
+
+- Every page has an error boundary. Use Next.js error.tsx files.
+- Every useQuery and useMutation has explicit error handling.
+  Never silently swallow errors.
+- User-facing errors use sonner toasts with a clear message.
+  Never show raw error.message from Supabase or the network
+  to the user.
+- Log errors to the console with context:
+  console.error('[ComponentName] operation failed:', error)
+- Async functions in event handlers are always wrapped in
+  try/catch. Never use unhandled promise rejections.
+- Loading states always show a skeleton — never a blank area.
+- Empty states always show a helpful message — never nothing.
+
+---
+
+## NAMING CONVENTIONS
+
+- Components: PascalCase (PlanCard, BlockDetailPanel)
+- Hooks: camelCase prefixed with use (usePlanDetail, useGateAttempts)
+- Utilities: camelCase (formatDate, buildRoadmapItems)
+- Constants: SCREAMING_SNAKE_CASE (PLAN_COLORS, MAX_FILE_SIZE)
+- Types: PascalCase (TrainingPlan, CompetitorProgress)
+- Event handlers: prefixed with handle or on
+  (handleSubmit, onPhaseSelect)
+- Boolean variables: prefixed with is, has, can, should
+  (isLoading, hasAttempts, canAdvance)
+- Files: kebab-case (plan-card.tsx, use-plan-detail.ts)
+- Never abbreviate unless the abbreviation is universally known
+  (id, url, db are fine — cmp, cfg, mgr are not)
+
+---
+
+## FOLDER STRUCTURE
+
+Maintain the current separation strictly:
+
+  app/                → Next.js routes and page components only
+  components/
+    shared/           → reusable across the whole app
+    layout/           → sidebar, header, background blobs
+    plan-detail/      → components specific to plan detail page
+    skeletons/        → all skeleton loading components
+  lib/
+    hooks/            → all TanStack Query hooks
+    constants/        → planColors, subcompetenceTokens, etc.
+    storage/          → Supabase storage utilities
+    types/            → shared TypeScript types
+    supabase/         → Supabase client configuration
+
+- Never put business logic in page components. Pages compose
+  components and hooks — they do not contain logic.
+- Never put components in lib/. Components go in components/.
+- Never put hooks in components/. Hooks go in lib/hooks/.
+- Co-locate a component's types in the same file if they are
+  only used by that component. Move to lib/types/ when shared.
+
+---
+
+## CODE STYLE
+
+- Comments only for non-obvious logic. If code needs a comment
+  to explain what it does, consider renaming. If it needs a
+  comment to explain why, write the comment.
+- No commented-out code in commits. Delete it.
+- No console.log in committed code. Use console.error for
+  genuine errors only.
+- Prefer early returns over deeply nested conditionals.
+
+  BAD:
+    if (data) {
+      if (data.plan) {
+        if (data.plan.phases.length > 0) {
+          return <Roadmap />
+        }
+      }
+    }
+
+  GOOD:
+    if (!data?.plan) return null
+    if (data.plan.phases.length === 0) return <EmptyState />
+    return <Roadmap />
+
+- Destructure props and object values at the top of functions.
+- Avoid magic numbers and magic strings. Extract to named constants.
+- Keep imports organized: React → Next.js → third-party → internal
+  Separate each group with a blank line.
+
+---
+
+## ACCESSIBILITY
+
+- All interactive elements are keyboard accessible.
+- All images have meaningful alt text or alt="" if decorative.
+- All form inputs have associated labels.
+- Focus rings are never removed with outline: none without
+  providing a custom focus indicator.
+- Color is never the only way to convey information — always
+  pair color with an icon, text, or pattern.
+
+---
+
+## VERIFICATION
+
+Before considering any feature complete:
+- No TypeScript errors (tsc --noEmit passes)
+- No any types introduced
+- No useEffect used where a derived value or event handler
+  would suffice
+- No raw supabase.from() calls in component files
+- No prop drilling beyond 2 levels
+- No component over 150 lines without justification
+- No copy-pasted JSX blocks
+- Error and loading states handled everywhere
+- All new components follow naming and folder conventions
+- npm run build passes with zero errors and zero warnings
