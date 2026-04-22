@@ -134,7 +134,7 @@ export function LoginForm({
         </div>
         <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
           <div className="space-y-2">
-            <Label htmlFor="email" className="tp-plan-label">
+            <Label htmlFor="email" className="login-auth-label">
               Email
             </Label>
             <Input
@@ -151,7 +151,7 @@ export function LoginForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password" className="tp-plan-label">
+            <Label htmlFor="password" className="login-auth-label">
               Password
             </Label>
             <Input

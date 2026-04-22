@@ -415,8 +415,13 @@
   }
 
   .login-auth-card .login-auth-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     font-size: 14px;
     font-weight: 500;
+    color: var(--color-text-primary);
+    margin-bottom: 2px;
   }
 
   .login-auth-card [data-slot="input"] {
