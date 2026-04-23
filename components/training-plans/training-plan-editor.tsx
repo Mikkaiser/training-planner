@@ -33,6 +33,7 @@ export function TrainingPlanEditor({ planId }: { planId?: string }): React.JSX.E
           phases={state.phases}
           phaseRefs={state.phaseRefs}
           profileId={state.profileId}
+          personalContext={state.personalContext}
           sensors={state.sensors}
           subcompetences={state.subcompetences}
           onAddExistingPhase={state.onAddExistingPhase}

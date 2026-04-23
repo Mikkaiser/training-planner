@@ -21,6 +21,7 @@ export interface TrainingPlanEditorLeftPanelProps {
   phases: Phase[];
   phaseRefs: PlanPhaseRef[];
   profileId: string | null;
+  personalContext: { id: string; full_name: string; avatar_color: string | null } | null;
   sensors: SensorDescriptor<Record<string, unknown>>[];
   subcompetences: Subcompetence[];
   onAddExistingPhase: (phase: Phase) => void;
@@ -45,6 +46,7 @@ export function TrainingPlanEditorLeftPanel({
   phases,
   phaseRefs,
   profileId,
+  personalContext,
   sensors,
   subcompetences,
   onAddExistingPhase,
@@ -70,6 +72,7 @@ export function TrainingPlanEditorLeftPanel({
       <div className="tp-plan-left-body">
         <TrainingPlanEditorForm
           draft={draft}
+          personalContext={personalContext}
           onChangeDescription={onChangeDescription}
           onChangeName={onChangeName}
           onChangeStartDate={onChangeStartDate}

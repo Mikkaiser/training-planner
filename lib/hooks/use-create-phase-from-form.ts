@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { createPhaseSchema, type CreatePhaseValues } from "@/components/training-plans/phase-picker-schemas";
+import type { UploadResult } from "@/lib/storage/storage";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { GateType, Phase, Subcompetence } from "@/lib/training-plans/types";
 
@@ -12,6 +13,7 @@ export interface CreatePhaseFromFormArgs {
   subcompetences: Subcompetence[];
   createdBy: string;
   planPhaseCount: number;
+  exerciseUploads: Array<UploadResult | null>;
 }
 
 async function createPhaseFromForm({
@@ -19,40 +21,18 @@ async function createPhaseFromForm({
   subcompetences,
   createdBy,
   planPhaseCount,
+  exerciseUploads,
 }: CreatePhaseFromFormArgs): Promise<Phase> {
   const supabase = getSupabaseBrowserClient();
   const parsed = createPhaseSchema.parse(values);
-
-  let scIds = parsed.subcompetence_ids.slice();
-
-  if (parsed.newSubcompetence.enabled) {
-    const name = (parsed.newSubcompetence.name ?? "").trim();
-    const color = parsed.newSubcompetence.color ?? "var(--color-text-accent)";
-    const icon = parsed.newSubcompetence.icon ?? "dot";
-    if (name.length >= 2) {
-      const { data, error } = await supabase
-        .from("subcompetences")
-        .insert({
-          name,
-          description: null,
-          color,
-          icon,
-          created_by: createdBy,
-        })
-        .select("id,name,description,color,icon")
-        .single();
-      if (error) throw error;
-      // Insert is followed by `.single()` with a select list including `id`.
-      scIds = [String(data.id), ...scIds];
-    }
-  }
+  const scIds = parsed.subcompetence_ids.slice();
 
   const { data: phaseRow, error: phaseErr } = await supabase
     .from("phases")
     .insert({
       name: parsed.name.trim(),
       description: null,
-      duration_weeks: parsed.duration_weeks,
+      duration_weeks: null,
       order_index: planPhaseCount + 1,
       created_by: createdBy,
     })
@@ -96,15 +76,35 @@ async function createPhaseFromForm({
       if (!gateId) {
         throw new Error("Gate insert succeeded but no gate id returned.");
       }
-      const topicInsert = await supabase.from("topics").insert({
-        phase_id: phaseId,
-        subcompetence_id: b.subcompetence_id,
-        gate_id: gateId,
-        name: b.name.trim(),
-        description: null,
-        order_index: idx + 1,
-      });
+      const topicInsert = await supabase
+        .from("topics")
+        .insert({
+          phase_id: phaseId,
+          subcompetence_id: b.subcompetence_id,
+          gate_id: gateId,
+          name: b.name.trim(),
+          description: null,
+          order_index: idx + 1,
+        })
+        .select("id")
+        .single();
       if (topicInsert.error) throw topicInsert.error;
+
+      const blockExerciseUpload = exerciseUploads[idx] ?? null;
+      if (blockExerciseUpload) {
+        const { error: exerciseError } = await supabase.from("exercises").insert({
+          topic_id: topicInsert.data.id,
+          subcompetence_id: b.subcompetence_id,
+          title: blockExerciseUpload.fileName,
+          description: null,
+          difficulty: null,
+          file_url: blockExerciseUpload.path,
+          file_name: blockExerciseUpload.fileName,
+          file_type: blockExerciseUpload.fileType,
+          created_by: createdBy,
+        });
+        if (exerciseError) throw exerciseError;
+      }
     }
   }
 

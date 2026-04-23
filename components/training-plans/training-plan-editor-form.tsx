@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Calendar } from "lucide-react";
 
+import { initialsFromName } from "@/components/competitors/competitor-utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PLAN_COLORS, PLAN_COLOR_KEYS, type PlanColorKey } from "@/lib/constants/plan-colors";
@@ -12,6 +13,7 @@ import { StatusPills } from "./training-plan-editor-widgets";
 
 export interface TrainingPlanEditorFormProps {
   draft: PlanDraft;
+  personalContext: { id: string; full_name: string; avatar_color: string | null } | null;
   onChangeDescription: (value: string) => void;
   onChangeName: (value: string) => void;
   onChangeStartDate: (value: string) => void;
@@ -21,6 +23,7 @@ export interface TrainingPlanEditorFormProps {
 
 export function TrainingPlanEditorForm({
   draft,
+  personalContext,
   onChangeDescription,
   onChangeName,
   onChangeStartDate,
@@ -29,6 +32,35 @@ export function TrainingPlanEditorForm({
 }: TrainingPlanEditorFormProps): React.JSX.Element {
   return (
     <div className="tp-plan-form">
+      {personalContext ? (
+        <div
+          className="rounded-xl border border-border px-3 py-2"
+          style={{
+            background:
+              "color-mix(in srgb, var(--plan-tint-strong, var(--color-accent-muted)) 45%, transparent)",
+          }}
+        >
+          <div className="flex items-center gap-2">
+            <span
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold"
+              style={{
+                background: personalContext.avatar_color ?? "var(--color-accent)",
+                color: "var(--color-surface-raised)",
+              }}
+              aria-hidden
+            >
+              {initialsFromName(personalContext.full_name)}
+            </span>
+            <div className="min-w-0">
+              <p className="text-[13px] text-tp-muted">Creating personal plan for</p>
+              <p className="truncate text-sm font-semibold text-tp-primary">
+                {personalContext.full_name}
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <div>
         <Label htmlFor="tp-plan-name" className="tp-plan-label">
           Plan name <span className="text-negative">*</span>

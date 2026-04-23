@@ -26,27 +26,19 @@ export function usePhasePickerCreateForm(): UsePhasePickerCreateFormReturn {
     resolver: zodResolver(createPhaseSchema) as unknown as Resolver<CreatePhaseValues>,
     defaultValues: {
       name: "",
-      duration_weeks: 4,
       subcompetence_ids: [],
       blocks: [
         {
           name: "Block 1",
           subcompetence_id: null,
-          gate_pass_threshold: 70,
-          gate_type: "phase_gate",
+          gate_pass_threshold: 80,
         },
       ],
-      newSubcompetence: {
-        enabled: false,
-        name: "",
-        color: "var(--color-text-accent)",
-        icon: "dot",
-      },
     },
     mode: "onChange",
   });
 
-  const { fields: blockFields, append, remove } = useFieldArray({
+  const { fields: blockFields, replace } = useFieldArray({
     control: form.control,
     name: "blocks",
   });
@@ -59,23 +51,39 @@ export function usePhasePickerCreateForm(): UsePhasePickerCreateFormReturn {
       : undefined;
 
   function addBlock(): void {
-    const nextLen = blockFields.length + 1;
-    // Default: last block is phase gate; earlier blocks are block gates.
-    const nextBlocks = values.blocks.map((b, i) => ({
+    const currentBlocks = form.getValues("blocks");
+    const nextLen = currentBlocks.length + 1;
+    const updatedCurrent = currentBlocks.map((b, i) => ({
       ...b,
-      gate_type: i === values.blocks.length - 1 ? "block_gate" : b.gate_type,
+      gate_pass_threshold:
+        i === currentBlocks.length - 1 &&
+        (b.gate_pass_threshold === null || b.gate_pass_threshold === 80)
+          ? 90
+          : b.gate_pass_threshold,
     }));
-    form.setValue("blocks", nextBlocks, { shouldValidate: true });
-    append({
-      name: `Block ${nextLen}`,
-      subcompetence_id: null,
-      gate_pass_threshold: 70,
-      gate_type: "phase_gate",
-    });
+
+    replace([
+      ...updatedCurrent,
+      {
+        name: `Block ${nextLen}`,
+        subcompetence_id: null,
+        gate_pass_threshold: 80,
+      },
+    ]);
   }
 
   function removeBlock(index: number): void {
-    remove(index);
+    const currentBlocks = form.getValues("blocks");
+    const remaining = currentBlocks.filter((_, currentIndex) => currentIndex !== index);
+    const nextBlocks = remaining.map((b, currentIndex) => ({
+      ...b,
+      gate_pass_threshold:
+        currentIndex === remaining.length - 1 &&
+        (b.gate_pass_threshold === null || b.gate_pass_threshold === 90)
+          ? 80
+          : b.gate_pass_threshold,
+    }));
+    replace(nextBlocks);
   }
 
   function toggleSubcompetenceId(id: string): void {

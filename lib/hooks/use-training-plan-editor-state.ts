@@ -2,12 +2,14 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { PointerSensor, useSensor, useSensors, type SensorDescriptor } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { useQuery } from "@tanstack/react-query";
 
 import { recomputeOffsets } from "@/lib/utils/training-plan-editor-utils";
 import { PLAN_COLORS, resolvePlanColor } from "@/lib/constants/plan-colors";
+import { useCreatePersonalPlan } from "@/lib/hooks/use-create-personal-plan";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import type {
   GateType,
@@ -31,6 +33,7 @@ export interface TrainingPlanEditorState {
   phases: Phase[];
   phaseRefs: PlanPhaseRef[];
   profileId: string | null;
+  personalContext: { id: string; full_name: string; avatar_color: string | null } | null;
   sensors: SensorDescriptor<Record<string, unknown>>[];
   subcompetences: Subcompetence[];
   totalWeeks: number;
@@ -50,7 +53,11 @@ export interface TrainingPlanEditorState {
 
 export function useTrainingPlanEditorState(planId?: string): TrainingPlanEditorState {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
+  const personalFor = searchParams.get("personalFor");
+  const from = searchParams.get("from");
+  const createPersonalPlanMutation = useCreatePersonalPlan(personalFor ?? "");
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
   const [orientation, setOrientation] = useState<Orientation>("horizontal");
@@ -61,6 +68,8 @@ export function useTrainingPlanEditorState(planId?: string): TrainingPlanEditorS
     status: "draft",
     start_date: "",
     color: "blue",
+    plan_type: "shared",
+    owner_competitor_id: null,
   });
   const [phaseRefs, setPhaseRefs] = useState<PlanPhaseRef[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -80,8 +89,46 @@ export function useTrainingPlanEditorState(planId?: string): TrainingPlanEditorS
     createdBy: profileId ?? "",
     enabled: Boolean(profileId),
     onFirstSave: (id) => {
-      router.replace(`/plans/${id}/edit`);
+      const nextParams = new URLSearchParams();
+      if (from && from.startsWith("/") && !from.startsWith("//")) {
+        nextParams.set("from", from);
+      }
+      const queryString = nextParams.toString();
+      router.replace(queryString ? `/plans/${id}/edit?${queryString}` : `/plans/${id}/edit`);
       setDraft((d) => ({ ...d, id }));
+    },
+  });
+
+  const { data: personalPrefill = null } = useQuery({
+    queryKey: ["personal-plan-prefill", personalFor],
+    enabled: Boolean(personalFor) && !planId,
+    queryFn: async () => {
+      if (!personalFor) return null;
+      const { data, error } = await supabase
+        .from("competitors")
+        .select("id,full_name,avatar_color")
+        .eq("id", personalFor)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) return null;
+      return data as { id: string; full_name: string; avatar_color: string | null };
+    },
+  });
+
+  const personalContextId = personalPrefill?.id ?? draft.owner_competitor_id;
+  const { data: loadedPersonalContext = null } = useQuery({
+    queryKey: ["personal-plan-context", personalContextId],
+    enabled: Boolean(personalContextId),
+    queryFn: async () => {
+      if (!personalContextId) return null;
+      const { data, error } = await supabase
+        .from("competitors")
+        .select("id,full_name,avatar_color")
+        .eq("id", personalContextId)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) return null;
+      return data as { id: string; full_name: string; avatar_color: string | null };
     },
   });
 
@@ -183,7 +230,7 @@ export function useTrainingPlanEditorState(planId?: string): TrainingPlanEditorS
       if (!planId) throw new Error("Missing planId");
       const { data: planRow, error: planErr } = await supabase
         .from("training_plans")
-        .select("id,name,description,status,start_date,color")
+        .select("id,name,description,status,start_date,color,plan_type,owner_competitor_id")
         // Safe: this queryFn only runs when `enabled` is true, but we also guard above.
         .eq("id", planId)
         .single();
@@ -226,6 +273,8 @@ export function useTrainingPlanEditorState(planId?: string): TrainingPlanEditorS
           status: (planRow.status ?? "draft") as TrainingPlanStatus,
           start_date: planRow.start_date ?? "",
           color: loadedColor,
+          plan_type: (planRow.plan_type ?? "shared") as "shared" | "personal",
+          owner_competitor_id: (planRow.owner_competitor_id ?? null) as string | null,
         } satisfies PlanDraft,
         phaseRefs: refs,
       };
@@ -240,6 +289,40 @@ export function useTrainingPlanEditorState(planId?: string): TrainingPlanEditorS
     setPhaseRefs(loadedPlan.phaseRefs);
     auto.markSavedHash(JSON.stringify(loadedPlan.draft));
   }, [auto, loadedPlan, planId]);
+
+  const didPersonalPrefillRef = useRef(false);
+  useEffect(() => {
+    if (!personalPrefill || planId || didPersonalPrefillRef.current) return;
+    didPersonalPrefillRef.current = true;
+
+    const monthYear = new Date().toLocaleString("en-US", {
+      month: "long",
+      year: "numeric",
+    });
+    const defaultName = `${personalPrefill.full_name} — ${monthYear}`;
+
+    const avatar = (personalPrefill.avatar_color ?? "").toLowerCase();
+    const color =
+      avatar.includes("7c6af7") || avatar.includes("purple")
+        ? "purple"
+        : avatar.includes("00a878") || avatar.includes("green")
+          ? "green"
+          : avatar.includes("f97316") || avatar.includes("orange")
+            ? "orange"
+            : avatar.includes("ef4444") || avatar.includes("red")
+              ? "red"
+              : avatar.includes("eab308") || avatar.includes("yellow")
+                ? "yellow"
+                : "blue";
+
+    setDraft((prev) => ({
+      ...prev,
+      name: prev.name.trim() ? prev.name : defaultName,
+      color: prev.color === "blue" ? color : prev.color,
+      plan_type: "personal",
+      owner_competitor_id: personalPrefill.id,
+    }));
+  }, [personalPrefill, planId]);
 
   const existingDisabled = useMemo(() => new Set(phaseRefs.map((p) => p.phase_id)), [phaseRefs]);
 
@@ -319,8 +402,17 @@ export function useTrainingPlanEditorState(planId?: string): TrainingPlanEditorS
 
   async function onSave() {
     try {
+      const isFirstSave = !draft.id;
       const id = await auto.save();
       await reconcilePhases(id);
+      if (
+        isFirstSave &&
+        draft.plan_type === "personal" &&
+        draft.owner_competitor_id &&
+        !createPersonalPlanMutation.isPending
+      ) {
+        await createPersonalPlanMutation.mutateAsync({ planId: id });
+      }
       auto.markExternalClean();
     } catch {
       // Error surface is driven by the hook's state/errorMessage.
@@ -328,6 +420,8 @@ export function useTrainingPlanEditorState(planId?: string): TrainingPlanEditorS
   }
 
   const planColorTokens = PLAN_COLORS[draft.color];
+  const canUseFromPath = Boolean(from && from.startsWith("/") && !from.startsWith("//"));
+  const personalContext = personalPrefill ?? loadedPersonalContext;
 
   const editorStyle: React.CSSProperties = {
     display: "flex",
@@ -365,11 +459,12 @@ export function useTrainingPlanEditorState(planId?: string): TrainingPlanEditorS
     phases,
     phaseRefs,
     profileId,
+    personalContext,
     sensors,
     subcompetences,
     totalWeeks,
     onAddExistingPhase,
-    onBackToPlans: () => router.push("/plans"),
+    onBackToPlans: () => router.push(canUseFromPath ? (from as string) : "/plans"),
     onChangeDescription: (value) => setDraft((d) => ({ ...d, description: value })),
     onChangeName: (value) => setDraft((d) => ({ ...d, name: value })),
     onChangeOrientation: setOrientation,
