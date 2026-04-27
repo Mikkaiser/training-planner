@@ -63,6 +63,8 @@ export function TrainingPlanEditorLeftPanel({
   return (
     <div className="tp-plan-left">
       <TrainingPlanEditorLeftHeader
+        planId={draft.id}
+        planName={draft.name}
         autoState={autoState}
         autoCanSave={autoCanSave}
         autoErrorMessage={autoErrorMessage}

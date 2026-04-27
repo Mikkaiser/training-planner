@@ -31,7 +31,7 @@ export function PhasePickerPopover({
   createdBy,
   planPhaseCount,
   triggerClassName,
-  planColor = "blue",
+  planColor = "iris",
 }: {
   existingPhases: Phase[];
   existingDisabledIds: Set<string>;
@@ -58,10 +58,11 @@ export function PhasePickerPopover({
     ["--plan-accent" as string]: planTokens.accent,
     // CSS custom properties consumed by `globals.css` (not part of `CSSProperties` index signature).
     ["--plan-glow" as string]: planTokens.glow,
+    // CSS custom properties consumed by `globals.css` (not part of `CSSProperties` index signature).
+    ["--plan-gradient" as string]: planTokens.gradient,
   };
   // Only the color tokens are passed as inline style; base/hover surface colors
-  // come from the `.tp-phase-picker-existing-card` rule in globals.css, which is
-  // dark-mode aware.
+  // come from the `.tp-phase-picker-existing-card` rule in globals.css.
   const existingCardStyle: React.CSSProperties = {
     borderColor: planTokens.chipBorder,
     borderLeft: `3px solid ${planTokens.border}`,

@@ -3,7 +3,7 @@ import { createSupabaseMiddlewareClient } from "@/lib/supabase/middleware";
 
 /** Auth pages that signed-in users should leave (not reset-password: recovery session). */
 const AUTH_ROUTES_REDIRECT_WHEN_AUTHENTICATED = ["/login", "/signup", "/forgot-password"];
-const PROTECTED_PREFIXES = ["/dashboard", "/plans", "/phases"] as const;
+const PROTECTED_PREFIXES = ["/dashboard", "/plans", "/phases", "/exercises", "/competitors"] as const;
 
 export async function middleware(request: NextRequest) {
   const { supabase, response } = createSupabaseMiddlewareClient(request);
@@ -28,22 +28,8 @@ export async function middleware(request: NextRequest) {
 
   if (user && isAuthRoute) {
     const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
+    url.pathname = "/plans";
     return NextResponse.redirect(url);
-  }
-
-  if (user && pathname.startsWith("/dashboard/users")) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    if (profile?.role !== "admin") {
-      const url = request.nextUrl.clone();
-      url.pathname = "/dashboard";
-      return NextResponse.redirect(url);
-    }
   }
 
   return response;
@@ -58,6 +44,8 @@ export const config = {
     "/dashboard/:path*",
     "/plans/:path*",
     "/phases/:path*",
+    "/exercises/:path*",
+    "/competitors/:path*",
   ],
 };
 

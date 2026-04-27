@@ -22,6 +22,5 @@ export { GatesSkeleton } from "./gates-skeleton";
 export { PageContentSkeleton } from "./page-content-skeleton";
 export { PhasesSkeleton } from "./phases-skeleton";
 export { UsersSkeleton } from "./users-skeleton";
-export { DashboardHomeSkeleton } from "./dashboard-home-skeleton";
 export { CompetitorsListingSkeleton } from "./competitors-listing-skeleton";
 export { CompetitorProfileSkeleton } from "./competitor-profile-skeleton";

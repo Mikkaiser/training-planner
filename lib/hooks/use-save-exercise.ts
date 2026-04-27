@@ -44,6 +44,7 @@ export function useSaveExercise({ planId, onSuccess }: UseSaveExerciseProps) {
       const { error: insertErr } = await supabase.from("exercises").insert({
         topic_id: block.id,
         subcompetence_id: block.subcompetence_id,
+        exercise_category_id: null,
         title: title.trim(),
         description: description.trim() || null,
         difficulty,

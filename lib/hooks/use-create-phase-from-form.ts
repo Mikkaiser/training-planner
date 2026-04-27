@@ -95,6 +95,7 @@ async function createPhaseFromForm({
         const { error: exerciseError } = await supabase.from("exercises").insert({
           topic_id: topicInsert.data.id,
           subcompetence_id: b.subcompetence_id,
+          exercise_category_id: null,
           title: blockExerciseUpload.fileName,
           description: null,
           difficulty: null,

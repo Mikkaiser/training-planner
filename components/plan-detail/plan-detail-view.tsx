@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { PLAN_COLORS, resolvePlanColor } from "@/lib/constants/plan-colors";
 import { PlanDetailHeader } from "@/components/plan-detail/plan-detail-header";
@@ -33,6 +33,23 @@ function getErrorMessage(error: unknown): string {
 export function PlanDetailView({ planId }: { planId: string }) {
   const { data, isLoading, isError, error } = usePlanDetail(planId);
   const [addOpen, setAddOpen] = useState(false);
+  const [selectedCompetitorId, setSelectedCompetitorId] = useState<string | null>(null);
+  const defaultCompetitorId =
+    data?.plan.plan_type === "personal" && data.plan.owner_competitor_id
+      ? data.plan.owner_competitor_id
+      : (data?.competitors[0]?.id ?? null);
+
+  useEffect(() => {
+    if (!data || !defaultCompetitorId) {
+      setSelectedCompetitorId(null);
+      return;
+    }
+    setSelectedCompetitorId((current) => {
+      if (!current) return defaultCompetitorId;
+      const stillValid = data.competitors.some((competitor) => competitor.id === current);
+      return stillValid ? current : defaultCompetitorId;
+    });
+  }, [data, defaultCompetitorId]);
 
   if (isLoading) {
     return <PlanDetailSkeleton />;
@@ -51,7 +68,12 @@ export function PlanDetailView({ planId }: { planId: string }) {
   const tokens = PLAN_COLORS[resolvePlanColor(data.plan.color)];
 
   return (
-    <PlanDetailProvider planId={planId} detail={data}>
+    <PlanDetailProvider
+      planId={planId}
+      detail={data}
+      selectedCompetitorId={selectedCompetitorId}
+      setSelectedCompetitorId={setSelectedCompetitorId}
+    >
       <SelectionProvider>
         <div
           className="plan-detail-root"
@@ -79,6 +101,8 @@ export function PlanDetailView({ planId }: { planId: string }) {
               ["--plan-chip-text" as string]: tokens.chipText,
               // CSS custom properties consumed by `globals.css` (not part of `CSSProperties` index signature).
               ["--plan-glow" as string]: tokens.glow,
+              // CSS custom properties consumed by `globals.css` (not part of `CSSProperties` index signature).
+              ["--plan-gradient" as string]: tokens.gradient,
             } as React.CSSProperties
           }
         >

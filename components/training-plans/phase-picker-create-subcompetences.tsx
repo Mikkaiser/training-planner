@@ -2,7 +2,6 @@
 
 import { subcompetenceChipStyle } from "@/lib/constants/subcompetence-tokens";
 import { cn } from "@/lib/utils";
-import { useIsDark } from "@/lib/use-is-dark";
 import type { Subcompetence } from "@/lib/training-plans/types";
 import { Label } from "@/components/ui/label";
 
@@ -26,7 +25,6 @@ export function PhasePickerCreateSubcompetences({
   onToggleSelectedId,
   errorMessage,
 }: PhasePickerCreateSubcompetencesProps): React.JSX.Element {
-  const isDark = useIsDark();
   const seededSubcompetences = subcompetences.filter((subcompetence) =>
     SEEDED_SUBCOMPETENCE_NAMES.has(subcompetence.name),
   );
@@ -50,7 +48,7 @@ export function PhasePickerCreateSubcompetences({
                   ? "opacity-100 ring-1 ring-[var(--color-border-hover)]"
                   : "opacity-55 hover:opacity-75"
               )}
-              style={subcompetenceChipStyle(s.color, isDark)}
+              style={subcompetenceChipStyle(s.color)}
             >
               {s.name}
             </button>

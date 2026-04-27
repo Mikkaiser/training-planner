@@ -24,7 +24,7 @@ export function ProgressDot({ competitorName, competitorColor, state }: Props) {
     return (
       <span
         className="plan-progress-dot plan-progress-dot--completed"
-        style={{ background: competitorColor, color: "#fff" }}
+        style={{ background: competitorColor, color: "var(--color-surface-raised)" }}
         title={title}
         aria-label={title}
       >

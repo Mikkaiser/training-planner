@@ -67,7 +67,7 @@ export function useTrainingPlanEditorState(planId?: string): TrainingPlanEditorS
     description: "",
     status: "draft",
     start_date: "",
-    color: "blue",
+    color: "iris",
     plan_type: "shared",
     owner_competitor_id: null,
   });
@@ -306,19 +306,19 @@ export function useTrainingPlanEditorState(planId?: string): TrainingPlanEditorS
       avatar.includes("7c6af7") || avatar.includes("purple")
         ? "purple"
         : avatar.includes("00a878") || avatar.includes("green")
-          ? "green"
+          ? "mint"
           : avatar.includes("f97316") || avatar.includes("orange")
-            ? "orange"
+            ? "coral"
             : avatar.includes("ef4444") || avatar.includes("red")
-              ? "red"
+              ? "coral"
               : avatar.includes("eab308") || avatar.includes("yellow")
-                ? "yellow"
-                : "blue";
+                ? "gold"
+                : "iris";
 
     setDraft((prev) => ({
       ...prev,
       name: prev.name.trim() ? prev.name : defaultName,
-      color: prev.color === "blue" ? color : prev.color,
+      color: prev.color === "iris" ? color : prev.color,
       plan_type: "personal",
       owner_competitor_id: personalPrefill.id,
     }));
@@ -447,6 +447,8 @@ export function useTrainingPlanEditorState(planId?: string): TrainingPlanEditorS
     ["--plan-glow" as string]: planColorTokens.glow,
     // CSS custom properties consumed by `globals.css` (not part of `CSSProperties` index signature).
     ["--plan-border" as string]: planColorTokens.border,
+    // CSS custom properties consumed by `globals.css` (not part of `CSSProperties` index signature).
+    ["--plan-gradient" as string]: planColorTokens.gradient,
   };
 
   return {

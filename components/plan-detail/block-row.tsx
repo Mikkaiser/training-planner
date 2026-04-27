@@ -6,28 +6,30 @@ import {
   getSubcompetenceTokens,
   subcompetenceChipStyle,
 } from "@/lib/constants/subcompetence-tokens";
+import { useExerciseCompletions } from "@/lib/hooks/use-exercise-completions";
 import { competitorBlockState } from "@/lib/plan-detail/progress";
 import type { BlockItem } from "@/lib/plan-detail/types";
 import { getSubcompetenceIcon } from "@/lib/training-plans/icons";
-import { useIsDark } from "@/lib/use-is-dark";
 import { usePlanDetailContext } from "@/components/plan-detail/plan-detail-context";
 import { ProgressDot } from "@/components/plan-detail/progress-dot";
 import { useSelection } from "@/components/plan-detail/selection-context";
 
 export function BlockRow({ block }: { block: BlockItem }) {
-  const { detail } = usePlanDetailContext();
+  const { detail, planId, selectedCompetitorId } = usePlanDetailContext();
   const { selection, selectBlock } = useSelection();
-  const isDark = useIsDark();
+  const { data: completionMap = new Map() } = useExerciseCompletions(
+    planId,
+    selectedCompetitorId
+  );
 
   const selected = selection?.id === block.id;
   const sc = block.subcompetence;
   const { Icon } = getSubcompetenceIcon(sc);
 
-  // Resolve a theme-aware subcompetence palette so the index chip and chip
-  // pill stay readable in both light and dark mode (particularly for lime
-  // #DBFD6B which is invisible on light surfaces when used raw).
-  const scTokens = getSubcompetenceTokens(sc?.color ?? null, isDark);
-  const chipStyle = subcompetenceChipStyle(sc?.color ?? null, isDark);
+  // Resolve a curated subcompetence palette so legacy lime stays readable on
+  // light glass surfaces.
+  const scTokens = getSubcompetenceTokens(sc?.color ?? null);
+  const chipStyle = subcompetenceChipStyle(sc?.color ?? null);
 
   const indexStyle: React.CSSProperties = scTokens.bg
     ? {
@@ -43,6 +45,12 @@ export function BlockRow({ block }: { block: BlockItem }) {
         borderColor: `${scTokens.color}66`,
         color: scTokens.fg,
       };
+
+  const exerciseIds = detail.exerciseIdsByBlock.get(block.id) ?? [];
+  const completedCount = exerciseIds.reduce((count, exerciseId) => {
+    const completion = completionMap.get(exerciseId);
+    return completion?.completed ? count + 1 : count;
+  }, 0);
 
   return (
     <motion.div
@@ -80,16 +88,24 @@ export function BlockRow({ block }: { block: BlockItem }) {
             {sc.name}
           </span>
         ) : null}
+        {exerciseIds.length > 0 ? (
+          <span className="text-[11px] font-body text-tp-muted">
+            {completedCount}/{exerciseIds.length}
+          </span>
+        ) : null}
       </div>
 
       <div className="plan-block-row__progress">
-        {detail.competitors.map((c) => {
-          const state = competitorBlockState(detail, c.id, block.id);
+        {(selectedCompetitorId
+          ? detail.competitors.filter((competitor) => competitor.id === selectedCompetitorId)
+          : detail.competitors
+        ).map((competitor) => {
+          const state = competitorBlockState(detail, competitor.id, block.id);
           return (
             <ProgressDot
-              key={c.id}
-              competitorName={c.full_name}
-              competitorColor={c.avatar_color}
+              key={competitor.id}
+              competitorName={competitor.full_name}
+              competitorColor={competitor.avatar_color}
               state={state}
             />
           );

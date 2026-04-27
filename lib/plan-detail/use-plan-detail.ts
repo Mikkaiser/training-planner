@@ -13,6 +13,7 @@ import {
   type Competitor,
   type CompetitorProgress,
   type Exercise,
+  type ExerciseCategory,
   type GateAssessment,
   type GateAttempt,
   type PhaseWithChildren,
@@ -54,6 +55,11 @@ type RawGate = {
 };
 
 type RawTopicWithGate = RawTopic & { gate: RawGate | null };
+
+type RawTopicExerciseCategory = {
+  topic_id: string;
+  exercise_categories: (ExerciseCategory & { exercises?: Exercise[] }) | null;
+};
 
 function toError(error: unknown, fallbackMessage: string): Error {
   if (error instanceof Error) return error;
@@ -185,12 +191,12 @@ async function fetchPlanDetail(planId: string): Promise<PlanDetail> {
   const blockIds = topicsRaw.map((t) => t.id);
   const gateIds = topicsRaw.map((t) => t.gate?.id).filter((x): x is string => Boolean(x));
 
-  const [exercisesRes, assessmentsRes] = await Promise.all([
+  const [exercisesRes, assessmentsRes, topicCategoryRes] = await Promise.all([
     blockIds.length
       ? supabase
           .from("exercises")
           .select(
-            "id,topic_id,subcompetence_id,title,description,difficulty,file_url,file_name,file_type,preview_url,preview_file_name,created_at"
+            "id,topic_id,subcompetence_id,exercise_category_id,title,description,difficulty,file_url,file_name,file_type,preview_url,preview_file_name,created_at"
           )
           .in("topic_id", blockIds)
           .order("created_at", { ascending: false })
@@ -211,6 +217,18 @@ async function fetchPlanDetail(planId: string): Promise<PlanDetail> {
           data: [] as GateAssessment[],
           error: null,
         }),
+    blockIds.length
+      ? supabase
+          .from("topic_exercise_categories")
+          .select(
+            "topic_id, exercise_categories(id,name,description,order_index, exercises(id,topic_id,subcompetence_id,exercise_category_id,title,description,difficulty,file_url,file_name,file_type,preview_url,preview_file_name,created_at))"
+          )
+          .in("topic_id", blockIds)
+      : Promise.resolve({
+          // Empty fallback preserves the expected `data` item shape.
+          data: [] as RawTopicExerciseCategory[],
+          error: null,
+        }),
   ]);
 
   if (exercisesRes.error) {
@@ -223,6 +241,13 @@ async function fetchPlanDetail(planId: string): Promise<PlanDetail> {
       assessmentsRes.error
     );
     throw toError(assessmentsRes.error, "Failed to load gate assessments.");
+  }
+  if (topicCategoryRes.error) {
+    console.error(
+      "[usePlanDetail] topic_exercise_categories query failed:",
+      topicCategoryRes.error
+    );
+    throw toError(topicCategoryRes.error, "Failed to load block exercise categories.");
   }
 
   // Build phase order using training_plan_phases.order_index.
@@ -341,6 +366,42 @@ async function fetchPlanDetail(planId: string): Promise<PlanDetail> {
     exercisesByBlock.set(ex.topic_id, list);
   }
 
+  const exerciseCategoriesByBlock = new Map<string, ExerciseCategory[]>();
+  const exerciseIdsByBlock = new Map<string, string[]>();
+  for (const row of (topicCategoryRes.data ?? []) as RawTopicExerciseCategory[]) {
+    const topicId = row.topic_id;
+    const category = row.exercise_categories;
+    if (!category) continue;
+
+    const sortedExercises = (category.exercises ?? [])
+      .slice()
+      .sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+    const categories = exerciseCategoriesByBlock.get(topicId) ?? [];
+    categories.push({
+      id: category.id,
+      name: category.name,
+      description: category.description,
+      order_index: category.order_index,
+      exercises: sortedExercises,
+    });
+    exerciseCategoriesByBlock.set(topicId, categories);
+  }
+
+  for (const [topicId, categories] of exerciseCategoriesByBlock.entries()) {
+    const sortedCategories = categories
+      .slice()
+      .sort((a, b) => a.order_index - b.order_index);
+    exerciseCategoriesByBlock.set(topicId, sortedCategories);
+
+    const uniqueExerciseIds = new Set<string>();
+    for (const category of sortedCategories) {
+      for (const exercise of category.exercises ?? []) {
+        uniqueExerciseIds.add(exercise.id);
+      }
+    }
+    exerciseIdsByBlock.set(topicId, [...uniqueExerciseIds]);
+  }
+
   const assessmentsByGate = new Map<string, GateAssessment[]>();
   // Supabase result typing is broader than this function needs; we constrain it here.
   for (const a of (assessmentsRes.data ?? []) as GateAssessment[]) {
@@ -390,6 +451,8 @@ async function fetchPlanDetail(planId: string): Promise<PlanDetail> {
     attemptsByGate,
     latestAttemptByGateAndCompetitor,
     exercisesByBlock,
+    exerciseCategoriesByBlock,
+    exerciseIdsByBlock,
     assessmentsByGate,
     orderedBlockIds,
     blocksById,

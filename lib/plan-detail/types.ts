@@ -82,6 +82,7 @@ export type Exercise = {
   id: string;
   topic_id: string | null;
   subcompetence_id: string | null;
+  exercise_category_id: string | null;
   title: string;
   description: string | null;
   difficulty: "foundation" | "intermediate" | "advanced" | null;
@@ -91,6 +92,28 @@ export type Exercise = {
   preview_url: string | null;
   preview_file_name: string | null;
   created_at: string;
+};
+
+export type ExerciseCategory = {
+  id: string;
+  name: string;
+  description: string | null;
+  order_index: number;
+  exercises?: Exercise[];
+};
+
+export type ExerciseCompletion = {
+  id: string;
+  exercise_id: string;
+  competitor_id: string;
+  plan_id: string;
+  completed: boolean;
+  completed_at: string | null;
+  marked_by: string | null;
+};
+
+export type TopicWithCategories = BlockItem & {
+  exercise_categories?: ExerciseCategory[];
 };
 
 export type GateAssessment = {
@@ -111,6 +134,8 @@ export type PlanDetail = {
   attemptsByGate: Map<string, GateAttempt[]>;
   latestAttemptByGateAndCompetitor: Map<string, GateAttempt>;
   exercisesByBlock: Map<string, Exercise[]>;
+  exerciseCategoriesByBlock: Map<string, ExerciseCategory[]>;
+  exerciseIdsByBlock: Map<string, string[]>;
   assessmentsByGate: Map<string, GateAssessment[]>;
   /** Flat, plan-ordered list of block IDs for "advance to next block" logic. */
   orderedBlockIds: string[];

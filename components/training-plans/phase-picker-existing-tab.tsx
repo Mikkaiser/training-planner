@@ -5,7 +5,6 @@ import { Check } from "lucide-react";
 import { subcompetenceChipStyle } from "@/lib/constants/subcompetence-tokens";
 import type { Phase } from "@/lib/training-plans/types";
 import { cn } from "@/lib/utils";
-import { useIsDark } from "@/lib/use-is-dark";
 import { Input } from "@/components/ui/input";
 
 type PhasePickerExistingTabProps = {
@@ -25,7 +24,6 @@ export function PhasePickerExistingTab({
   existingCardStyle,
   onAddExisting,
 }: PhasePickerExistingTabProps): React.JSX.Element {
-  const isDark = useIsDark();
 
   return (
     <div className="max-h-[420px] overflow-y-auto p-3">
@@ -60,7 +58,7 @@ export function PhasePickerExistingTab({
                       <span
                         key={s.id}
                         className="subcompetence-chip px-2 py-0.5 text-xs"
-                        style={subcompetenceChipStyle(s.color, isDark)}
+                        style={subcompetenceChipStyle(s.color)}
                       >
                         {s.name}
                       </span>

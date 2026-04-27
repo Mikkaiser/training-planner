@@ -1,14 +1,13 @@
 "use client";
 
-import { LogOut, Menu } from "lucide-react";
+import { LogOut, Plus } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { ThemedLogo } from "@/components/brand/themed-logo";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,23 +17,39 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import type { ProfileRole } from "@/types";
-import { SidebarNav } from "./sidebar-nav";
 import { cn } from "@/lib/utils";
 
 type Props = {
   fullName: string | null;
   email: string | null;
   avatarUrl: string | null;
-  role: ProfileRole | null;
 };
 
-export function AppHeader({ fullName, email, avatarUrl, role }: Props) {
+type TopNavSection = "plans" | "exercises" | "competitors";
+
+const TOP_NAV_ITEMS: Array<{ href: string; label: string; section: TopNavSection }> = [
+  { href: "/plans", label: "Plans", section: "plans" },
+  { href: "/exercises", label: "Exercises", section: "exercises" },
+  { href: "/competitors", label: "Competitors", section: "competitors" },
+];
+
+function getActiveSection(pathname: string): TopNavSection {
+  if (pathname === "/exercises" || pathname.startsWith("/exercises/")) {
+    return "exercises";
+  }
+
+  if (pathname === "/competitors" || pathname.startsWith("/competitors/")) {
+    return "competitors";
+  }
+
+  return "plans";
+}
+
+export function AppHeader({ fullName, email, avatarUrl }: Props) {
   const router = useRouter();
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const pathname = usePathname();
+  const activeSection = getActiveSection(pathname);
 
   async function signOut() {
     try {
@@ -56,43 +71,54 @@ export function AppHeader({ fullName, email, avatarUrl, role }: Props) {
       .map((p) => p[0]?.toUpperCase())
       .join("") ?? "U";
 
-  return (
-    <header className="app-header-bar sticky top-0 z-40">
-      <div className="mx-auto flex h-[70px] max-w-[1400px] items-center gap-3 px-[45px]">
-        <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
-          <SheetTrigger
-            render={
-              <Button
-                variant="outline"
-                size="icon"
-                className="md:hidden border-border bg-transparent"
-              >
-                <Menu className="h-[25px] w-[25px]" />
-              </Button>
-            }
-          />
-          <SheetContent side="left" className="w-[360px] p-0 text-tp-primary">
-            <SidebarNav
-              role={role}
-              fullName={fullName}
-              email={email}
-              avatarUrl={avatarUrl}
-              onNavigate={() => setMobileNavOpen(false)}
-            />
-          </SheetContent>
-        </Sheet>
+  const ctaBySection: Record<TopNavSection, { label: string; href: string }> = {
+    plans: { label: "+ New plan", href: "/plans/new" },
+    exercises: { label: "+ New exercise", href: "/exercises/upload" },
+    competitors: { label: "+ Add competitor", href: "/competitors" },
+  };
+  const cta = ctaBySection[activeSection];
 
+  return (
+    <header className="app-header-bar sticky top-0 z-40 font-body">
+      <div className="mx-auto flex h-[70px] max-w-[1400px] items-center gap-4 px-[45px]">
         <Link
-          href="/dashboard"
+          href="/plans"
           className="flex shrink-0 items-center py-1"
           aria-label="Training Planner home"
         >
           <ThemedLogo variant="headerMark" priority />
         </Link>
 
+        <nav className="ml-2 flex min-w-0 items-center gap-2">
+          {TOP_NAV_ITEMS.map((item) => {
+            const isActive = activeSection === item.section;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "app-top-nav-item rounded-[10px] px-3 py-2 text-sm transition",
+                  isActive ? "app-top-nav-item--active" : "app-top-nav-item--inactive"
+                )}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+
         <div className="min-w-0 flex-1" />
 
-        <ThemeToggle />
+        <Link
+          href={cta.href}
+          className={cn(
+            buttonVariants({ variant: "default", size: "sm" }),
+            "tp-nav-cta-btn hidden md:inline-flex"
+          )}
+        >
+          <Plus className="mr-1 h-4 w-4" />
+          {cta.label}
+        </Link>
 
         <DropdownMenu>
           <DropdownMenuTrigger

@@ -1,5 +1,5 @@
 ---
-description: Only use in tasks involving changes in the frontend - Training Planner complete design system — tokens, theming, glassmorphism, light/dark mode
+description: Only use in tasks involving changes in the frontend - Training Planner complete design system — tokens, theming, glassmorphism, light mode only
 alwaysApply: false
 ---
 # Training Planner Design System
@@ -7,63 +7,168 @@ alwaysApply: false
 ## ABSOLUTE RULES — never violate these
 
 - Never use hardcoded hex or rgba() color values in component files
-- Never define [data-theme="dark"] blocks outside globals.css
+- Never define theme blocks outside globals.css
 - Never use prefers-color-scheme media queries
 - Never write background: white, background: black, color: black, color: white
 - Never reproduce glass rgba() values inline — use CSS classes
 - Never create new CSS variables outside globals.css
-- Never add dark mode styles inside .tsx or .ts files
-- Dark mode is handled globally in globals.css only
+- This app is LIGHT MODE ONLY — no dark mode, no data-theme toggles, no dark variant classes
+- Never add theme-switching logic anywhere in the codebase
+
+---
+
+## TYPOGRAPHY
+
+### Font families
+- Display & headings: **Syne** (Google Fonts)
+- UI, body & labels: **Plus Jakarta Sans** (Google Fonts)
+
+Never use any other font family. Never use Inter, Roboto, Arial, or system-ui as a substitute.
+
+### Next.js font setup — globals.css or layout.tsx
+```ts
+import { Syne, Plus_Jakarta_Sans } from 'next/font/google'
+
+export const syne = Syne({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-display',
+  display: 'swap',
+})
+
+export const jakarta = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600'],
+  variable: '--font-body',
+  display: 'swap',
+})
+```
+
+Apply both variables on the root `<html>` element:
+```tsx
+<html className={`${syne.variable} ${jakarta.variable}`}>
+```
+
+### CSS variables
+- var(--font-display)  → Syne
+- var(--font-body)     → Plus Jakarta Sans
+
+### Scale and usage
+
+| Role              | Font           | Size  | Weight | Letter-spacing |
+|-------------------|----------------|-------|--------|----------------|
+| Page title        | Syne           | 22px  | 700    | -0.3px         |
+| Section heading   | Syne           | 18px  | 600    | -0.2px         |
+| Card title        | Syne           | 14px  | 600    | 0              |
+| Nav logo          | Syne           | 15px  | 700    | -0.3px         |
+| Body text         | Plus Jakarta   | 14px  | 400    | 0              |
+| UI labels/meta    | Plus Jakarta   | 12px  | 400    | 0              |
+| Muted/hint text   | Plus Jakarta   | 11px  | 300    | 0              |
+| Buttons           | Plus Jakarta   | 13px  | 500    | 0              |
+| Nav items         | Plus Jakarta   | 12px  | 400–500| 0              |
+
+### Rules
+- Syne is for headings and display text only — never for body copy or labels
+- Plus Jakarta Sans handles all UI text, inputs, badges, tables, metadata
+- Minimum font size: 11px — never go below this
+- Negative letter-spacing only on Syne at large sizes (18px+)
+- Line height: 1.5 for body, 1.2 for headings
+
+### Tailwind config
+```js
+fontFamily: {
+  display: ['var(--font-display)', 'sans-serif'],
+  body: ['var(--font-body)', 'sans-serif'],
+}
+```
+
+Usage: `font-display` for Syne, `font-body` for Jakarta Sans.
 
 ---
 
 ## CSS VARIABLES — always reference these
 
 ### Text
-- var(--color-text-primary)    → #111827 light / #EAF2EF dark
-- var(--color-text-secondary)  → #374151 light / rgba(234,242,239,0.65) dark
-- var(--color-text-muted)      → #6B7280 light / rgba(234,242,239,0.40) dark
-- var(--color-text-accent)     → #1d4ed8 light / #60a5fa dark
+- var(--color-text-primary)    → #111827
+- var(--color-text-secondary)  → #374151
+- var(--color-text-muted)      → #6B7280
+- var(--color-text-accent)     → #0A7A52
 
-### Accent
-- var(--color-accent)          → #2563EB both modes
-- var(--color-accent-hover)    → #1d4ed8 both modes
-- var(--color-accent-muted)    → rgba(37,99,235,0.09) light / rgba(37,99,235,0.12) dark
-- var(--color-border)          → rgba(37,99,235,0.10) light / rgba(37,99,235,0.16) dark
-- var(--color-border-hover)    → rgba(37,99,235,0.22) light / rgba(37,99,235,0.32) dark
-- var(--color-border-subtle)   → rgba(37,99,235,0.06) light / rgba(37,99,235,0.10) dark
+### Accent (green-teal system)
+- var(--color-accent)          → #1DBF8A
+- var(--color-accent-dark)     → #0D5A46
+- var(--color-accent-hover)    → #17A87A
+- var(--color-accent-muted)    → rgba(29,191,138,0.09)
+- var(--color-border)          → rgba(29,191,138,0.18)
+- var(--color-border-hover)    → rgba(29,191,138,0.32)
+- var(--color-border-subtle)   → rgba(29,191,138,0.08)
 
 ### Surfaces
-- var(--color-base)            → #EAF2EF light / #181616 dark
-- var(--color-surface)         → #f7fbff light / #2D2B2B dark
-- var(--color-surface-raised)  → #ffffff light / #1f1d1d dark
+- var(--color-base)            → #EAF7F2   (page background — mint mist)
+- var(--color-surface)         → rgba(255,255,255,0.72)   (frosted glass cards)
+- var(--color-surface-raised)  → rgba(255,255,255,0.92)   (elevated elements)
 
 ### Semantic
-- var(--color-positive)        → #1a8a5a light / #52FFBA dark
-- var(--color-positive-bg)     → rgba(82,255,186,0.18) light / rgba(82,255,186,0.10) dark
-- var(--color-positive-border) → rgba(82,255,186,0.40) light / rgba(82,255,186,0.25) dark
-- var(--color-negative)        → #d63a3a light / #FF6060 dark
-- var(--color-negative-bg)     → rgba(255,96,96,0.12) light / rgba(255,96,96,0.10) dark
-- var(--color-negative-border) → rgba(255,96,96,0.30) light / rgba(255,96,96,0.25) dark
+- var(--color-positive)        → #0A7A52
+- var(--color-positive-bg)     → rgba(29,191,138,0.12)
+- var(--color-positive-border) → rgba(29,191,138,0.28)
+- var(--color-negative)        → #B8390A
+- var(--color-negative-bg)     → rgba(255,123,84,0.12)
+- var(--color-negative-border) → rgba(255,123,84,0.28)
+- var(--color-warning)         → #7A5A00
+- var(--color-warning-bg)      → rgba(255,209,102,0.18)
+- var(--color-warning-border)  → rgba(255,209,102,0.40)
 
 ### Buttons and interaction
-- var(--cta-shadow)
-- var(--cta-shadow-hover)
-- var(--btn-primary-hover-bg)
-- var(--btn-primary-hover-shadow)
-- var(--btn-ghost-hover-bg)
-- var(--btn-ghost-hover-border)
-- var(--btn-ghost-hover-fg)
-- var(--nav-hover-bg)
-- var(--nav-hover-fg)
-- var(--hover-tint-bg)
-- var(--sidebar-bg)
-- var(--sidebar-border)
-- var(--stat-number-color)
+- var(--cta-shadow)            → 0 3px 14px rgba(13,90,70,0.28)
+- var(--cta-shadow-hover)      → 0 5px 20px rgba(13,90,70,0.38)
+- var(--btn-primary-hover-bg)  → #17A87A
+- var(--btn-ghost-hover-bg)    → rgba(29,191,138,0.10)
+- var(--btn-ghost-hover-border)→ rgba(29,191,138,0.30)
+- var(--btn-ghost-hover-fg)    → #0D5A46
+- var(--nav-hover-bg)          → rgba(255,255,255,0.15)
+- var(--hover-tint-bg)         → rgba(29,191,138,0.06)
+- var(--stat-number-color)     → #0D5A46
 
 ---
 
-## TAILWIND UTILITY CLASSES — use instead of hardcoded colors
+## COLOR PALETTE — named tokens
+
+| Name    | Hex       | Role                          |
+|---------|-----------|-------------------------------|
+| Forest  | #0D5A46   | Primary dark anchor, headings |
+| Mint    | #1DBF8A   | Primary action accent         |
+| Jade    | #34c99a   | Mid-range tint, hover states  |
+| Foam    | #a8f0da   | Light tint, chip backgrounds  |
+| Mist    | #EAF7F2   | Page background               |
+| Iris    | #6385FF   | Secondary accent, plan colors |
+| Coral   | #FF7B54   | Warning / plan color          |
+| Gold    | #FFD166   | Caution / plan color          |
+| Stone   | #F3F4F6   | Neutral surface               |
+| Ink     | #111827   | Body text                     |
+
+---
+
+## GRADIENT LIBRARY — three defined gradients only
+
+### Primary — header navigation, primary CTAs
+  background: linear-gradient(135deg, #0D5A46 0%, #1DBF8A 45%, #6385FF 100%)
+  Use for: app header bar, primary call-to-action buttons
+
+### Aurora — hero cards, featured elements
+  background: linear-gradient(135deg, #1DBF8A 0%, #6385FF 100%)
+  Use for: hero stat cards, featured plan accents, avatar backgrounds
+
+### Soft — background blobs, decorative areas
+  background: linear-gradient(135deg, #34c99a 0%, #a8f0da 100%)
+  Use for: background blob elements, decorative sections
+
+Never create new gradients outside these three.
+Never use gradients inline in component files — reference CSS variables only.
+
+---
+
+## TAILWIND UTILITY CLASSES
 
 - text-tp-primary       → var(--color-text-primary)
 - text-tp-secondary     → var(--color-text-secondary)
@@ -77,36 +182,44 @@ alwaysApply: false
 
 ## CSS CLASSES — always use, never reproduce inline
 
-### Glass surfaces
-- glass-panel           → icy blue tinted glass, light mode default
-- glass-panel--strong   → stronger opacity, sidebar and modals
-- glass-panel--subtle   → lighter opacity, background areas
-- glass-panel--login    → login card glass
+### Glass surfaces (frosted — more opaque, less blur than previous system)
+- glass-panel           → rgba(255,255,255,0.72), backdrop-filter blur(12px), border rgba(255,255,255,0.90)
+- glass-panel--strong   → rgba(255,255,255,0.86), backdrop-filter blur(16px) — sidebar, modals
+- glass-panel--subtle   → rgba(255,255,255,0.50), backdrop-filter blur(8px) — background areas
 - glass-input           → form input glass styling
 - glass-tooltip         → tooltip/popover glass styling
 
+### Navigation
+- app-header-bar        → Primary gradient header (Forest → Mint → Iris), height 52px
+- nav-item              → base nav link on gradient header, white text at 0.75 opacity
+- nav-item-active       → rgba(255,255,255,0.18) bg, full white text, blur(8px), white border 0.25 opacity
+- nav-item-hover        → var(--nav-hover-bg)
+
 ### Badges and chips
-- badge-status-active   → green, active status
-- badge-status-draft    → blue, draft status
-- badge-status-completed → blue, completed status
-- badge-status-error    → red, error status
+- badge-status-active   → Mint tint bg, Forest text
+- badge-status-draft    → Iris tint bg, deep iris text
+- badge-status-completed → Foam bg, Forest text
+- badge-status-error    → Coral tint bg, dark coral text
 - subcompetence-chip    → uses --sc-bg, --sc-border, --sc-fg variables
 
 ### Layout
-- app-header-bar        → header topbar glass
-- sidebar-nav-link      → nav item base styles
-- nav-item-active       → active nav item styles
-- hover-tint            → generic interactive hover transition
+- sidebar-nav-link      → nav item base styles (if sidebar used in sub-views)
+- hover-tint            → var(--hover-tint-bg) transition
 - modal-backdrop        → modal overlay backdrop
+
+### Plan cards
+- tp-plan-card          → glass-panel, border-radius 14px, top accent bar 4px
+- tp-plan-card-accent   → top 4px bar using plan color gradient
+- tp-plan-status-pill   → status badge using badge-status-* classes
+- tp-plan-phase-badge   → small chip showing phase count
 
 ### Plan editor
 - tp-plan-left          → left form panel
 - tp-plan-right         → right canvas panel
 - tp-plan-left-header   → sticky panel header
 - tp-plan-phase-card    → phase card in left panel
-- tp-plan-status-pill   → status toggle pill
 - tp-add-phase-btn      → Add Phase button
-- tp-plan-save-btn      → Save button
+- tp-plan-save-btn      → Save button (Primary gradient bg)
 - tp-plan-color-swatch  → color picker swatch
 - tp-plan-toggle-btn    → horizontal/vertical toggle
 - tp-phase-block        → Gantt phase block
@@ -122,9 +235,28 @@ alwaysApply: false
 - plan-progress-dot     → competitor progress dot
 - plan-status-chip      → gate pass/fail chip
 
+### Competitor cards
+- comp-card             → glass-panel, flex row, avatar + details
+- comp-avatar           → 36px circle, Aurora gradient background, white text
+- comp-result-badge     → small chip, semantic color per result tier
+
 ### Skeleton
 - skeleton-shimmer      → shimmer animation base
 - skeleton-card         → card-shaped skeleton
+
+---
+
+## NAVIGATION STRUCTURE
+
+Top navigation bar using Primary gradient. Four items:
+
+1. Plans       — main list of training plans
+2. Phases      — phase library (cross-plan view)
+3. Exercises   — exercise library
+4. Competitors — competitor profiles and tracking
+
+No sidebar. No dashboard. Entry point is always Plans list.
+Breadcrumb navigation used for drill-down: Plans › Plan name › Phase name
 
 ---
 
@@ -133,9 +265,17 @@ alwaysApply: false
 Never hardcode plan color hex values in components.
 Always use PLAN_COLORS[plan.color].border / .bg / .accent / .glow etc.
 
-Available keys: red, blue, yellow, green, purple, orange
+Available keys: mint, iris, coral, gold, purple, teal
 
-Each key provides: label, border, bg, bgStrong, chip, chipBorder, chipText, accent, accentHover, glow
+Each key provides: label, border, bg, bgStrong, chip, chipBorder, chipText, accent, accentHover, gradient
+
+Gradient values per key:
+- mint:   linear-gradient(90deg, #1DBF8A, #34c99a)
+- iris:   linear-gradient(90deg, #6385FF, #a78bfa)
+- coral:  linear-gradient(90deg, #FF7B54, #FFD166)
+- gold:   linear-gradient(90deg, #FFD166, #FFAA33)
+- purple: linear-gradient(90deg, #a78bfa, #7C6AF7)
+- teal:   linear-gradient(90deg, #34c99a, #0D5A46)
 
 Set as CSS custom properties on the plan root element:
 - --plan-accent
@@ -146,217 +286,145 @@ Set as CSS custom properties on the plan root element:
 - --plan-chip
 - --plan-chip-border
 - --plan-chip-text
-- --plan-glow
-- --plan-tint
-- --plan-tint-strong
-- --plan-card-glow
+- --plan-gradient
 
 ---
 
 ## SUBCOMPETENCE COLORS — import from lib/constants/subcompetenceTokens
 
 Never hardcode subcompetence rgba() values inline.
-Use getSubcompetenceTokens(color, isDark) and set --sc-bg, --sc-border, --sc-fg on the component root.
-
-### Light mode values
+Use getSubcompetenceTokens(color) and set --sc-bg, --sc-border, --sc-fg on the component root.
 
 Analysis & Design #7C6AF7
   bg: rgba(124,106,247,0.12)
-  border: rgba(124,106,247,0.40)
+  border: rgba(124,106,247,0.35)
   fg: #5b47e0
 
-Development #DBFD6B — WARNING: raw color is invisible on light backgrounds
-  bg: rgba(150,180,0,0.12)
-  border: rgba(150,180,0,0.40)
-  fg: #5a6e00
-  — this is dark olive, derived by darkening #DBFD6B until
-    it reaches 4.5:1 contrast ratio on white/icy blue surfaces.
-    It is the only accessible text representation of the lime
-    color on light backgrounds. Never substitute it with the
-    raw #DBFD6B or any lighter yellow-green value in light mode.
-    In dark mode the raw #DBFD6B is used directly since contrast
-    is reversed and the lime reads clearly on dark surfaces.
+Development #1DBF8A
+  bg: rgba(29,191,138,0.12)
+  border: rgba(29,191,138,0.35)
+  fg: #0A7A52
 
-Testing #00a878
-  bg: rgba(0,168,120,0.12)
-  border: rgba(0,168,120,0.40)
-  fg: #007a58
+Testing #0D5A46
+  bg: rgba(13,90,70,0.10)
+  border: rgba(13,90,70,0.28)
+  fg: #0D5A46
 
-Transversal #FB923C
-  bg: rgba(251,146,60,0.12)
-  border: rgba(251,146,60,0.40)
-  fg: #c45e00
-
-### Dark mode values
-
-Analysis & Design #7C6AF7
-  bg: rgba(124,106,247,0.12)
-  border: rgba(124,106,247,0.30)
-  fg: #a78bfa
-
-Development #DBFD6B — raw color IS readable on dark backgrounds
-  bg: rgba(219,253,107,0.10)
-  border: rgba(219,253,107,0.28)
-  fg: #DBFD6B  full color fine in dark mode
-
-Testing #00a878
-  bg: rgba(0,168,120,0.10)
-  border: rgba(0,168,120,0.28)
-  fg: #00a878
-
-Transversal #FB923C
-  bg: rgba(251,146,60,0.10)
-  border: rgba(251,146,60,0.28)
-  fg: #fb923c
+Transversal #FF7B54
+  bg: rgba(255,123,84,0.12)
+  border: rgba(255,123,84,0.35)
+  fg: #B8390A
 
 ---
 
-## LIGHT MODE RULES
-
-### Surface hierarchy — each layer must be visually distinct
+## SURFACE HIERARCHY — light mode only
 
 Layer 0 — Page background
-  var(--color-base) → #EAF2EF mint cream
-  Blobs animate on top of this layer
+  var(--color-base) → #EAF7F2 mint mist
+  Soft gradient blobs animate on top using Soft gradient
 
-Layer 1 — Glass panels, sidebar, main panels
+Layer 1 — Glass panels, main content areas
   class: glass-panel
-  rgba(179,215,255,0.45) icy blue tint plus blur
-  border: rgba(37,99,235,0.20)
+  rgba(255,255,255,0.72) frosted white, blur(12px)
+  border: rgba(255,255,255,0.90) — bright white border for frosted effect
 
-Layer 2 — Raised surfaces, cards inside panels, inputs
-  rgba(255,255,255,0.60) to rgba(255,255,255,0.80)
-  Whiter than glass panel to create depth
+Layer 2 — Cards inside panels, inputs
+  rgba(255,255,255,0.86)
+  Whiter than panel to create depth
 
 Layer 3 — Elevated elements, dropdowns, tooltips, popovers
-  rgba(255,255,255,0.92) or var(--color-surface-raised)
-  Most opaque layer, clearly above everything
-
-### Text contrast — WCAG AA minimum 4.5:1
-
-- Headings: var(--color-text-primary) → #111827
-- Body: var(--color-text-secondary) → #374151
-- Muted: var(--color-text-muted) → #6B7280
-- Accent: var(--color-text-accent) → #1d4ed8
-
-Never in light mode:
-- White or near-white text
-- rgba(255,255,255,0.X) as text color
-- Light gray above #9CA3AF as body text
-- Raw #DBFD6B as text color
-
-### Interactive states
-
-Active nav item:
-  background rgba(37,99,235,0.12), color #1d4ed8, font-weight 600
-
-Inactive nav hover:
-  background rgba(37,99,235,0.07), color #374151
-
-Primary button:
-  background #2563EB, color #ffffff
-  box-shadow var(--cta-shadow)
-  hover bg var(--btn-primary-hover-bg)
-
-Ghost button:
-  background var(--color-accent-muted)
-  border rgba(37,99,235,0.20)
-  color #2563EB
-  hover var(--btn-ghost-hover-bg)
-
-### Glassmorphism requirements
-
-- Blobs MUST be present and visible — they provide the blur source
-- Every glass surface MUST have semi-transparent background, backdropFilter blur() AND -webkit-backdropFilter blur(), visible border at 0.15–0.25 opacity, box-shadow for depth
-- Glass surfaces MUST NOT have background transparent, background opaque color, overflow hidden on parent clipping blur, transform or filter on parent which breaks backdrop-filter
-
----
-
-## DARK MODE RULES
-
-### Surface hierarchy
-
-Layer 0 — Page background
-  var(--color-base) → #181616 carbon black
-  Purple/violet blobs at low opacity
-
-Layer 1 — Glass panels
-  class: glass-panel
-  rgba(24,22,22,0.60) plus blur
-  border: rgba(37,99,235,0.22)
-
-Layer 2 — Raised surfaces
-  rgba(255,255,255,0.04) to rgba(255,255,255,0.06)
-  Slightly lighter than panel
-
-Layer 3 — Elevated elements
-  rgba(24,22,22,0.92)
+  rgba(255,255,255,0.95) or var(--color-surface-raised)
   Most opaque layer
 
-### Text contrast
-
-- Primary: var(--color-text-primary) → #EAF2EF
-- Secondary: var(--color-text-secondary) → rgba(234,242,239,0.65)
-- Muted: var(--color-text-muted) → rgba(234,242,239,0.40)
-- Accent: var(--color-text-accent) → #60a5fa
-
-Never in dark mode:
-- Dark text like #111827, #374151, #6B7280 — invisible
-- Pure black #000000
-- rgba(0,0,0,...) as text color
-
-### Interactive states
-
-Active nav item:
-  background rgba(37,99,235,0.12), color #60a5fa, font-weight 600
-
-Inactive nav hover:
-  background rgba(37,99,235,0.12), color rgba(234,242,239,0.70)
-
-Primary button:
-  background #2563EB same as light
-  box-shadow var(--cta-shadow) stronger glow
-
-Stat numbers:
-  text-shadow 0 0 12px rgba(37,99,235,0.35)
-  Only stat numbers get glow — never body text
-
-### Glassmorphism requirements
-
-- Blobs are purple/violet tinted and must be visible through panels
-- Glass border opacity slightly higher than light mode: 0.22 vs 0.20
-- Never add white backgrounds — max rgba(255,255,255,0.06) for Layer 2
-- Anything more opaque kills glass depth
-- Regular body text never gets glow
+Layer 4 — Navigation header
+  Primary gradient: linear-gradient(135deg, #0D5A46 0%, #1DBF8A 45%, #6385FF 100%)
+  Always sits at top, always full width
 
 ---
 
-## THEME TOGGLE IMPLEMENTATION
+## TEXT CONTRAST — WCAG AA minimum 4.5:1
 
-- Toggle: set/remove data-theme="dark" on document.documentElement
-- Persist: localStorage key "tp-theme"
-- Anti-flash: read localStorage in head before first paint
-- Icon: Sun for light active, Moon for dark active, both from lucide-react
-- After toggling all surfaces must switch — if any surface does not switch it has a hardcoded color, find and fix it
+- Headings: var(--color-text-primary) → #111827
+- Section titles: var(--color-accent-dark) → #0D5A46
+- Body: var(--color-text-secondary) → #374151
+- Muted: var(--color-text-muted) → #6B7280
+- Accent: var(--color-text-accent) → #0A7A52
+
+Never:
+- White or near-white text on light backgrounds
+- rgba(255,255,255,0.X) as text color outside the nav header
+- Light gray above #9CA3AF as body text
+
+---
+
+## INTERACTIVE STATES
+
+Active nav item (on gradient header):
+  background rgba(255,255,255,0.18), color #ffffff, font-weight 500
+  backdrop-filter blur(8px), border 1px solid rgba(255,255,255,0.25)
+
+Inactive nav hover (on gradient header):
+  background rgba(255,255,255,0.10), color rgba(255,255,255,0.90)
+
+Primary button:
+  background: Primary gradient, color #ffffff
+  box-shadow: var(--cta-shadow)
+  hover: var(--btn-primary-hover-bg), var(--cta-shadow-hover)
+
+Ghost button:
+  background: var(--color-accent-muted)
+  border: var(--color-border)
+  color: var(--color-accent-dark)
+  hover: var(--btn-ghost-hover-bg), var(--btn-ghost-hover-border)
+
+---
+
+## GLASSMORPHISM REQUIREMENTS
+
+- Background blobs MUST be present — they provide color context behind the frosted glass
+- Every glass surface MUST have: semi-transparent background, backdrop-filter blur(), -webkit-backdrop-filter blur(), white-tinted border, subtle box-shadow
+- Glass opacity is higher than previous system (0.72 vs 0.45) — this is intentional for the frosted style
+- Glass surfaces MUST NOT have: fully transparent background, fully opaque background, overflow:hidden on parent clipping blur, transform or filter on parent breaking backdrop-filter
+
+---
+
+## REMOVED — dark mode
+
+Dark mode has been fully removed from this design system.
+
+Remove from globals.css:
+- All [data-theme="dark"] blocks
+- All prefers-color-scheme blocks
+- All dark variant CSS variables
+- Theme toggle component and its localStorage logic
+
+Remove from components:
+- ThemeToggle component
+- Any useTheme hooks
+- Any dark: Tailwind variants
+- tp-theme localStorage key
 
 ---
 
 ## FORBIDDEN PATTERNS — never generate these
 
-- color: #111827                    → use var(--color-text-primary)
-- color: #374151                    → use var(--color-text-secondary)
-- color: #6B7280                    → use var(--color-text-muted)
-- color: #2563eb inline             → use var(--color-accent)
-- color: #1d4ed8 inline             → use var(--color-accent-hover)
-- background: rgba(37,99,235,...)   → use CSS variable
-- background: rgba(179,215,255,...) → use glass-panel class
-- background: rgba(24,22,22,...)    → use glass-panel class
-- background: white                 → use var(--color-surface-raised)
-- background: black                 → use var(--color-base)
-- color: white                      → use var(--color-text-primary)
-- color: black                      → use var(--color-text-primary)
-- prefers-color-scheme              → never, use data-theme only
-- [data-theme="dark"] in tsx/ts     → move to globals.css
+- color: #111827 inline              → use var(--color-text-primary)
+- color: #374151 inline              → use var(--color-text-secondary)
+- color: #6B7280 inline              → use var(--color-text-muted)
+- color: #1DBF8A inline              → use var(--color-accent)
+- color: #0D5A46 inline              → use var(--color-accent-dark)
+- background: rgba(29,191,138,...) inline → use CSS variable
+- background: rgba(255,255,255,...) inline → use glass-panel class
+- background: white                  → use var(--color-surface-raised)
+- color: white outside nav header    → use var(--color-text-primary)
+- prefers-color-scheme               → never, app is light-only
+- [data-theme="dark"]                → fully removed
+- data-theme attribute anywhere      → fully removed
+- Dark mode Tailwind variants (dark:) → fully removed
+- new gradient values not in library → use only the three defined gradients
+- font-family: Inter, Roboto, Arial, system-ui → use var(--font-display) or var(--font-body)
+- Syne on body text or labels              → Syne is display/headings only
+- font-size below 11px                     → minimum is 11px
 
 ---
 
@@ -369,33 +437,26 @@ Stat numbers:
 
 ---
 
-## SKELETON LOADING
-
-- Always use class skeleton-shimmer from globals.css
-- Never recreate shimmer animation inline
-- Use skeleton-card for card-shaped placeholders
-- Page-level skeletons live in components/shared/skeletons/
-- Show skeleton when TanStack Query isLoading is true
-- Swap entire content area for skeleton — never conditional inline skeletons except for detail panels loaded after click
-
----
-
 ## VERIFICATION CHECKLIST
 
-- Toggle dark mode — no text disappears
-- Toggle light mode — no text disappears
-- Glass panels show blur in both modes
-- Background blobs visible through panels in both modes
-- Development chip uses #5a6e00 in light mode
-- Development chip uses #DBFD6B in dark mode
-- Active nav readable in both modes
-- Primary buttons readable in both modes
-- All badge/chip variants readable in both modes
-- Stat numbers visible in both modes
-- Input placeholders visible in both modes
+- Glass panels show blur against page background
+- Background blobs visible through panels
+- Nav header shows Primary gradient (Forest → Mint → Iris)
+- Active nav item has frosted white pill style
+- Primary buttons use Primary gradient with correct shadow
+- All badge/chip variants readable
+- Stat numbers use var(--stat-number-color) → #0D5A46
+- Input placeholders visible
 - No element has same color as its background
 - No hardcoded hex in any tsx or ts file outside constants
-- grep for #2563 in components/ returns zero results
+- grep for #2563 in components/ returns zero results (old blue accent gone)
 - grep for #111827 in components/ returns zero results
-- grep for rgba(179,215 in components/ returns zero results
-- grep for rgba(24,22,22 in components/ returns zero results
+- grep for rgba(179,215 in components/ returns zero results (old glass gone)
+- grep for data-theme in components/ returns zero results
+- grep for dark: in components/ returns zero results
+- ThemeToggle component deleted
+- localStorage tp-theme key removed
+- Syne loads correctly on all headings and nav logo
+- Plus Jakarta Sans loads correctly on all body/UI text
+- No fallback system fonts visible on first paint
+- grep for font-family: Inter in components/ returns zero results

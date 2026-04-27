@@ -8,7 +8,6 @@ import { format, parseISO } from "date-fns";
 import { getSubcompetenceTokens } from "@/lib/constants/subcompetence-tokens";
 import { getLatestAttempt, initialsFromName } from "@/lib/plan-detail/progress";
 import type { GateItem } from "@/lib/plan-detail/types";
-import { useIsDark } from "@/lib/use-is-dark";
 import { BlockDetailGateHistory } from "@/components/plan-detail/block-detail-gate-history";
 import { usePlanDetailContext } from "@/components/plan-detail/plan-detail-context";
 import { useSaveGateAttempt } from "@/lib/hooks/use-save-gate-attempt";
@@ -24,11 +23,10 @@ export function BlockDetailGateCard({
   subcompetenceColor,
 }: BlockDetailGateCardProps): React.JSX.Element {
   const { detail, tokens } = usePlanDetailContext();
-  const isDark = useIsDark();
   const [expandedFor, setExpandedFor] = useState<string | null>(null);
   const [draftByCompetitor, setDraftByCompetitor] = useState<Record<string, string>>({});
 
-  const scTokens = getSubcompetenceTokens(subcompetenceColor, isDark);
+  const scTokens = getSubcompetenceTokens(subcompetenceColor);
   const scBorder = scTokens.border || scTokens.fg;
 
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);

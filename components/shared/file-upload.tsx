@@ -40,7 +40,7 @@ export function FileUpload({
   disabled = false,
   planColor,
 }: FileUploadProps) {
-  const tokens: PlanColorTokens = PLAN_COLORS[planColor ?? "blue"];
+  const tokens: PlanColorTokens = PLAN_COLORS[planColor ?? "iris"];
   const {
     inputRef,
     state,

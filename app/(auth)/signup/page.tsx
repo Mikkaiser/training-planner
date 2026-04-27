@@ -6,7 +6,7 @@ export default function SignupPage({
   searchParams?: Record<string, string | string[] | undefined>;
 }) {
   const next =
-    typeof searchParams?.next === "string" ? searchParams?.next : "/dashboard";
+    typeof searchParams?.next === "string" ? searchParams?.next : "/plans";
 
   return (
     <div className="mx-auto w-full max-w-lg">

@@ -6,7 +6,7 @@ export default function TrainingPlanEditPage({
   params: { id: string };
 }) {
   return (
-    <div className="-mx-[45px] -my-[40px] flex h-full min-h-0 flex-col overflow-hidden">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden">
       <TrainingPlanEditor planId={params.id} />
     </div>
   );

@@ -9,7 +9,7 @@ export function AppFooter() {
     <footer className="mt-auto border-t border-border py-6">
       <div className="mx-auto flex max-w-screen-2xl flex-col items-center justify-between gap-4 px-4 sm:flex-row sm:gap-6">
         <Link
-          href="/dashboard"
+          href="/plans"
           className="flex items-center transition-opacity hover:opacity-90"
           aria-label="Training Planner home"
         >

@@ -1,10 +1,10 @@
 export type PlanColorKey =
-  | "red"
-  | "blue"
-  | "yellow"
-  | "green"
+  | "mint"
+  | "iris"
+  | "coral"
+  | "gold"
   | "purple"
-  | "orange";
+  | "teal";
 
 export type PlanColorTokens = {
   label: string;
@@ -17,104 +17,116 @@ export type PlanColorTokens = {
   accent: string;
   accentHover: string;
   glow: string;
+  gradient: string;
 };
 
 export const PLAN_COLORS: Record<PlanColorKey, PlanColorTokens> = {
-  red: {
-    label: "Red",
-    border: "#ef4444",
-    bg: "rgba(239,68,68,0.06)",
-    bgStrong: "rgba(239,68,68,0.12)",
-    chip: "rgba(239,68,68,0.10)",
-    chipBorder: "rgba(239,68,68,0.35)",
-    chipText: "#b91c1c",
-    accent: "#dc2626",
-    accentHover: "#b91c1c",
-    glow: "rgba(239,68,68,0.15)",
+  mint: {
+    label: "Mint",
+    border: "#1DBF8A",
+    bg: "rgba(29,191,138,0.06)",
+    bgStrong: "rgba(29,191,138,0.12)",
+    chip: "rgba(29,191,138,0.10)",
+    chipBorder: "rgba(29,191,138,0.35)",
+    chipText: "#0A7A52",
+    accent: "#1DBF8A",
+    accentHover: "#17A87A",
+    glow: "rgba(29,191,138,0.15)",
+    gradient: "linear-gradient(90deg, #1DBF8A, #34c99a)",
   },
-  blue: {
-    label: "Blue",
-    border: "#3b82f6",
-    bg: "rgba(59,130,246,0.06)",
-    bgStrong: "rgba(59,130,246,0.12)",
-    chip: "rgba(59,130,246,0.10)",
-    chipBorder: "rgba(59,130,246,0.35)",
-    chipText: "#1d4ed8",
-    accent: "#2563eb",
-    accentHover: "#1d4ed8",
-    glow: "rgba(59,130,246,0.15)",
+  iris: {
+    label: "Iris",
+    border: "#6385FF",
+    bg: "rgba(99,133,255,0.06)",
+    bgStrong: "rgba(99,133,255,0.12)",
+    chip: "rgba(99,133,255,0.10)",
+    chipBorder: "rgba(99,133,255,0.35)",
+    chipText: "#3f5bd8",
+    accent: "#6385FF",
+    accentHover: "#4f6fe6",
+    glow: "rgba(99,133,255,0.15)",
+    gradient: "linear-gradient(90deg, #6385FF, #a78bfa)",
   },
-  yellow: {
-    label: "Yellow",
-    border: "#eab308",
-    bg: "rgba(234,179,8,0.06)",
-    bgStrong: "rgba(234,179,8,0.12)",
-    chip: "rgba(234,179,8,0.10)",
-    chipBorder: "rgba(234,179,8,0.35)",
-    chipText: "#854d0e",
-    accent: "#ca8a04",
-    accentHover: "#a16207",
-    glow: "rgba(234,179,8,0.15)",
+  coral: {
+    label: "Coral",
+    border: "#FF7B54",
+    bg: "rgba(255,123,84,0.06)",
+    bgStrong: "rgba(255,123,84,0.12)",
+    chip: "rgba(255,123,84,0.10)",
+    chipBorder: "rgba(255,123,84,0.35)",
+    chipText: "#B8390A",
+    accent: "#FF7B54",
+    accentHover: "#E96A45",
+    glow: "rgba(255,123,84,0.15)",
+    gradient: "linear-gradient(90deg, #FF7B54, #FFD166)",
   },
-  green: {
-    label: "Green",
-    border: "#22c55e",
-    bg: "rgba(34,197,94,0.06)",
-    bgStrong: "rgba(34,197,94,0.12)",
-    chip: "rgba(34,197,94,0.10)",
-    chipBorder: "rgba(34,197,94,0.35)",
-    chipText: "#15803d",
-    accent: "#16a34a",
-    accentHover: "#15803d",
-    glow: "rgba(34,197,94,0.15)",
+  gold: {
+    label: "Gold",
+    border: "#FFD166",
+    bg: "rgba(255,209,102,0.10)",
+    bgStrong: "rgba(255,209,102,0.18)",
+    chip: "rgba(255,209,102,0.18)",
+    chipBorder: "rgba(255,209,102,0.40)",
+    chipText: "#7A5A00",
+    accent: "#FFD166",
+    accentHover: "#FFAA33",
+    glow: "rgba(255,209,102,0.18)",
+    gradient: "linear-gradient(90deg, #FFD166, #FFAA33)",
   },
   purple: {
     label: "Purple",
-    border: "#a855f7",
-    bg: "rgba(168,85,247,0.06)",
-    bgStrong: "rgba(168,85,247,0.12)",
-    chip: "rgba(168,85,247,0.10)",
-    chipBorder: "rgba(168,85,247,0.35)",
-    chipText: "#7e22ce",
-    accent: "#9333ea",
-    accentHover: "#7e22ce",
-    glow: "rgba(168,85,247,0.15)",
+    border: "#a78bfa",
+    bg: "rgba(167,139,250,0.06)",
+    bgStrong: "rgba(167,139,250,0.12)",
+    chip: "rgba(167,139,250,0.10)",
+    chipBorder: "rgba(167,139,250,0.35)",
+    chipText: "#5b47e0",
+    accent: "#a78bfa",
+    accentHover: "#7C6AF7",
+    glow: "rgba(167,139,250,0.15)",
+    gradient: "linear-gradient(90deg, #a78bfa, #7C6AF7)",
   },
-  orange: {
-    label: "Orange",
-    border: "#f97316",
-    bg: "rgba(249,115,22,0.06)",
-    bgStrong: "rgba(249,115,22,0.12)",
-    chip: "rgba(249,115,22,0.10)",
-    chipBorder: "rgba(249,115,22,0.35)",
-    chipText: "#c2410c",
-    accent: "#ea580c",
-    accentHover: "#c2410c",
-    glow: "rgba(249,115,22,0.15)",
+  teal: {
+    label: "Teal",
+    border: "#34c99a",
+    bg: "rgba(52,201,154,0.06)",
+    bgStrong: "rgba(52,201,154,0.12)",
+    chip: "rgba(52,201,154,0.10)",
+    chipBorder: "rgba(52,201,154,0.35)",
+    chipText: "#0D5A46",
+    accent: "#34c99a",
+    accentHover: "#0D5A46",
+    glow: "rgba(52,201,154,0.15)",
+    gradient: "linear-gradient(90deg, #34c99a, #0D5A46)",
   },
 };
 
 export const PLAN_COLOR_KEYS: PlanColorKey[] = [
-  "red",
-  "blue",
-  "yellow",
-  "green",
+  "mint",
+  "iris",
+  "coral",
+  "gold",
   "purple",
-  "orange",
+  "teal",
 ];
 
 export function isPlanColor(v: unknown): v is PlanColorKey {
   return (
     typeof v === "string" &&
-    (v === "red" ||
-      v === "blue" ||
-      v === "yellow" ||
-      v === "green" ||
+    (v === "mint" ||
+      v === "iris" ||
+      v === "coral" ||
+      v === "gold" ||
       v === "purple" ||
-      v === "orange")
+      v === "teal")
   );
 }
 
 export function resolvePlanColor(v: unknown): PlanColorKey {
-  return isPlanColor(v) ? v : "blue";
+  if (isPlanColor(v)) return v;
+  if (v === "red" || v === "orange") return "coral";
+  if (v === "blue") return "iris";
+  if (v === "yellow") return "gold";
+  if (v === "green") return "mint";
+  return "iris";
 }

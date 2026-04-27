@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Shield, ShieldCheck } from "lucide-react";
 
+import { BlockCategoryPicker } from "@/components/training-plans/block-category-picker";
 import { getSubcompetenceIcon } from "@/lib/training-plans/icons";
 import type { PlanPhaseRef } from "@/lib/training-plans/types";
 import { cn } from "@/lib/utils";
@@ -25,18 +26,13 @@ export function TrainingPlanEditorPhaseBlocks({
           .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0))
           .map((b, bi, arr) => {
             const sc = item.phase.subcompetences.find((s) => s.id === b.subcompetence_id);
-            const { Icon, colorLight, colorDark } = getSubcompetenceIcon(sc);
+            const { Icon, color } = getSubcompetenceIcon(sc);
             const isPhaseGate = bi === arr.length - 1 && b.gate.gate_type === "phase_gate";
             const GateIcon = isPhaseGate ? ShieldCheck : Shield;
             return (
               <div key={`${item.phase_id}-blk-${b.id ?? b.order_index}`}>
                 <div className="flex items-center gap-2 text-xs text-tp-secondary">
-                  <Icon size={16} className="shrink-0 dark:hidden" style={{ color: colorLight }} />
-                  <Icon
-                    size={16}
-                    className="hidden shrink-0 dark:block"
-                    style={{ color: colorDark }}
-                  />
+                  <Icon size={16} className="shrink-0" style={{ color }} />
                   <span className="truncate">{b.name}</span>
                 </div>
 
@@ -63,6 +59,10 @@ export function TrainingPlanEditorPhaseBlocks({
                       {b.gate.pass_threshold}%
                     </span>
                   ) : null}
+                </div>
+
+                <div className="mt-2 pl-6">
+                  <BlockCategoryPicker topicId={b.id ?? null} />
                 </div>
               </div>
             );

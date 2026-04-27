@@ -35,7 +35,7 @@ export function DownloadButton({
   className,
 }: DownloadButtonProps) {
   const [loading, setLoading] = useState(false);
-  const tokens = PLAN_COLORS[planColor ?? "blue"];
+  const tokens = PLAN_COLORS[planColor ?? "iris"];
 
   const handleClick = async (e: React.MouseEvent) => {
     e.stopPropagation();

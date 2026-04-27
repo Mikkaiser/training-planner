@@ -28,6 +28,8 @@ export function PlanCard({ plan, onDelete, deleting }: PlanCardProps): React.JSX
     borderLeftColor: isPersonal && ownerColor ? ownerColor : tokens.border,
     // CSS custom property consumed by `globals.css` (not part of `CSSProperties` index signature).
     ["--plan-card-glow" as string]: tokens.glow,
+    // CSS custom property consumed by `globals.css` (not part of `CSSProperties` index signature).
+    ["--plan-gradient" as string]: tokens.gradient,
   };
 
   const chipStyle = {

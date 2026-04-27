@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronLeft, Pencil, UserPlus } from "lucide-react";
+import { Pencil, UserPlus } from "lucide-react";
 
 import { usePlanDetailContext } from "@/components/plan-detail/plan-detail-context";
 
@@ -10,7 +10,8 @@ export function PlanDetailHeader({
 }: {
   onAddCompetitor: () => void;
 }) {
-  const { planId, detail, tokens } = usePlanDetailContext();
+  const { planId, detail, tokens, selectedCompetitorId, setSelectedCompetitorId } =
+    usePlanDetailContext();
   const { plan } = detail;
   const owner =
     plan.owner_competitor_id
@@ -23,18 +24,17 @@ export function PlanDetailHeader({
   return (
     <header className="plan-detail-header">
       <div className="plan-detail-header__left">
-        <Link href="/plans" className="plan-detail-header__back">
-          <ChevronLeft size={16} />
+        <Link href="/plans" className="plan-detail-header__back page-breadcrumb-link font-body">
           <span>Plans</span>
         </Link>
-        <span className="plan-detail-header__separator" aria-hidden>
-          /
+        <span className="plan-detail-header__separator page-breadcrumb-separator" aria-hidden>
+          ›
         </span>
-        <span className="plan-detail-header__title">
+        <span className="plan-detail-header__title page-breadcrumb-current font-display">
           {plan.name?.trim() ? plan.name : "Untitled plan"}
         </span>
         {plan.plan_type === "personal" && owner ? (
-          <Link href={`/competitors/${owner.id}`} className="competitor-pill competitor-pill--personal">
+          <div className="competitor-pill competitor-pill--personal">
             <span
               className="inline-flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold"
               style={{
@@ -50,7 +50,23 @@ export function PlanDetailHeader({
                 .join("")}
             </span>
             {owner.full_name}
-          </Link>
+          </div>
+        ) : null}
+        {plan.plan_type === "shared" ? (
+          <label className="flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1 text-xs text-tp-secondary">
+            <span>Competitor</span>
+            <select
+              className="bg-transparent text-xs font-medium text-tp-primary outline-none"
+              value={selectedCompetitorId ?? ""}
+              onChange={(event) => setSelectedCompetitorId(event.target.value)}
+            >
+              {detail.competitors.map((competitor) => (
+                <option key={competitor.id} value={competitor.id}>
+                  {competitor.full_name}
+                </option>
+              ))}
+            </select>
+          </label>
         ) : null}
         <span
           className="plan-detail-header__status"

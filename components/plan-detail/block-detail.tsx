@@ -5,7 +5,6 @@ import { useMemo } from "react";
 import { subcompetenceChipStyle } from "@/lib/constants/subcompetence-tokens";
 import type { BlockItem, GateItem } from "@/lib/plan-detail/types";
 import { getSubcompetenceIcon } from "@/lib/training-plans/icons";
-import { useIsDark } from "@/lib/use-is-dark";
 import { BlockDetailHeader } from "@/components/plan-detail/block-detail-header";
 import { BlockDetailExercises } from "@/components/plan-detail/block-detail-exercises";
 import { BlockDetailGateCard } from "@/components/plan-detail/block-detail-gate-card";
@@ -13,18 +12,17 @@ import { BlockDetailGateInfoBar } from "@/components/plan-detail/block-detail-ga
 import { usePlanDetailContext } from "@/components/plan-detail/plan-detail-context";
 
 export function BlockDetail({ block }: { block: BlockItem }) {
-  const { detail, tokens, colorKey } = usePlanDetailContext();
-  const isDark = useIsDark();
+  const { detail, tokens } = usePlanDetailContext();
 
   const phase = detail.phases.find((p) => p.id === block.phase_id);
   const blockGate: GateItem = block.gate;
 
   const sc = block.subcompetence;
-  const { Icon, colorDark } = getSubcompetenceIcon(sc);
-  const subcompetenceColor = sc?.color ?? colorDark;
-  const scChipStyle = subcompetenceChipStyle(sc?.color ?? null, isDark);
+  const { Icon, color } = getSubcompetenceIcon(sc);
+  const subcompetenceColor = sc?.color ?? color;
+  const scChipStyle = subcompetenceChipStyle(sc?.color ?? null);
 
-  const exercises = detail.exercisesByBlock.get(block.id) ?? [];
+  const categories = detail.exerciseCategoriesByBlock.get(block.id) ?? [];
 
   const weekRange = useMemo(() => {
     if (!phase?.duration_weeks || !phase.blocks.length) return null;
@@ -52,10 +50,8 @@ export function BlockDetail({ block }: { block: BlockItem }) {
       <BlockDetailGateCard gate={blockGate} subcompetenceColor={sc?.color ?? null} />
 
       <BlockDetailExercises
-        block={block}
-        exercises={exercises}
+        categories={categories}
         accentColor={tokens.accent}
-        planColor={colorKey}
       />
     </div>
   );

@@ -9,10 +9,8 @@ export type BlobFloatAnimation = "blobFloat1" | "blobFloat2" | "blobFloat3";
 
 export type BlobSpec = {
   size: number;
-  /** rgba() string for light mode */
-  colorLight: string;
-  /** rgba() string for dark mode */
-  colorDark: string;
+  /** rgba() string for the light-only blob color. */
+  color: string;
   /** Position of blob center */
   left: string;
   top: string;
@@ -26,8 +24,7 @@ export const BLOB_VARIANT_SPECS: Record<BlobVariant, BlobSpec[]> = {
   login: [
     {
       size: 700,
-      colorLight: "rgba(105,0,255,0.08)",
-      colorDark: "rgba(105,0,255,0.12)",
+      color: "rgba(52,201,154,0.12)",
       left: "40%",
       top: "-15%",
       blur: 100,
@@ -36,8 +33,7 @@ export const BLOB_VARIANT_SPECS: Record<BlobVariant, BlobSpec[]> = {
     },
     {
       size: 500,
-      colorLight: "rgba(82,255,186,0.10)",
-      colorDark: "rgba(82,255,186,0.06)",
+      color: "rgba(168,240,218,0.16)",
       left: "75%",
       top: "60%",
       blur: 90,
@@ -46,8 +42,7 @@ export const BLOB_VARIANT_SPECS: Record<BlobVariant, BlobSpec[]> = {
     },
     {
       size: 350,
-      colorLight: "rgba(105,0,255,0.05)",
-      colorDark: "rgba(105,0,255,0.07)",
+      color: "rgba(52,201,154,0.09)",
       left: "-5%",
       top: "70%",
       blur: 80,
@@ -58,8 +53,7 @@ export const BLOB_VARIANT_SPECS: Record<BlobVariant, BlobSpec[]> = {
   dashboard: [
     {
       size: 650,
-      colorLight: "rgba(105,0,255,0.07)",
-      colorDark: "rgba(37,99,235,0.14)",
+      color: "rgba(168,240,218,0.12)",
       left: "-10%",
       top: "-15%",
       blur: 90,
@@ -68,8 +62,7 @@ export const BLOB_VARIANT_SPECS: Record<BlobVariant, BlobSpec[]> = {
     },
     {
       size: 500,
-      colorLight: "rgba(82,255,186,0.10)",
-      colorDark: "rgba(82,255,186,0.06)",
+      color: "rgba(52,201,154,0.12)",
       left: "75%",
       top: "65%",
       blur: 85,
@@ -78,8 +71,7 @@ export const BLOB_VARIANT_SPECS: Record<BlobVariant, BlobSpec[]> = {
     },
     {
       size: 400,
-      colorLight: "rgba(179,215,255,0.40)",
-      colorDark: "rgba(37,99,235,0.08)",
+      color: "rgba(168,240,218,0.16)",
       left: "35%",
       top: "30%",
       blur: 70,
@@ -88,8 +80,7 @@ export const BLOB_VARIANT_SPECS: Record<BlobVariant, BlobSpec[]> = {
     },
     {
       size: 300,
-      colorLight: "rgba(105,0,255,0.05)",
-      colorDark: "rgba(37,99,235,0.10)",
+      color: "rgba(52,201,154,0.09)",
       left: "80%",
       top: "5%",
       blur: 80,
@@ -101,8 +92,7 @@ export const BLOB_VARIANT_SPECS: Record<BlobVariant, BlobSpec[]> = {
   gantt: [
     {
       size: 550,
-      colorLight: "rgba(105,0,255,0.09)",
-      colorDark: "rgba(37,99,235,0.16)",
+      color: "rgba(168,240,218,0.12)",
       left: "-15%",
       top: "-20%",
       blur: 90,
@@ -111,8 +101,7 @@ export const BLOB_VARIANT_SPECS: Record<BlobVariant, BlobSpec[]> = {
     },
     {
       size: 500,
-      colorLight: "rgba(82,255,186,0.08)",
-      colorDark: "rgba(82,255,186,0.05)",
+      color: "rgba(52,201,154,0.12)",
       left: "80%",
       top: "75%",
       blur: 85,
@@ -121,8 +110,7 @@ export const BLOB_VARIANT_SPECS: Record<BlobVariant, BlobSpec[]> = {
     },
     {
       size: 280,
-      colorLight: "rgba(105,0,255,0.06)",
-      colorDark: "rgba(37,99,235,0.10)",
+      color: "rgba(168,240,218,0.16)",
       left: "85%",
       top: "-5%",
       blur: 70,
@@ -131,8 +119,7 @@ export const BLOB_VARIANT_SPECS: Record<BlobVariant, BlobSpec[]> = {
     },
     {
       size: 250,
-      colorLight: "rgba(82,255,186,0.05)",
-      colorDark: "rgba(82,255,186,0.03)",
+      color: "rgba(52,201,154,0.09)",
       left: "-8%",
       top: "80%",
       blur: 70,
@@ -144,8 +131,7 @@ export const BLOB_VARIANT_SPECS: Record<BlobVariant, BlobSpec[]> = {
   management: [
     {
       size: 500,
-      colorLight: "rgba(105,0,255,0.07)",
-      colorDark: "rgba(37,99,235,0.14)",
+      color: "rgba(168,240,218,0.12)",
       left: "-10%",
       top: "-15%",
       blur: 100,
@@ -154,8 +140,7 @@ export const BLOB_VARIANT_SPECS: Record<BlobVariant, BlobSpec[]> = {
     },
     {
       size: 400,
-      colorLight: "rgba(82,255,186,0.05)",
-      colorDark: "rgba(82,255,186,0.03)",
+      color: "rgba(52,201,154,0.12)",
       left: "75%",
       top: "70%",
       blur: 100,
@@ -166,8 +151,7 @@ export const BLOB_VARIANT_SPECS: Record<BlobVariant, BlobSpec[]> = {
   gates: [
     {
       size: 550,
-      colorLight: "rgba(105,0,255,0.08)",
-      colorDark: "rgba(37,99,235,0.14)",
+      color: "rgba(168,240,218,0.16)",
       left: "-5%",
       top: "-10%",
       blur: 85,
@@ -176,8 +160,7 @@ export const BLOB_VARIANT_SPECS: Record<BlobVariant, BlobSpec[]> = {
     },
     {
       size: 400,
-      colorLight: "rgba(255,96,96,0.10)",
-      colorDark: "rgba(255,96,96,0.10)",
+      color: "rgba(52,201,154,0.09)",
       left: "70%",
       top: "65%",
       blur: 90,
@@ -186,8 +169,7 @@ export const BLOB_VARIANT_SPECS: Record<BlobVariant, BlobSpec[]> = {
     },
     {
       size: 350,
-      colorLight: "rgba(105,0,255,0.06)",
-      colorDark: "rgba(37,99,235,0.10)",
+      color: "rgba(168,240,218,0.12)",
       left: "80%",
       top: "5%",
       blur: 75,
@@ -196,8 +178,7 @@ export const BLOB_VARIANT_SPECS: Record<BlobVariant, BlobSpec[]> = {
     },
     {
       size: 300,
-      colorLight: "rgba(255,96,96,0.08)",
-      colorDark: "rgba(255,96,96,0.08)",
+      color: "rgba(52,201,154,0.12)",
       left: "10%",
       top: "75%",
       blur: 80,
@@ -209,16 +190,18 @@ export const BLOB_VARIANT_SPECS: Record<BlobVariant, BlobSpec[]> = {
 };
 
 /**
- * Dashboard subtree blob variant (see USAGE MAP).
+ * Authenticated app subtree blob variant (see USAGE MAP).
  */
-export function resolveDashboardBlobVariant(pathname: string): BlobVariant {
+export function resolveShellBlobVariant(pathname: string): BlobVariant {
   const path = pathname.replace(/\/$/, "") || "/";
 
   if (path === "/plans" || path.startsWith("/plans/")) {
     return "management";
   }
 
-  if (path === "/dashboard") return "dashboard";
+  if (path === "/exercises" || path.startsWith("/exercises/")) {
+    return "management";
+  }
 
   const planMatch = /^\/plans\/([^/]+)$/.exec(path);
   if (planMatch) {
@@ -226,16 +209,16 @@ export function resolveDashboardBlobVariant(pathname: string): BlobVariant {
     if (segment !== "new") return "gantt";
   }
 
-  if (path === "/dashboard/gates" || path.startsWith("/dashboard/gates/")) {
+  if (path === "/gates" || path.startsWith("/gates/")) {
     return "gates";
   }
 
   if (
     path.startsWith("/plans") ||
     path.startsWith("/phases") ||
-    path.startsWith("/dashboard/subcompetences") ||
-    path.startsWith("/dashboard/exercises") ||
-    path.startsWith("/dashboard/users")
+    path.startsWith("/subcompetences") ||
+    path.startsWith("/competitors") ||
+    path.startsWith("/users")
   ) {
     return "management";
   }
@@ -262,11 +245,11 @@ export function resolveAppBlobVariant(pathname: string): BlobVariant {
   }
 
   if (
-    path.startsWith("/dashboard") ||
-    path === "/plans" ||
-    path.startsWith("/plans/")
+    path.startsWith("/plans") ||
+    path.startsWith("/exercises") ||
+    path.startsWith("/competitors")
   ) {
-    return resolveDashboardBlobVariant(pathname);
+    return resolveShellBlobVariant(pathname);
   }
 
   return "management";

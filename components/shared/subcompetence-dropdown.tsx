@@ -6,7 +6,6 @@ import { Popover as PopoverPrimitive } from "@base-ui/react/popover";
 import { getSubcompetenceTokens } from "@/lib/constants/subcompetence-tokens";
 import type { Subcompetence } from "@/lib/training-plans/types";
 import { cn } from "@/lib/utils";
-import { useIsDark } from "@/lib/use-is-dark";
 
 type SubcompetenceDropdownProps = {
   id?: string;
@@ -23,7 +22,6 @@ export function SubcompetenceDropdown({
   placeholder = "Select macro-competence",
   onChange,
 }: SubcompetenceDropdownProps): React.JSX.Element {
-  const isDark = useIsDark();
   const selected = options.find((option) => option.id === value) ?? null;
 
   return (
@@ -36,7 +34,7 @@ export function SubcompetenceDropdown({
           <span className="subcompetence-chip inline-flex max-w-full items-center gap-2 px-2 py-1 text-sm">
             <span
               className="h-3 w-3 shrink-0 rounded-full"
-              style={{ background: getSubcompetenceTokens(selected.color, isDark).color }}
+              style={{ background: getSubcompetenceTokens(selected.color).color }}
               aria-hidden
             />
             <span className="truncate">{selected.name}</span>
@@ -54,7 +52,7 @@ export function SubcompetenceDropdown({
             ) : (
               options.map((option) => {
                 const selectedOption = option.id === value;
-                const optionTokens = getSubcompetenceTokens(option.color, isDark);
+                const optionTokens = getSubcompetenceTokens(option.color);
 
                 return (
                   <button

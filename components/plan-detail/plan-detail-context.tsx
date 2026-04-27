@@ -14,6 +14,8 @@ type PlanDetailContextValue = {
   detail: PlanDetail;
   colorKey: PlanColorKey;
   tokens: PlanColorTokens;
+  selectedCompetitorId: string | null;
+  setSelectedCompetitorId: (competitorId: string) => void;
 };
 
 const PlanDetailContext = createContext<PlanDetailContextValue | null>(null);
@@ -21,10 +23,14 @@ const PlanDetailContext = createContext<PlanDetailContextValue | null>(null);
 export function PlanDetailProvider({
   planId,
   detail,
+  selectedCompetitorId,
+  setSelectedCompetitorId,
   children,
 }: {
   planId: string;
   detail: PlanDetail;
+  selectedCompetitorId: string | null;
+  setSelectedCompetitorId: (competitorId: string) => void;
   children: ReactNode;
 }) {
   const value = useMemo<PlanDetailContextValue>(() => {
@@ -34,8 +40,10 @@ export function PlanDetailProvider({
       detail,
       colorKey,
       tokens: PLAN_COLORS[colorKey],
+      selectedCompetitorId,
+      setSelectedCompetitorId,
     };
-  }, [planId, detail]);
+  }, [planId, detail, selectedCompetitorId, setSelectedCompetitorId]);
 
   return (
     <PlanDetailContext.Provider value={value}>

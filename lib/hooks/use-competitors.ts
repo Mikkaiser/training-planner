@@ -125,7 +125,7 @@ async function fetchCompetitors({
     id: row.id,
     full_name: row.full_name,
     email: row.email,
-    avatar_color: row.avatar_color ?? "#3b82f6",
+    avatar_color: row.avatar_color ?? "#6385FF",
     archived: Boolean(row.archived),
     active_plan_id: row.active_plan_id,
     active_plan: row.active_plan_id ? plansById.get(row.active_plan_id) ?? null : null,

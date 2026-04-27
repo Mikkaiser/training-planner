@@ -5,9 +5,9 @@ export default function PlansPage() {
   return (
     <div className="space-y-[30px]">
       <PageHeader
-        title="Training Plans"
+        title="Plans"
         subtitle="Manage and track your WorldSkills training roadmaps"
-        actionLabel="New Training Plan"
+        actionLabel="+ New plan"
         actionHref="/plans/new"
       />
       <PlansList />

@@ -1,9 +1,8 @@
 import type { Config } from "tailwindcss";
 import defaultTheme from "tailwindcss/defaultTheme";
 
-/** Tokens in app/globals.css; theme via data-theme on <html>. */
+/** Tokens in app/globals.css. */
 const config: Config = {
-  darkMode: ["class", '[data-theme="dark"]'],
   content: [
     "./app/**/*.{ts,tsx}",
     "./components/**/*.{ts,tsx}",
@@ -24,7 +23,8 @@ const config: Config = {
         "16": "5rem",
       },
       fontFamily: {
-        sans: ["Roboto", "system-ui", "sans-serif"],
+        display: ["var(--font-display)", "sans-serif"],
+        body: ["var(--font-body)", "sans-serif"],
       },
       fontSize: {
         "2xs": "11px",
@@ -70,10 +70,10 @@ const config: Config = {
         },
         border: "var(--color-border)",
         input: "var(--color-border)",
-        ring: "rgba(37, 99, 235, 0.45)",
+        ring: "var(--color-border-hover)",
       },
       boxShadow: {
-        glow: "0 0 0 1px rgba(37, 99, 235, 0.12), 0 8px 30px rgba(37, 99, 235, 0.06)",
+        glow: "0 0 0 1px var(--color-border), 0 8px 30px var(--color-border-subtle)",
         cta: "var(--cta-shadow)",
         "cta-hover": "var(--cta-shadow-hover)",
       },

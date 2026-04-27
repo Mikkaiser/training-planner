@@ -121,7 +121,7 @@ export function ResetPasswordForm() {
       }
 
       toast.success("Password updated.");
-      router.push("/dashboard");
+      router.push("/plans");
       router.refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Something went wrong.");

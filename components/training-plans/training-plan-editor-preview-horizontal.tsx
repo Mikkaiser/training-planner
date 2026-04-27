@@ -10,7 +10,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { SortablePreviewPhase } from "@/components/training-plans/training-plan-editor-sortable-preview-phase";
 import { weekLabel } from "@/lib/utils/training-plan-editor-utils";
 import { subcompetenceChipStyle } from "@/lib/constants/subcompetence-tokens";
-import { useIsDark } from "@/lib/use-is-dark";
 import type { PlanPhaseRef } from "@/lib/training-plans/types";
 
 export interface TrainingPlanEditorPreviewHorizontalProps {
@@ -26,7 +25,6 @@ export function TrainingPlanEditorPreviewHorizontal({
   totalWeeks,
   onReorder,
 }: TrainingPlanEditorPreviewHorizontalProps): React.JSX.Element {
-  const isDark = useIsDark();
 
   return (
     <div className="h-full w-full overflow-hidden">
@@ -93,7 +91,7 @@ export function TrainingPlanEditorPreviewHorizontal({
                             <span
                               key={s.id}
                               className="subcompetence-chip max-w-full truncate px-2 py-0.5 text-[11px]"
-                              style={subcompetenceChipStyle(s.color, isDark)}
+                              style={subcompetenceChipStyle(s.color)}
                               title={s.name}
                             >
                               {s.name}

@@ -27,7 +27,7 @@ export function PlanCardHeader({
       <div className="flex min-w-0 items-start justify-between gap-3">
         <Link
           href={`/plans/${planId}`}
-          className="min-w-0 truncate text-[16px] font-bold text-tp-primary hover:underline"
+          className="min-w-0 truncate font-display text-[16px] font-bold text-tp-primary hover:underline"
         >
           {name?.trim() ? name : "Untitled plan"}
         </Link>

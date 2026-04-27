@@ -19,7 +19,7 @@ export default function NewPhaseError({
           <button type="button" onClick={reset} className="tp-plan-save-btn">
             Retry
           </button>
-          <Link href="/phases" className="tp-ghost-btn text-center">
+          <Link href="/plans" className="tp-ghost-btn text-center">
             Back
           </Link>
         </div>

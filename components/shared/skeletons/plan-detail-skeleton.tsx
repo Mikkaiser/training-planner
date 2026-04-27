@@ -5,10 +5,10 @@ import { PlanDetailSkeletonHeaderBar } from "./plan-detail-skeleton-header-bar";
 import { PlanDetailSkeletonRoadmap } from "./plan-detail-skeleton-roadmap";
 
 /**
- * Full-page skeleton for /plans/[id]. Mirrors the real layout:
+ * Skeleton for /plans/[id]. Mirrors the real layout:
  * sticky 64px header, 42/58 roadmap/detail split, both columns independently
  * scrollable. Kept inside `.plan-detail-root` so it inherits the same
- * full-bleed flex sizing as the loaded page.
+ * flex sizing as the loaded page.
  */
 export function PlanDetailSkeleton() {
   return (

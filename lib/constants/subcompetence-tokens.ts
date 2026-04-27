@@ -1,11 +1,10 @@
 /**
  * Subcompetence color tokens — resolve raw subcompetence hex colors (as stored
- * in the DB) into theme-aware bg/border/fg tuples used by the
+ * in the DB) into bg/border/fg tuples used by the
  * `.subcompetence-chip` CSS class via `--subcompetence-bg|border|fg`.
  *
- * Light mode rules out raw color values that fail WCAG contrast on light
- * surfaces (notably the lime #DBFD6B). Dark mode can use near-full saturation
- * text since contrast is reversed.
+ * Bright legacy colors that fail WCAG contrast on light surfaces are mapped to
+ * the current light-only design system.
  *
  * Only allowed place (along with globals.css and planColors.ts) to hardcode
  * palette values — see `.cursor/rules/design-system.mdc`.
@@ -20,76 +19,40 @@ export type SubcompetenceTokens = {
   color: string;
 };
 
-type Preset = {
-  light: Omit<SubcompetenceTokens, "color">;
-  dark: Omit<SubcompetenceTokens, "color">;
-};
-
-const PRESETS: Record<string, Preset> = {
+const PRESETS: Record<string, Omit<SubcompetenceTokens, "color">> = {
   // Analysis & Design — violet
   "#7c6af7": {
-    light: {
-      bg: "rgba(124,106,247,0.12)",
-      border: "rgba(124,106,247,0.40)",
-      fg: "#5b47e0",
-    },
-    dark: {
-      bg: "rgba(124,106,247,0.12)",
-      border: "rgba(124,106,247,0.30)",
-      fg: "#a78bfa",
-    },
+    bg: "rgba(124,106,247,0.12)",
+    border: "rgba(124,106,247,0.35)",
+    fg: "#5b47e0",
   },
-  // Development — new green (#22c55e) + legacy lime (#DBFD6B) mapped to olive in light
+  // Development — system mint, with legacy green/lime mapped to the same token.
+  "#1dbf8a": {
+    bg: "rgba(29,191,138,0.12)",
+    border: "rgba(29,191,138,0.35)",
+    fg: "#0A7A52",
+  },
   "#22c55e": {
-    light: {
-      bg: "rgba(34,197,94,0.12)",
-      border: "rgba(34,197,94,0.40)",
-      fg: "#166534",
-    },
-    dark: {
-      bg: "rgba(34,197,94,0.12)",
-      border: "rgba(34,197,94,0.30)",
-      fg: "#4ade80",
-    },
+    bg: "rgba(29,191,138,0.12)",
+    border: "rgba(29,191,138,0.35)",
+    fg: "#0A7A52",
   },
   "#dbfd6b": {
-    // Dev legacy: bright lime is invisible on light surfaces, use dark olive.
-    light: {
-      bg: "rgba(150,180,0,0.12)",
-      border: "rgba(150,180,0,0.40)",
-      fg: "#5a6e00",
-    },
-    dark: {
-      bg: "rgba(219,253,107,0.10)",
-      border: "rgba(219,253,107,0.28)",
-      fg: "#dbfd6b",
-    },
+    bg: "rgba(29,191,138,0.12)",
+    border: "rgba(29,191,138,0.35)",
+    fg: "#0A7A52",
   },
   // Testing — teal
   "#00a878": {
-    light: {
-      bg: "rgba(0,168,120,0.12)",
-      border: "rgba(0,168,120,0.40)",
-      fg: "#007a58",
-    },
-    dark: {
-      bg: "rgba(0,168,120,0.10)",
-      border: "rgba(0,168,120,0.28)",
-      fg: "#00a878",
-    },
+    bg: "rgba(13,90,70,0.10)",
+    border: "rgba(13,90,70,0.28)",
+    fg: "#0D5A46",
   },
-  // Transversal — orange
+  // Transversal — coral
   "#fb923c": {
-    light: {
-      bg: "rgba(251,146,60,0.12)",
-      border: "rgba(251,146,60,0.40)",
-      fg: "#c45e00",
-    },
-    dark: {
-      bg: "rgba(251,146,60,0.10)",
-      border: "rgba(251,146,60,0.28)",
-      fg: "#fb923c",
-    },
+    bg: "rgba(255,123,84,0.12)",
+    border: "rgba(255,123,84,0.35)",
+    fg: "#B8390A",
   },
 };
 
@@ -98,23 +61,20 @@ function isHex(v: string): boolean {
 }
 
 /**
- * Resolve a (possibly user-defined) subcompetence color into a theme-aware
+ * Resolve a (possibly user-defined) subcompetence color into a light-mode
  * tokens object. Falls back to color-mix-based tokens via the passed-in color.
  *
  * @param rawColor The raw color string stored on the subcompetence row.
- * @param isDark   Whether dark mode is currently active.
  */
 export function getSubcompetenceTokens(
   rawColor: string | null | undefined,
-  isDark: boolean,
 ): SubcompetenceTokens {
   const color = (rawColor ?? "").trim();
   const key = color.toLowerCase();
   const preset = PRESETS[key];
 
   if (preset) {
-    const v = isDark ? preset.dark : preset.light;
-    return { ...v, color };
+    return { ...preset, color };
   }
 
   // Fallback — let the `.subcompetence-chip` CSS fall back to color-mix()
@@ -137,9 +97,8 @@ export function getSubcompetenceTokens(
  */
 export function subcompetenceChipStyle(
   rawColor: string | null | undefined,
-  isDark: boolean,
 ): React.CSSProperties {
-  const tokens = getSubcompetenceTokens(rawColor, isDark);
+  const tokens = getSubcompetenceTokens(rawColor);
   const style: Record<string, string> = {
     "--subcompetence-color": tokens.color,
   };

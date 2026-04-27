@@ -6,14 +6,59 @@ import { motion } from "framer-motion";
 import { BlockGateCard } from "@/components/plan-detail/block-gate-card";
 import { usePlanDetailContext } from "@/components/plan-detail/plan-detail-context";
 import { getSubcompetenceTokens } from "@/lib/constants/subcompetence-tokens";
-import { phaseAveragePercent } from "@/lib/plan-detail/progress";
+import { useExerciseCompletions } from "@/lib/hooks/use-exercise-completions";
+import { competitorBlockState, phaseAveragePercent } from "@/lib/plan-detail/progress";
 import type { PhaseWithChildren } from "@/lib/plan-detail/types";
-import { useIsDark } from "@/lib/use-is-dark";
 
 export function PhaseSection({ phase }: { phase: PhaseWithChildren }) {
-  const { detail, tokens } = usePlanDetailContext();
-  const isDark = useIsDark();
-  const avg = phaseAveragePercent(detail, phase.id);
+  const { detail, tokens, planId, selectedCompetitorId } = usePlanDetailContext();
+  const { data: completionMap = new Map() } = useExerciseCompletions(
+    planId,
+    selectedCompetitorId
+  );
+  const avg = (() => {
+    if (!selectedCompetitorId) return phaseAveragePercent(detail, phase.id);
+    if (phase.blocks.length === 0) return 0;
+    const passedBlocks = phase.blocks.reduce((count, block) => {
+      const state = competitorBlockState(detail, selectedCompetitorId, block.id);
+      return state.kind === "completed" ? count + 1 : count;
+    }, 0);
+    return Math.round((passedBlocks / phase.blocks.length) * 100);
+  })();
+  const phaseExerciseIds = phase.blocks.flatMap(
+    (block) => detail.exerciseIdsByBlock.get(block.id) ?? []
+  );
+  const phaseCompletedCount = phaseExerciseIds.reduce((count, exerciseId) => {
+    const completion = completionMap.get(exerciseId);
+    return completion?.completed ? count + 1 : count;
+  }, 0);
+  const phaseProgressPercent =
+    phaseExerciseIds.length > 0
+      ? Math.round((phaseCompletedCount / phaseExerciseIds.length) * 100)
+      : null;
+
+  const exerciseBadgeStyle = (() => {
+    if (phaseProgressPercent === null) return null;
+    if (phaseProgressPercent <= 32) {
+      return {
+        background: "var(--color-negative-bg)",
+        color: "var(--color-negative)",
+        borderColor: "var(--color-negative-border)",
+      };
+    }
+    if (phaseProgressPercent <= 65) {
+      return {
+        background: "var(--color-warning-bg)",
+        color: "var(--color-warning)",
+        borderColor: "var(--color-warning-border)",
+      };
+    }
+    return {
+      background: "var(--color-positive-bg)",
+      color: "var(--color-positive)",
+      borderColor: "var(--color-positive-border)",
+    };
+  })();
 
   return (
     <section className="plan-phase-section">
@@ -28,6 +73,14 @@ export function PhaseSection({ phase }: { phase: PhaseWithChildren }) {
           <Layers size={18} />
         </span>
         <span className="plan-phase-section__name">{phase.name}</span>
+        {phaseProgressPercent !== null && exerciseBadgeStyle ? (
+          <span
+            className="rounded-full border px-2 py-0.5 text-[11px] font-medium"
+            style={exerciseBadgeStyle}
+          >
+            {phaseCompletedCount}/{phaseExerciseIds.length}
+          </span>
+        ) : null}
         {typeof phase.duration_weeks === "number" ? (
           <span
             className="plan-phase-section__duration"
@@ -60,7 +113,7 @@ export function PhaseSection({ phase }: { phase: PhaseWithChildren }) {
       <div className="plan-phase-section__body">
         {phase.blocks.map((block, idx) => {
           const isLast = idx === phase.blocks.length - 1;
-          const scTokens = getSubcompetenceTokens(block.subcompetence?.color ?? null, isDark);
+          const scTokens = getSubcompetenceTokens(block.subcompetence?.color ?? null);
           const connectorColor = scTokens.fg || tokens.border;
 
           return (

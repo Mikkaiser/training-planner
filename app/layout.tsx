@@ -1,6 +1,22 @@
 import type { Metadata } from "next";
+import { Plus_Jakarta_Sans, Syne } from "next/font/google";
+
 import "@/app/globals.css";
 import { Providers } from "@/components/providers";
+
+const syne = Syne({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-display",
+  display: "swap",
+});
+
+const jakarta = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
+  variable: "--font-body",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Training Planner",
@@ -21,10 +37,6 @@ export const metadata: Metadata = {
   },
 };
 
-const themeInitScript = `
-(function(){try{var t=localStorage.getItem('tp-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();
-`;
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -33,13 +45,11 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      suppressHydrationWarning
-      className="h-full antialiased"
+      className={`${syne.variable} ${jakarta.variable} h-full antialiased`}
     >
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <link rel="icon" href="/training-planner-logomark-dark-mode.png" />
-        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <link rel="icon" href="/training-planner-logomark-white-mode.png" />
       </head>
       <body className="flex min-h-full flex-col bg-transparent text-foreground">
         <Providers>{children}</Providers>

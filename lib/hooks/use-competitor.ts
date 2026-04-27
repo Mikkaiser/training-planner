@@ -195,7 +195,7 @@ async function fetchCompetitor(competitorId: string): Promise<CompetitorProfile>
     full_name: competitor.full_name,
     email: competitor.email,
     notes: competitor.notes,
-    avatar_color: competitor.avatar_color ?? "#3b82f6",
+    avatar_color: competitor.avatar_color ?? "#6385FF",
     archived: Boolean(competitor.archived),
     active_plan_id: competitor.active_plan_id,
     active_plan: competitor.active_plan_id

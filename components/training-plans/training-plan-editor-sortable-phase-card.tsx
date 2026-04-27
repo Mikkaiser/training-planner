@@ -6,7 +6,6 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
 import { subcompetenceChipStyle } from "@/lib/constants/subcompetence-tokens";
-import { useIsDark } from "@/lib/use-is-dark";
 import type { PlanPhaseRef } from "@/lib/training-plans/types";
 import { cn } from "@/lib/utils";
 import { TrainingPlanEditorPhaseBlocks } from "./training-plan-editor-phase-blocks";
@@ -26,7 +25,6 @@ export function SortablePhaseCard({
 }: SortablePhaseCardProps): React.JSX.Element {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: item.phase_id });
-  const isDark = useIsDark();
 
   return (
     <div
@@ -72,7 +70,7 @@ export function SortablePhaseCard({
               <span
                 key={s.id}
                 className="subcompetence-chip px-2 py-0.5 text-xs"
-                style={subcompetenceChipStyle(s.color, isDark)}
+                style={subcompetenceChipStyle(s.color)}
               >
                 {s.name}
               </span>

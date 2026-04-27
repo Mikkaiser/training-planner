@@ -10,7 +10,6 @@ import {
 import { competitorBlockState, competitorGateState } from "@/lib/plan-detail/progress";
 import type { BlockItem } from "@/lib/plan-detail/types";
 import { getSubcompetenceIcon } from "@/lib/training-plans/icons";
-import { useIsDark } from "@/lib/use-is-dark";
 import { usePlanDetailContext } from "@/components/plan-detail/plan-detail-context";
 import { ProgressDot } from "@/components/plan-detail/progress-dot";
 import { CompetitorStatusChip } from "@/components/plan-detail/competitor-status-chip";
@@ -30,14 +29,13 @@ export function BlockGateCard({
 }) {
   const { detail, tokens } = usePlanDetailContext();
   const { selection, selectBlock } = useSelection();
-  const isDark = useIsDark();
 
   const selected = selection?.id === block.id;
   const sc = block.subcompetence;
   const { Icon } = getSubcompetenceIcon(sc);
 
-  const scTokens = getSubcompetenceTokens(sc?.color ?? null, isDark);
-  const chipStyle = subcompetenceChipStyle(sc?.color ?? null, isDark);
+  const scTokens = getSubcompetenceTokens(sc?.color ?? null);
+  const chipStyle = subcompetenceChipStyle(sc?.color ?? null);
 
   const leftBorder = scTokens.fg || tokens.border;
 
