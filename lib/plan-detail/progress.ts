@@ -65,6 +65,7 @@ export function phaseAveragePercent(
 ): number {
   const phase = detail.phases.find((p) => p.id === phaseId);
   if (!phase) return 0;
+  if (detail.competitors.length === 0) return 0;
 
   if (phase.blocks.length === 0 || detail.competitors.length === 0) {
     if (phase.blocks.length === 0) return 0;
