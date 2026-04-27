@@ -25,7 +25,7 @@ export function GateAttemptActions({
         type="submit"
         className="tp-plan-save-btn plan-attempt-form__save"
         disabled={isSaving}
-        style={{ background: "var(--plan-accent, var(--color-accent))" }}
+        style={{ background: "var(--plan-accent)" }}
       >
         <Plus size={14} />
         <span>{isSaving ? "Saving…" : "Save Attempt"}</span>

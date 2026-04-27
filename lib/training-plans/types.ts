@@ -49,6 +49,8 @@ export type PlanDraft = {
   status: TrainingPlanStatus;
   start_date: string; // YYYY-MM-DD
   color: PlanColorKey;
+  plan_type: "shared" | "personal";
+  owner_competitor_id: string | null;
 };
 
 export type PlanPhaseRef = {

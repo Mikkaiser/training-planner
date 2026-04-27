@@ -12,6 +12,10 @@ export function PlanDetailHeader({
 }) {
   const { planId, detail, tokens } = usePlanDetailContext();
   const { plan } = detail;
+  const owner =
+    plan.owner_competitor_id
+      ? detail.competitors.find((item) => item.id === plan.owner_competitor_id) ?? null
+      : null;
 
   const status = (plan.status ?? "draft").toString();
   const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
@@ -29,6 +33,25 @@ export function PlanDetailHeader({
         <span className="plan-detail-header__title">
           {plan.name?.trim() ? plan.name : "Untitled plan"}
         </span>
+        {plan.plan_type === "personal" && owner ? (
+          <Link href={`/competitors/${owner.id}`} className="competitor-pill competitor-pill--personal">
+            <span
+              className="inline-flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold"
+              style={{
+                background: owner.avatar_color,
+                color: "var(--color-surface-raised)",
+              }}
+            >
+              {owner.full_name
+                .split(/\s+/)
+                .filter(Boolean)
+                .slice(0, 2)
+                .map((part) => part.charAt(0).toUpperCase())
+                .join("")}
+            </span>
+            {owner.full_name}
+          </Link>
+        ) : null}
         <span
           className="plan-detail-header__status"
           style={{
@@ -42,14 +65,16 @@ export function PlanDetailHeader({
       </div>
 
       <div className="plan-detail-header__right">
-        <button
-          type="button"
-          onClick={onAddCompetitor}
-          className="plan-detail-header__btn plan-detail-header__btn--ghost"
-        >
-          <UserPlus size={16} />
-          <span>Add Competitor</span>
-        </button>
+        {plan.plan_type === "shared" ? (
+          <button
+            type="button"
+            onClick={onAddCompetitor}
+            className="plan-detail-header__btn plan-detail-header__btn--ghost"
+          >
+            <UserPlus size={16} />
+            <span>Add Competitor</span>
+          </button>
+        ) : null}
         <Link
           href={`/plans/${planId}/edit`}
           className="plan-detail-header__btn plan-detail-header__btn--primary"

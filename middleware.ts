@@ -3,7 +3,7 @@ import { createSupabaseMiddlewareClient } from "@/lib/supabase/middleware";
 
 /** Auth pages that signed-in users should leave (not reset-password: recovery session). */
 const AUTH_ROUTES_REDIRECT_WHEN_AUTHENTICATED = ["/login", "/signup", "/forgot-password"];
-const DASHBOARD_PREFIX = "/dashboard";
+const PROTECTED_PREFIXES = ["/dashboard", "/plans", "/phases"] as const;
 
 export async function middleware(request: NextRequest) {
   const { supabase, response } = createSupabaseMiddlewareClient(request);
@@ -15,10 +15,11 @@ export async function middleware(request: NextRequest) {
   const isAuthRoute = AUTH_ROUTES_REDIRECT_WHEN_AUTHENTICATED.some(
     (p) => pathname === p || pathname.startsWith(`${p}/`)
   );
-  const isDashboardRoute =
-    pathname === DASHBOARD_PREFIX || pathname.startsWith(`${DASHBOARD_PREFIX}/`);
+  const isProtectedRoute = PROTECTED_PREFIXES.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`)
+  );
 
-  if (!user && isDashboardRoute) {
+  if (!user && isProtectedRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", pathname);
@@ -55,6 +56,8 @@ export const config = {
     "/forgot-password",
     "/reset-password",
     "/dashboard/:path*",
+    "/plans/:path*",
+    "/phases/:path*",
   ],
 };
 

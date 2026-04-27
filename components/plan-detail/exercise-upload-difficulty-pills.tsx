@@ -21,7 +21,7 @@ export function ExerciseUploadDifficultyPills({
 }: ExerciseUploadDifficultyPillsProps): React.JSX.Element {
   return (
     <div className="plan-exercise-upload__difficulty">
-      <span className="plan-exercise-upload__difficulty-label">Difficulty</span>
+      <div className="tp-plan-label">Difficulty</div>
       <div className="plan-exercise-upload__difficulty-pills">
         {DIFFICULTY_OPTIONS.map((d) => {
           const active = difficulty === d;

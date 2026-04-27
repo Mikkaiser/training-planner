@@ -1,6 +1,9 @@
 "use client";
 
+import { useState } from "react";
+
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
 import {
@@ -13,7 +16,7 @@ import {
 import { toast } from "sonner";
 
 import { ThemedLogo } from "@/components/brand/themed-logo";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { buttonVariants } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -33,6 +36,7 @@ const nav = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/plans", label: "Plans", icon: Map },
   { href: "/phases", label: "Phases", icon: Layers },
+  { href: "/competitors", label: "Competitors", icon: Users },
 ] as const;
 
 /** Only one item active: `/dashboard` matches the home route only, not nested paths. */
@@ -62,6 +66,7 @@ export function SidebarNav({
   const pathname = usePathname();
   const router = useRouter();
   const usersActive = isNavItemActive(pathname, "/dashboard/users");
+  const [avatarFailed, setAvatarFailed] = useState(false);
 
   async function signOut() {
     try {
@@ -84,6 +89,7 @@ export function SidebarNav({
       .join("") ?? "U";
 
   const accountLabel = fullName ?? email ?? "Account";
+  const showAvatarImage = Boolean(avatarUrl) && !avatarFailed;
 
   return (
     <aside className="relative z-10 flex h-full flex-col px-4 py-6">
@@ -154,26 +160,36 @@ export function SidebarNav({
       </nav>
 
       <div className="mt-auto pt-5">
-        <div className="flex items-center gap-3 px-2">
-          <ThemeToggle />
+        <div className="mx-auto flex w-full min-w-0 items-center justify-center gap-3 px-2">
+          <div className="shrink-0">
+            <ThemeToggle />
+          </div>
 
           <DropdownMenu>
             <DropdownMenuTrigger
               className={cn(
                 buttonVariants({ variant: "outline", size: "default" }),
-                "hover-tint h-[50px] flex-1 justify-start gap-3 border-border bg-[var(--color-surface-raised)] px-4 text-tp-primary backdrop-blur-md"
+                "hover-tint h-[50px] flex-1 min-w-0 justify-start gap-3 overflow-hidden border-border bg-[var(--color-surface-raised)] px-4 text-tp-primary backdrop-blur-md"
               )}
             >
               <Avatar className="my-1 h-9 w-9 flex-shrink-0">
-                <AvatarImage
-                  src={avatarUrl ?? undefined}
-                  alt={fullName ?? "User"}
-                />
+                {showAvatarImage ? (
+                  <Image
+                    src={avatarUrl as string}
+                    alt={fullName ?? "User"}
+                    fill
+                    sizes="36px"
+                    className="rounded-full object-cover"
+                    onError={() => setAvatarFailed(true)}
+                  />
+                ) : null}
                 <AvatarFallback className="bg-[var(--color-accent-muted)] text-tp-primary">
                   {initials}
                 </AvatarFallback>
               </Avatar>
-              <span className="min-w-0 truncate text-[17px]">{accountLabel}</span>
+              <span className="min-w-0 flex-1 truncate text-[17px]">
+                {accountLabel}
+              </span>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-64">
               <DropdownMenuGroup>

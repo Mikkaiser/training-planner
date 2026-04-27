@@ -55,6 +55,19 @@ type RawGate = {
 
 type RawTopicWithGate = RawTopic & { gate: RawGate | null };
 
+function toError(error: unknown, fallbackMessage: string): Error {
+  if (error instanceof Error) return error;
+  if (typeof error === "string") return new Error(error);
+  if (error && typeof error === "object") {
+    const message =
+      "message" in error && typeof (error as { message?: unknown }).message === "string"
+        ? (error as { message: string }).message
+        : null;
+    if (message) return new Error(message);
+  }
+  return new Error(fallbackMessage);
+}
+
 async function fetchPlanDetail(planId: string): Promise<PlanDetail> {
   const supabase = getSupabaseBrowserClient();
 
@@ -62,7 +75,7 @@ async function fetchPlanDetail(planId: string): Promise<PlanDetail> {
     await Promise.all([
       supabase
         .from("training_plans")
-        .select("id,name,description,status,start_date,color")
+        .select("id,name,description,status,start_date,color,plan_type,owner_competitor_id")
         .eq("id", planId)
         .maybeSingle(),
       supabase
@@ -71,12 +84,12 @@ async function fetchPlanDetail(planId: string): Promise<PlanDetail> {
         .eq("training_plan_id", planId),
       supabase
         .from("competitors")
-        .select("id,full_name,avatar_color")
+        .select("id,full_name,avatar_color,email,archived")
         .order("created_at", { ascending: true }),
       supabase
         .from("competitor_progress")
         .select(
-          "id,competitor_id,training_plan_id,current_topic_id,current_phase_id,status,started_at,completed_at"
+          "id,competitor_id,training_plan_id,current_topic_id,current_phase_id,status,started_at,completed_at,participation_status"
         )
         .eq("training_plan_id", planId),
       supabase
@@ -91,13 +104,37 @@ async function fetchPlanDetail(planId: string): Promise<PlanDetail> {
         .select("id,name,description,color,icon"),
     ]);
 
-  if (planRes.error) throw planRes.error;
+  if (planRes.error) {
+    console.error("[usePlanDetail] training_plans query failed:", planRes.error);
+    throw toError(planRes.error, "Failed to load plan.");
+  }
   if (!planRes.data) throw new Error("Plan not found");
-  if (tppRes.error) throw tppRes.error;
-  if (competitorsRes.error) throw competitorsRes.error;
-  if (progressRes.error) throw progressRes.error;
-  if (attemptsRes.error) throw attemptsRes.error;
-  if (subsRes.error) throw subsRes.error;
+  if (tppRes.error) {
+    console.error(
+      "[usePlanDetail] training_plan_phases query failed:",
+      tppRes.error
+    );
+    throw toError(tppRes.error, "Failed to load plan phases.");
+  }
+  if (competitorsRes.error) {
+    console.error("[usePlanDetail] competitors query failed:", competitorsRes.error);
+    throw toError(competitorsRes.error, "Failed to load competitors.");
+  }
+  if (progressRes.error) {
+    console.error(
+      "[usePlanDetail] competitor_progress query failed:",
+      progressRes.error
+    );
+    throw toError(progressRes.error, "Failed to load competitor progress.");
+  }
+  if (attemptsRes.error) {
+    console.error("[usePlanDetail] gate_attempts query failed:", attemptsRes.error);
+    throw toError(attemptsRes.error, "Failed to load gate attempts.");
+  }
+  if (subsRes.error) {
+    console.error("[usePlanDetail] subcompetences query failed:", subsRes.error);
+    throw toError(subsRes.error, "Failed to load subcompetences.");
+  }
 
   // Supabase result typing is broader than this function needs; we constrain it here.
   const tpp = (tppRes.data ?? []) as RawTrainingPlanPhase[];
@@ -119,7 +156,7 @@ async function fetchPlanDetail(planId: string): Promise<PlanDetail> {
       ? supabase
           .from("topics")
           .select(
-            "id,phase_id,subcompetence_id,gate_id,name,description,order_index, gate:gates!topics_gate_id_fkey(id,phase_id,name,description,gate_type,pass_threshold)"
+            "id,phase_id,subcompetence_id,gate_id,name,description,order_index, gate:gates(id,phase_id,name,description,gate_type,pass_threshold)"
           )
           .in("phase_id", phaseIds)
           .order("order_index", { ascending: true, nullsFirst: false })
@@ -130,8 +167,14 @@ async function fetchPlanDetail(planId: string): Promise<PlanDetail> {
         }),
   ]);
 
-  if (phasesRes.error) throw phasesRes.error;
-  if (topicsRes.error) throw topicsRes.error;
+  if (phasesRes.error) {
+    console.error("[usePlanDetail] phases query failed:", phasesRes.error);
+    throw toError(phasesRes.error, "Failed to load phases.");
+  }
+  if (topicsRes.error) {
+    console.error("[usePlanDetail] topics query failed:", topicsRes.error);
+    throw toError(topicsRes.error, "Failed to load topics.");
+  }
 
   // Supabase result typing is broader than this function needs; we constrain it here.
   const phasesRaw = (phasesRes.data ?? []) as RawPhase[];
@@ -170,8 +213,17 @@ async function fetchPlanDetail(planId: string): Promise<PlanDetail> {
         }),
   ]);
 
-  if (exercisesRes.error) throw exercisesRes.error;
-  if (assessmentsRes.error) throw assessmentsRes.error;
+  if (exercisesRes.error) {
+    console.error("[usePlanDetail] exercises query failed:", exercisesRes.error);
+    throw toError(exercisesRes.error, "Failed to load exercises.");
+  }
+  if (assessmentsRes.error) {
+    console.error(
+      "[usePlanDetail] gate_assessments query failed:",
+      assessmentsRes.error
+    );
+    throw toError(assessmentsRes.error, "Failed to load gate assessments.");
+  }
 
   // Build phase order using training_plan_phases.order_index.
   const orderByPhaseId = new Map<string, number>();
@@ -309,11 +361,30 @@ async function fetchPlanDetail(planId: string): Promise<PlanDetail> {
     // Nullable DB columns; enforce null instead of undefined.
     start_date: (planRes.data.start_date ?? null) as string | null,
     color: resolvePlanColor(planRes.data.color),
+    plan_type:
+      ((planRes.data.plan_type ?? "shared") as "shared" | "personal"),
+    owner_competitor_id: (planRes.data.owner_competitor_id ?? null) as string | null,
   };
+
+  const progressRows = (progressRes.data ?? []) as Array<
+    CompetitorProgress & { participation_status?: "active" | "archived" | null }
+  >;
+  const activeProgressRows = progressRows.filter(
+    (row) => (row.participation_status ?? "active") === "active"
+  );
+
+  const activeCompetitorIds = new Set(activeProgressRows.map((row) => row.competitor_id));
+  const competitors = ((competitorsRes.data ?? []) as Competitor[])
+    .filter((row) => {
+      if (plan.plan_type === "personal" && plan.owner_competitor_id) {
+        return row.id === plan.owner_competitor_id;
+      }
+      return activeCompetitorIds.has(row.id);
+    });
 
   return {
     plan,
-    competitors: (competitorsRes.data ?? []) as Competitor[],
+    competitors,
     phases,
     progressByCompetitor,
     attemptsByGate,

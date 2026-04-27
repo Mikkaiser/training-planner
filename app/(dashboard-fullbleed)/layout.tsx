@@ -32,6 +32,10 @@ export default async function DashboardFullbleedLayout({
 
   // Supabase `profiles.role` is validated in DB; constrain to our `ProfileRole` union.
   const role = (profile?.role ?? null) as ProfileRole | null;
+  const oauthAvatarUrl =
+    (user.user_metadata?.avatar_url as string | undefined) ??
+    (user.user_metadata?.picture as string | undefined) ??
+    null;
 
   return (
     <div
@@ -53,7 +57,7 @@ export default async function DashboardFullbleedLayout({
           height: "100vh",
           width: 300,
           minWidth: 300,
-          overflow: "hidden",
+          overflow: "visible",
         }}
         className="app-sidebar-glass hidden md:block"
       >
@@ -61,7 +65,7 @@ export default async function DashboardFullbleedLayout({
           role={role}
           fullName={profile?.full_name ?? null}
           email={user.email ?? null}
-          avatarUrl={profile?.avatar_url ?? null}
+          avatarUrl={profile?.avatar_url ?? oauthAvatarUrl}
         />
       </div>
 

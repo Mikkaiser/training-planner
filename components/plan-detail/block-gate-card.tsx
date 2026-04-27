@@ -14,6 +14,11 @@ import { useIsDark } from "@/lib/use-is-dark";
 import { usePlanDetailContext } from "@/components/plan-detail/plan-detail-context";
 import { ProgressDot } from "@/components/plan-detail/progress-dot";
 import { CompetitorStatusChip } from "@/components/plan-detail/competitor-status-chip";
+import {
+  CompetitorDonutRing,
+  type DonutRingCompetitor,
+  type DonutRingSegmentState,
+} from "@/components/plan-detail/competitor-donut-ring";
 import { useSelection } from "@/components/plan-detail/selection-context";
 
 export function BlockGateCard({
@@ -39,6 +44,25 @@ export function BlockGateCard({
   const gate = block.gate;
   const GateIcon = gate.gate_type === "phase_gate" ? ShieldCheck : Shield;
 
+  const ringCompetitors: DonutRingCompetitor[] = detail.competitors.map((c) => ({
+    id: c.id,
+    name: c.full_name,
+    color: c.avatar_color,
+  }));
+
+  const ringSegments: DonutRingSegmentState[] = detail.competitors.map((c) => {
+    const state = competitorGateState(detail, c.id, gate.id);
+    if (state.kind === "passed") return { kind: "passed", scoreLabel: `${state.attempt.score}/100` };
+    if (state.kind === "failed" || state.kind === "attempted") {
+      return { kind: "failed", scoreLabel: `${state.attempt.score}/100` };
+    }
+    return { kind: "none" };
+  });
+
+  const ringActiveCompetitors = detail.competitors
+    .filter((c) => competitorBlockState(detail, c.id, block.id).kind === "in_progress")
+    .map((c) => c.id);
+
   if (isPhaseMilestone && gate.gate_type === "phase_gate") {
     return (
       <motion.div
@@ -62,7 +86,14 @@ export function BlockGateCard({
         }
       >
         <span className="plan-phase-gate-card__icon" aria-hidden>
-          <ShieldCheck size={18} />
+          <CompetitorDonutRing
+            competitors={ringCompetitors}
+            segments={ringSegments}
+            activeCompetitorIds={ringActiveCompetitors}
+            centerLabel={`${block.global_index}`}
+            size={34}
+            strokeWidth={4}
+          />
         </span>
         <div className="plan-phase-gate-card__text">
           <span className="plan-phase-gate-card__label">PHASE GATE</span>
@@ -99,16 +130,15 @@ export function BlockGateCard({
       }
     >
       <div className="plan-block-gate-card__top">
-        <span
+        <CompetitorDonutRing
           className="plan-block-gate-card__index"
-          style={{
-            background: scTokens.bg || tokens.chip,
-            borderColor: scTokens.border || tokens.chipBorder,
-            color: scTokens.fg || tokens.chipText,
-          }}
-        >
-          {block.global_index}
-        </span>
+          competitors={ringCompetitors}
+          segments={ringSegments}
+          activeCompetitorIds={ringActiveCompetitors}
+          centerLabel={`${block.global_index}`}
+          size={32}
+          strokeWidth={4}
+        />
 
         <div className="plan-block-gate-card__info">
           <span

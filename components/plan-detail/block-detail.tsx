@@ -7,7 +7,6 @@ import type { BlockItem, GateItem } from "@/lib/plan-detail/types";
 import { getSubcompetenceIcon } from "@/lib/training-plans/icons";
 import { useIsDark } from "@/lib/use-is-dark";
 import { BlockDetailHeader } from "@/components/plan-detail/block-detail-header";
-import { BlockDetailCompetitors } from "@/components/plan-detail/block-detail-competitors";
 import { BlockDetailExercises } from "@/components/plan-detail/block-detail-exercises";
 import { BlockDetailGateCard } from "@/components/plan-detail/block-detail-gate-card";
 import { BlockDetailGateInfoBar } from "@/components/plan-detail/block-detail-gate-info-bar";
@@ -46,12 +45,6 @@ export function BlockDetail({ block }: { block: BlockItem }) {
         subcompetenceChipStyle={scChipStyle}
         subcompetenceColor={subcompetenceColor}
         Icon={Icon}
-      />
-
-      <BlockDetailCompetitors
-        detail={detail}
-        blockId={block.id}
-        accentColor={tokens.accent}
       />
 
       <BlockDetailGateInfoBar gate={blockGate} />

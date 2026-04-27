@@ -19,7 +19,9 @@ export function ExerciseUploadMetadataFields({
   return (
     <>
       <div>
-        <Label htmlFor="ex-title">Title</Label>
+        <Label htmlFor="ex-title" className="tp-plan-label">
+          Title
+        </Label>
         <Input
           id="ex-title"
           value={title}
@@ -29,13 +31,15 @@ export function ExerciseUploadMetadataFields({
       </div>
 
       <div>
-        <Label htmlFor="ex-desc">Description</Label>
+        <Label htmlFor="ex-desc" className="tp-plan-label">
+          Description
+        </Label>
         <textarea
           id="ex-desc"
           rows={2}
           value={description}
           onChange={(e) => onDescriptionChange(e.target.value)}
-          className="plan-exercise-upload__textarea"
+          className="glass-input plan-exercise-upload__textarea"
           placeholder="Optional description..."
         />
       </div>

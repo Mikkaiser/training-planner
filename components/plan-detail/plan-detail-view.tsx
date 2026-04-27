@@ -12,6 +12,24 @@ import { AddCompetitorDialog } from "@/components/plan-detail/add-competitor-dia
 import { PlanDetailSkeleton } from "@/components/shared/skeletons";
 import { usePlanDetail } from "@/lib/plan-detail/use-plan-detail";
 
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  if (error && typeof error === "object") {
+    const maybeMessage =
+      "message" in error && typeof (error as { message?: unknown }).message === "string"
+        ? (error as { message: string }).message
+        : null;
+    if (maybeMessage) return maybeMessage;
+    try {
+      return JSON.stringify(error);
+    } catch {
+      // ignore
+    }
+  }
+  return "Failed to load plan.";
+}
+
 export function PlanDetailView({ planId }: { planId: string }) {
   const { data, isLoading, isError, error } = usePlanDetail(planId);
   const [addOpen, setAddOpen] = useState(false);
@@ -24,7 +42,7 @@ export function PlanDetailView({ planId }: { planId: string }) {
     return (
       <div className="plan-detail-state plan-detail-state--error">
         <div className="text-sm text-destructive">
-          {error instanceof Error ? error.message : "Failed to load plan."}
+          {getErrorMessage(error)}
         </div>
       </div>
     );

@@ -8,12 +8,15 @@ export type PlanDetailPlan = {
   status: "draft" | "active" | "completed";
   start_date: string | null;
   color: PlanColorKey;
+  plan_type: "shared" | "personal";
+  owner_competitor_id: string | null;
 };
 
 export type Competitor = {
   id: string;
   full_name: string;
   avatar_color: string;
+  email?: string | null;
 };
 
 export type CompetitorProgress = {
@@ -25,6 +28,7 @@ export type CompetitorProgress = {
   status: "not_started" | "in_progress" | "completed";
   started_at: string | null;
   completed_at: string | null;
+  participation_status?: "active" | "archived" | null;
 };
 
 export type BlockItem = {

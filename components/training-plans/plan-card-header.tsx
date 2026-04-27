@@ -11,6 +11,7 @@ type PlanCardHeaderProps = {
   description: string | null;
   status: string;
   planColor: keyof typeof PLAN_COLORS;
+  planType: "shared" | "personal";
 };
 
 export function PlanCardHeader({
@@ -19,6 +20,7 @@ export function PlanCardHeader({
   description,
   status,
   planColor,
+  planType,
 }: PlanCardHeaderProps): React.JSX.Element {
   return (
     <div className="plan-card-header">
@@ -29,7 +31,18 @@ export function PlanCardHeader({
         >
           {name?.trim() ? name : "Untitled plan"}
         </Link>
-        <PlanStatusBadge status={status} planColor={planColor} />
+        <div className="flex items-center gap-2">
+          <span
+            className={
+              planType === "personal"
+                ? "competitor-pill competitor-pill--personal"
+                : "competitor-pill"
+            }
+          >
+            {planType === "personal" ? "Personal" : "Shared"}
+          </span>
+          <PlanStatusBadge status={status} planColor={planColor} />
+        </div>
       </div>
       {description?.trim() ? (
         <div className="plan-card-description">{description}</div>

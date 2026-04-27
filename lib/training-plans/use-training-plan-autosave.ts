@@ -49,6 +49,8 @@ export function useTrainingPlanSave({
       status: draft.status,
       start_date: draft.start_date,
       color: draft.color,
+      plan_type: draft.plan_type,
+      owner_competitor_id: draft.owner_competitor_id,
     });
   }, [
     draft.color,
@@ -56,6 +58,8 @@ export function useTrainingPlanSave({
     draft.name,
     draft.start_date,
     draft.status,
+    draft.plan_type,
+    draft.owner_competitor_id,
     planId,
   ]);
 
@@ -89,6 +93,8 @@ export function useTrainingPlanSave({
             status: draft.status,
             start_date: draft.start_date,
             color: draft.color,
+            plan_type: draft.plan_type,
+            owner_competitor_id: draft.owner_competitor_id,
             created_by: createdBy,
           })
           .select("id")
@@ -106,6 +112,8 @@ export function useTrainingPlanSave({
             status: draft.status,
             start_date: draft.start_date,
             color: draft.color,
+            plan_type: draft.plan_type,
+            owner_competitor_id: draft.owner_competitor_id,
           })
           .eq("id", planId);
         if (error) throw error;
@@ -118,6 +126,8 @@ export function useTrainingPlanSave({
         status: draft.status,
         start_date: draft.start_date,
         color: draft.color,
+        plan_type: draft.plan_type,
+        owner_competitor_id: draft.owner_competitor_id,
       });
       externalDirtyRef.current = false;
       setState("saved");

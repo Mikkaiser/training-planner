@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { BookOpen, CheckCircle, Plus, XCircle } from "lucide-react";
+import { useMemo, useState } from "react";
+import { BookOpen, CheckCircle, XCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { format, parseISO } from "date-fns";
 
@@ -10,8 +10,9 @@ import { getLatestAttempt, initialsFromName } from "@/lib/plan-detail/progress";
 import type { GateItem } from "@/lib/plan-detail/types";
 import { useIsDark } from "@/lib/use-is-dark";
 import { BlockDetailGateHistory } from "@/components/plan-detail/block-detail-gate-history";
-import { GateAttemptForm } from "@/components/plan-detail/gate-attempt-form";
 import { usePlanDetailContext } from "@/components/plan-detail/plan-detail-context";
+import { useSaveGateAttempt } from "@/lib/hooks/use-save-gate-attempt";
+import { GateScoreSparkline } from "@/components/plan-detail/gate-score-sparkline";
 
 type BlockDetailGateCardProps = {
   gate: GateItem;
@@ -24,11 +25,24 @@ export function BlockDetailGateCard({
 }: BlockDetailGateCardProps): React.JSX.Element {
   const { detail, tokens } = usePlanDetailContext();
   const isDark = useIsDark();
-  const [recordingFor, setRecordingFor] = useState<string | null>(null);
   const [expandedFor, setExpandedFor] = useState<string | null>(null);
+  const [draftByCompetitor, setDraftByCompetitor] = useState<Record<string, string>>({});
 
   const scTokens = getSubcompetenceTokens(subcompetenceColor, isDark);
   const scBorder = scTokens.border || scTokens.fg;
+
+  const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const threshold = gate.pass_threshold ?? 0;
+
+  const { planId } = usePlanDetailContext();
+  const mutation = useSaveGateAttempt({
+    gate,
+    planId,
+    detail,
+    onReset: () => {
+      // Intentionally left blank: we clear per-row on success.
+    },
+  });
 
   return (
     <section
@@ -57,7 +71,11 @@ export function BlockDetailGateCard({
           const all =
             detail.attemptsByGate.get(gate.id)?.filter((a) => a.competitor_id === c.id) ?? [];
           const expanded = expandedFor === c.id;
-          const isRecording = recordingFor === c.id;
+          const draft = draftByCompetitor[c.id] ?? "";
+          const numericDraft = Number.parseInt(draft, 10);
+          const hasValidDraft =
+            !Number.isNaN(numericDraft) && numericDraft >= 0 && numericDraft <= 100;
+          const willPass = hasValidDraft && numericDraft >= threshold;
 
           return (
             <div key={c.id} className="plan-block-detail__gate-competitor">
@@ -69,7 +87,23 @@ export function BlockDetailGateCard({
                 >
                   {initialsFromName(c.full_name)}
                 </span>
-                <span className="plan-block-detail__competitor-name">{c.full_name}</span>
+                <span className="plan-block-detail__gate-competitor-meta">
+                  <span className="plan-block-detail__competitor-name">
+                    {c.full_name}
+                    {hasValidDraft ? (
+                      <span
+                        className={`plan-block-detail__gate-live ${
+                          willPass
+                            ? "plan-block-detail__gate-live--pass"
+                            : "plan-block-detail__gate-live--fail"
+                        }`}
+                      >
+                        {willPass ? "Pass" : "Fail"}
+                      </span>
+                    ) : null}
+                  </span>
+                  <GateScoreSparkline attempts={all} threshold={threshold} />
+                </span>
 
                 {latest ? (
                   <>
@@ -105,27 +139,41 @@ export function BlockDetailGateCard({
                     </span>
                   </>
                 ) : (
-                  <span className="plan-block-detail__gate-empty">No attempts yet</span>
+                  <span className="plan-block-detail__gate-empty">Ready for first attempt</span>
                 )}
 
-                <button
-                  type="button"
-                  onClick={() => setRecordingFor((cur) => (cur === c.id ? null : c.id))}
-                  className="plan-block-detail__record-btn"
-                >
-                  <Plus size={12} />
-                  <span>Record Attempt</span>
-                </button>
-              </div>
-
-              {isRecording ? (
-                <GateAttemptForm
-                  gate={gate}
-                  competitorId={c.id}
-                  lockedCompetitor
-                  onDone={() => setRecordingFor(null)}
+                <input
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  placeholder="0–100"
+                  value={draft}
+                  onChange={(e) => {
+                    const next = e.target.value.replace(/[^\d]/g, "").slice(0, 3);
+                    setDraftByCompetitor((cur) => ({ ...cur, [c.id]: next }));
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key !== "Enter") return;
+                    e.preventDefault();
+                    if (mutation.isPending) return;
+                    if (!hasValidDraft) return;
+                    mutation.mutate(
+                      {
+                        selectedCompetitor: c.id,
+                        date: today,
+                        numericScore: numericDraft,
+                        notes: "",
+                      },
+                      {
+                        onSuccess: () => {
+                          setDraftByCompetitor((cur) => ({ ...cur, [c.id]: "" }));
+                        },
+                      }
+                    );
+                  }}
+                  className="plan-block-detail__score-input"
+                  aria-label={`Record score for ${c.full_name}`}
                 />
-              ) : null}
+              </div>
 
               {all.length > 0 ? (
                 <BlockDetailGateHistory

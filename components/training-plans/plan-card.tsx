@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Code2, Layers, ShieldCheck } from "lucide-react";
 
 import { PLAN_COLORS, resolvePlanColor } from "@/lib/constants/plan-colors";
@@ -16,13 +17,15 @@ type PlanCardProps = {
 };
 
 export function PlanCard({ plan, onDelete, deleting }: PlanCardProps): React.JSX.Element {
-  const colorKey = resolvePlanColor(plan.color);
+  const isPersonal = plan.plan_type === "personal";
+  const ownerColor = plan.owner_competitor_avatar_color;
+  const colorKey = resolvePlanColor(isPersonal && ownerColor ? null : plan.color);
   const tokens = PLAN_COLORS[colorKey];
 
   const status = (plan.status ?? "draft").toString();
 
   const cardStyle: React.CSSProperties = {
-    borderLeftColor: tokens.border,
+    borderLeftColor: isPersonal && ownerColor ? ownerColor : tokens.border,
     // CSS custom property consumed by `globals.css` (not part of `CSSProperties` index signature).
     ["--plan-card-glow" as string]: tokens.glow,
   };
@@ -41,7 +44,29 @@ export function PlanCard({ plan, onDelete, deleting }: PlanCardProps): React.JSX
         description={plan.description}
         status={status}
         planColor={colorKey}
+        planType={plan.plan_type}
       />
+
+      {isPersonal && plan.owner_competitor_id ? (
+        <div className="plan-card-owner">
+          <Link href={`/competitors/${plan.owner_competitor_id}`} className="plan-card-owner__link">
+            <span
+              className="plan-card-owner__avatar"
+              style={{ background: plan.owner_competitor_avatar_color ?? "var(--color-accent)" }}
+            >
+              {(plan.owner_competitor_name ?? "?")
+                .split(/\s+/)
+                .filter(Boolean)
+                .slice(0, 2)
+                .map((part) => part.charAt(0).toUpperCase())
+                .join("")}
+            </span>
+            <span className="plan-card-owner__name">
+              {plan.owner_competitor_name ?? "Competitor"}
+            </span>
+          </Link>
+        </div>
+      ) : null}
 
       <PlanCardStats
         planColors={PLAN_COLORS}

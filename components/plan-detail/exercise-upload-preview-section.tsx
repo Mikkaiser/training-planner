@@ -27,7 +27,7 @@ export function ExerciseUploadPreviewSection({
 }: ExerciseUploadPreviewSectionProps): React.JSX.Element {
   return (
     <div className="plan-exercise-upload__preview-section">
-      <Label>Preview (optional, PDF only)</Label>
+      <Label className="tp-plan-label">Preview (optional, PDF only)</Label>
       {preview ? (
         <div className="plan-exercise-upload__selected">
           <FileIcon type="pdf" size={16} />

@@ -15,25 +15,38 @@ type SaveGateAttemptArgs = {
   notes: string;
 };
 
-type SaveGateAttemptResult = {
-  passed: boolean;
+type InsertedAttempt = {
+  id: string;
+  gate_id: string;
+  competitor_id: string;
+  training_plan_id: string;
+  attempt_date: string;
   score: number;
+  passed: boolean;
+  created_at: string;
+  notes: string | null;
+  file_url: string | null;
+  file_name: string | null;
+  file_type: string | null;
+  recorded_by: string | null;
 };
 
 type UseSaveGateAttemptProps = {
   gate: GateItem;
   planId: string;
   detail: PlanDetail;
-  competitorName: string;
   onDone?: () => void;
   onReset: () => void;
 };
+
+function competitorNameById(detail: PlanDetail, competitorId: string) {
+  return detail.competitors.find((c) => c.id === competitorId)?.full_name ?? "Competitor";
+}
 
 export function useSaveGateAttempt({
   gate,
   planId,
   detail,
-  competitorName,
   onDone,
   onReset,
 }: UseSaveGateAttemptProps) {
@@ -45,7 +58,7 @@ export function useSaveGateAttempt({
       date,
       numericScore,
       notes,
-    }: SaveGateAttemptArgs): Promise<SaveGateAttemptResult> => {
+    }: SaveGateAttemptArgs): Promise<InsertedAttempt> => {
       if (!selectedCompetitor) throw new Error("Pick a competitor");
       if (Number.isNaN(numericScore) || numericScore < 0 || numericScore > 100) {
         throw new Error("Score must be between 0 and 100");
@@ -66,14 +79,14 @@ export function useSaveGateAttempt({
           notes: notes.trim() || null,
           recorded_by: uid,
         })
-        .select("id,passed,score")
+        .select("id,gate_id,competitor_id,training_plan_id,attempt_date,score,passed,created_at,notes")
         .single();
 
       if (insertRes.error) {
         throw insertRes.error;
       }
 
-      const inserted = insertRes.data as { passed: boolean; score: number };
+      const inserted = insertRes.data as InsertedAttempt;
 
       // Any first attempt means the competitor has started the plan.
       // Without this, a competitor can show "Not started" while having attempts
@@ -131,13 +144,70 @@ export function useSaveGateAttempt({
 
       return inserted;
     },
-    onSuccess: (inserted) => {
+    onSuccess: (inserted, variables) => {
+      // Update the plan detail cache immediately so rings/badges update without waiting.
+      queryClient.setQueryData(planDetailQueryKey(planId), (current: PlanDetail | undefined) => {
+        if (!current) return current;
+
+        const attempt = inserted;
+        const attemptsByGate = new Map(current.attemptsByGate);
+        const prevAttempts = attemptsByGate.get(attempt.gate_id) ?? [];
+        attemptsByGate.set(attempt.gate_id, [attempt, ...prevAttempts]);
+
+        const latestAttemptByGateAndCompetitor = new Map(current.latestAttemptByGateAndCompetitor);
+        latestAttemptByGateAndCompetitor.set(
+          `${attempt.gate_id}:${attempt.competitor_id}`,
+          attempt
+        );
+
+        const progressByCompetitor = new Map(current.progressByCompetitor);
+        const prevProgress = progressByCompetitor.get(attempt.competitor_id);
+        if (prevProgress) {
+          const next = { ...prevProgress };
+          const shouldMarkStarted =
+            next.status === "not_started" || !next.started_at || !next.current_topic_id;
+          if (shouldMarkStarted) {
+            const fallbackBlockId = current.orderedBlockIds[0] ?? null;
+            const nextTopicId = next.current_topic_id ?? fallbackBlockId;
+            const nextPhaseId =
+              next.current_phase_id ??
+              (nextTopicId ? current.blocksById.get(nextTopicId)?.phase_id ?? null : null);
+            next.status = "in_progress";
+            next.started_at = next.started_at ?? new Date().toISOString();
+            next.current_topic_id = nextTopicId;
+            next.current_phase_id = nextPhaseId;
+          }
+
+          if (attempt.passed && gate.gate_type === "block_gate") {
+            const { nextBlockId, nextPhaseId } = nextBlockIdAfterPass(current, attempt.competitor_id);
+            if (nextBlockId) {
+              next.current_topic_id = nextBlockId;
+              next.current_phase_id = nextPhaseId;
+              next.status = "in_progress";
+              next.started_at = next.started_at ?? new Date().toISOString();
+            } else {
+              next.status = "completed";
+              next.completed_at = next.completed_at ?? new Date().toISOString();
+            }
+          }
+
+          progressByCompetitor.set(attempt.competitor_id, next);
+        }
+
+        return {
+          ...current,
+          attemptsByGate,
+          latestAttemptByGateAndCompetitor,
+          progressByCompetitor,
+        };
+      });
+
+      const competitorName = competitorNameById(detail, variables.selectedCompetitor);
       if (inserted.passed) {
         toast.success(`${competitorName} — Gate passed`);
       } else {
         toast.error(`${competitorName} — Gate failed. Score: ${inserted.score}%`);
       }
-      queryClient.invalidateQueries({ queryKey: planDetailQueryKey(planId) });
       onReset();
       onDone?.();
     },

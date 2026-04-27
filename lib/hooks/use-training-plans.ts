@@ -16,6 +16,10 @@ export type PlanListItem = {
   start_date: string | null;
   created_at: string | null;
   color: string | null;
+  plan_type: "shared" | "personal";
+  owner_competitor_id: string | null;
+  owner_competitor_name: string | null;
+  owner_competitor_avatar_color: string | null;
   creator_name: string | null;
   creator_avatar: string | null;
   phase_count: number;
@@ -35,7 +39,9 @@ async function fetchPlans(): Promise<PlanListItem[]> {
   // Base plans for this user.
   const { data: plans, error } = await supabase
     .from("training_plans")
-    .select("id,name,description,status,start_date,created_at,color,created_by")
+    .select(
+      "id,name,description,status,start_date,created_at,color,created_by,plan_type,owner_competitor_id"
+    )
     .eq("created_by", userId)
     .order("created_at", { ascending: false });
 
@@ -44,6 +50,13 @@ async function fetchPlans(): Promise<PlanListItem[]> {
 
   // Supabase result typing is broader than this function needs; we constrain it here.
   const planIds = (plans as Array<{ id: string }>).map((p) => p.id);
+  const ownerIds = Array.from(
+    new Set(
+      (plans as Array<{ owner_competitor_id: string | null }>)
+        .map((p) => p.owner_competitor_id)
+        .filter((value): value is string => Boolean(value))
+    )
+  );
 
   // Gather all training_plan_phases rows for these plans in one query.
   const { data: tpp, error: tppErr } = await supabase
@@ -101,6 +114,32 @@ async function fetchPlans(): Promise<PlanListItem[]> {
     .eq("id", userId)
     .maybeSingle();
 
+  const { data: ownerRows, error: ownersError } = ownerIds.length
+    ? await supabase
+        .from("competitors")
+        .select("id,full_name,avatar_color")
+        .in("id", ownerIds)
+    : { data: [], error: null };
+  if (ownersError) throw ownersError;
+
+  const ownerById = new Map<
+    string,
+    {
+      full_name: string | null;
+      avatar_color: string | null;
+    }
+  >();
+  for (const row of (ownerRows ?? []) as Array<{
+    id: string;
+    full_name: string | null;
+    avatar_color: string | null;
+  }>) {
+    ownerById.set(row.id, {
+      full_name: row.full_name,
+      avatar_color: row.avatar_color,
+    });
+  }
+
   type PlanRow = {
     id: string;
     name: string | null;
@@ -109,6 +148,8 @@ async function fetchPlans(): Promise<PlanListItem[]> {
     start_date: string | null;
     created_at: string | null;
     color: string | null;
+    plan_type: "shared" | "personal" | null;
+    owner_competitor_id: string | null;
   };
 
   return (plans as PlanRow[]).map((p) => {
@@ -119,6 +160,8 @@ async function fetchPlans(): Promise<PlanListItem[]> {
       blockCount += blocksByPhase.get(pid) ?? 0;
       gateCount += gatesByPhase.get(pid) ?? 0;
     }
+    const owner = p.owner_competitor_id ? ownerById.get(p.owner_competitor_id) : null;
+
     return {
       id: p.id,
       name: p.name,
@@ -127,6 +170,10 @@ async function fetchPlans(): Promise<PlanListItem[]> {
       start_date: p.start_date,
       created_at: p.created_at,
       color: p.color,
+      plan_type: p.plan_type === "personal" ? "personal" : "shared",
+      owner_competitor_id: p.owner_competitor_id,
+      owner_competitor_name: owner?.full_name ?? null,
+      owner_competitor_avatar_color: owner?.avatar_color ?? null,
       creator_name:
         // Supabase typing for `.maybeSingle()` is broader than needed; we constrain to our shape.
         ((profile as { full_name?: string | null } | null)?.full_name ?? null) as

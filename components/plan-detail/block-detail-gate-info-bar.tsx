@@ -11,6 +11,7 @@ export function BlockDetailGateInfoBar({
   gate,
 }: BlockDetailGateInfoBarProps): React.JSX.Element {
   const { tokens } = usePlanDetailContext();
+  const typeLabel = gate.gate_type === "phase_gate" ? "Phase Gate" : "Block Gate";
 
   return (
     <div
@@ -23,7 +24,7 @@ export function BlockDetailGateInfoBar({
     >
       <span className="plan-block-detail__gate-bar-name">{gate.name}</span>
       <span className="plan-block-detail__gate-bar-type">
-        {gate.gate_type === "phase_gate" ? "phase_gate" : "block_gate"}
+        {typeLabel}
       </span>
       {typeof gate.pass_threshold === "number" ? (
         <span className="plan-block-detail__gate-bar-threshold" style={{ color: tokens.accent }}>

@@ -142,10 +142,11 @@ export function competitorBlockState(
 }
 
 export type CompetitorBlockPresentation = {
-  label: string;
+  label: string | null;
   color: "positive" | "negative" | "accent" | "muted";
   showProgress: boolean;
   progressPercent?: number;
+  kind?: "active" | "passed" | "advanced" | "other";
 };
 
 /**
@@ -168,17 +169,19 @@ export function getCompetitorBlockPresentation(
 
   if (state.kind === "completed" && latest?.passed) {
     return {
-      label: `Gate passed · ${latest.score}%`,
+      label: `Passed · Gate ${block?.global_index ?? ""}`.trim(),
       color: "positive",
       showProgress: false,
+      kind: "passed",
     };
   }
   if (state.kind === "in_progress") {
     return {
-      label: "Currently here",
+      label: "Active",
       color: "accent",
       showProgress: latest != null,
       progressPercent: latest?.score,
+      kind: "active",
     };
   }
 
@@ -193,20 +196,18 @@ export function getCompetitorBlockPresentation(
       label: away === 1 ? "Next block" : `${away} blocks ahead`,
       color: "muted",
       showProgress: false,
+      kind: "other",
     };
   }
   if (curIdx >= 0 && thisIdx < curIdx) {
     return {
-      label: "Manually advanced",
+      label: "Advanced",
       color: "muted",
       showProgress: false,
+      kind: "advanced",
     };
   }
-  return {
-    label: "Not started",
-    color: "muted",
-    showProgress: false,
-  };
+  return { label: null, color: "muted", showProgress: false, kind: "other" };
 }
 
 export type CompetitorGateState =

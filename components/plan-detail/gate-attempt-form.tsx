@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { AttemptDatePicker } from "@/components/plan-detail/attempt-date-picker";
 import { GateAttemptActions } from "@/components/plan-detail/gate-attempt-actions";
@@ -40,16 +40,10 @@ export function GateAttemptForm({
     !Number.isNaN(numericScore) && numericScore >= 0 && numericScore <= 100;
   const willPass = hasValidScore && numericScore >= threshold;
 
-  const competitorName = useMemo(() => {
-    const c = detail.competitors.find((x) => x.id === selectedCompetitor);
-    return c?.full_name ?? "Competitor";
-  }, [detail.competitors, selectedCompetitor]);
-
   const mutation = useSaveGateAttempt({
     gate,
     planId,
     detail,
-    competitorName,
     onDone,
     onReset: () => {
       setScore("");
