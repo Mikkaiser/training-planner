@@ -20,6 +20,7 @@ export interface TrainingPlanEditorPhasesProps {
   subcompetences: Subcompetence[];
   planColor: PlanColorKey;
   onAddExistingPhase: (phase: Phase) => void;
+  onUpdatePhase: (phase: Phase) => void;
   onRemovePhase: (phaseId: string) => void;
   onReorder: (activeId: string, overId: string) => void;
   onToggleExpanded: (phaseId: string) => void;
@@ -35,6 +36,7 @@ export function TrainingPlanEditorPhases({
   subcompetences,
   planColor,
   onAddExistingPhase,
+  onUpdatePhase,
   onRemovePhase,
   onReorder,
   onToggleExpanded,
@@ -83,6 +85,9 @@ export function TrainingPlanEditorPhases({
                   key={p.phase_id}
                   item={p}
                   expanded={Boolean(expanded[p.phase_id])}
+                  subcompetences={subcompetences}
+                  planColor={planColor}
+                  onUpdated={onUpdatePhase}
                   onToggleExpanded={() => onToggleExpanded(p.phase_id)}
                   onRemove={() => onRemovePhase(p.phase_id)}
                 />

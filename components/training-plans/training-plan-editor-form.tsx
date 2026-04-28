@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Calendar } from "lucide-react";
 
+import { CompetitorAssignPopover } from "@/components/competitors/competitor-assign-popover";
 import { initialsFromName } from "@/components/competitors/competitor-utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +20,7 @@ export interface TrainingPlanEditorFormProps {
   onChangeStartDate: (value: string) => void;
   onChangeStatus: (value: TrainingPlanStatus) => void;
   onPickColor: (color: PlanColorKey) => void;
+  onAssignCompetitor: (competitorId: string | null) => void;
 }
 
 export function TrainingPlanEditorForm({
@@ -29,6 +31,7 @@ export function TrainingPlanEditorForm({
   onChangeStartDate,
   onChangeStatus,
   onPickColor,
+  onAssignCompetitor,
 }: TrainingPlanEditorFormProps): React.JSX.Element {
   return (
     <div className="tp-plan-form">
@@ -60,6 +63,21 @@ export function TrainingPlanEditorForm({
           </div>
         </div>
       ) : null}
+
+      {!personalContext ? (
+        <CompetitorAssignPopover
+          value={draft.owner_competitor_id}
+          onChange={onAssignCompetitor}
+        />
+      ) : (
+        <CompetitorAssignPopover
+          value={personalContext.id}
+          locked
+          onChange={() => {
+            // Locked to personalContext.
+          }}
+        />
+      )}
 
       <div>
         <Label htmlFor="tp-plan-name" className="tp-plan-label">

@@ -24,6 +24,7 @@ type PhasePickerCreateBlocksProps = {
   createdBy: string;
   planColor: PlanColorKey;
   exerciseUploads: Array<UploadResult | null>;
+  showExerciseUpload?: boolean;
   onAddBlock: () => void;
   onRemoveBlock: (index: number) => void;
   onBlockNameChange: (index: number, name: string) => void;
@@ -40,6 +41,7 @@ export function PhasePickerCreateBlocks({
   createdBy,
   planColor,
   exerciseUploads,
+  showExerciseUpload = true,
   onAddBlock,
   onRemoveBlock,
   onBlockNameChange,
@@ -67,6 +69,7 @@ export function PhasePickerCreateBlocks({
             createdBy={createdBy}
             planColor={planColor}
             exerciseUpload={exerciseUploads[idx] ?? null}
+            showExerciseUpload={showExerciseUpload}
             onRemove={() => onRemoveBlock(idx)}
             onNameChange={(name) => onBlockNameChange(idx, name)}
             onSubcompetenceChange={(subcompetenceId) =>

@@ -25,11 +25,13 @@ export interface TrainingPlanEditorLeftPanelProps {
   sensors: SensorDescriptor<Record<string, unknown>>[];
   subcompetences: Subcompetence[];
   onAddExistingPhase: (phase: Phase) => void;
+  onUpdatePhase: (phase: Phase) => void;
   onChangeDescription: (value: string) => void;
   onChangeName: (value: string) => void;
   onChangeStartDate: (value: string) => void;
   onChangeStatus: (value: TrainingPlanStatus) => void;
   onPickColor: (color: PlanColorKey) => void;
+  onAssignCompetitor: (competitorId: string | null) => void;
   onRemovePhase: (phaseId: string) => void;
   onReorder: (activeId: string, overId: string) => void;
   onSave: () => void;
@@ -50,11 +52,13 @@ export function TrainingPlanEditorLeftPanel({
   sensors,
   subcompetences,
   onAddExistingPhase,
+  onUpdatePhase,
   onChangeDescription,
   onChangeName,
   onChangeStartDate,
   onChangeStatus,
   onPickColor,
+  onAssignCompetitor,
   onRemovePhase,
   onReorder,
   onSave,
@@ -80,6 +84,7 @@ export function TrainingPlanEditorLeftPanel({
           onChangeStartDate={onChangeStartDate}
           onChangeStatus={onChangeStatus}
           onPickColor={onPickColor}
+          onAssignCompetitor={onAssignCompetitor}
         />
 
         <TrainingPlanEditorPhases
@@ -92,6 +97,7 @@ export function TrainingPlanEditorLeftPanel({
           subcompetences={subcompetences}
           planColor={draft.color}
           onAddExistingPhase={onAddExistingPhase}
+          onUpdatePhase={onUpdatePhase}
           onRemovePhase={onRemovePhase}
           onReorder={onReorder}
           onToggleExpanded={onToggleExpanded}

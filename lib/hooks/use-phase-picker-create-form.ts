@@ -19,22 +19,28 @@ type UsePhasePickerCreateFormReturn = {
   subcompetenceError?: string;
 };
 
-export function usePhasePickerCreateForm(): UsePhasePickerCreateFormReturn {
+function defaultCreatePhaseValues(): CreatePhaseValues {
+  return {
+    name: "",
+    subcompetence_ids: [],
+    blocks: [
+      {
+        name: "Block 1",
+        subcompetence_id: null,
+        gate_pass_threshold: 80,
+      },
+    ],
+  };
+}
+
+export function usePhasePickerCreateForm(
+  initialValues?: CreatePhaseValues
+): UsePhasePickerCreateFormReturn {
   const form = useForm<CreatePhaseValues>({
     // `zodResolver()` typing doesn't preserve the inferred schema value type.
     // This is safe because `createPhaseSchema` is the single source of truth.
     resolver: zodResolver(createPhaseSchema) as unknown as Resolver<CreatePhaseValues>,
-    defaultValues: {
-      name: "",
-      subcompetence_ids: [],
-      blocks: [
-        {
-          name: "Block 1",
-          subcompetence_id: null,
-          gate_pass_threshold: 80,
-        },
-      ],
-    },
+    defaultValues: initialValues ?? defaultCreatePhaseValues(),
     mode: "onChange",
   });
 

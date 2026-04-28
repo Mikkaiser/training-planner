@@ -26,6 +26,7 @@ type PhasePickerCreateBlockCardProps = {
   createdBy: string;
   planColor: PlanColorKey;
   exerciseUpload: UploadResult | null;
+  showExerciseUpload?: boolean;
   onRemove: () => void;
   onNameChange: (name: string) => void;
   onSubcompetenceChange: (subcompetenceId: string | null) => void;
@@ -42,6 +43,7 @@ export function PhasePickerCreateBlockCard({
   createdBy,
   planColor,
   exerciseUpload,
+  showExerciseUpload = true,
   onRemove,
   onNameChange,
   onSubcompetenceChange,
@@ -137,30 +139,37 @@ export function PhasePickerCreateBlockCard({
         </div>
       </div>
 
-      <div className="mt-3">
-        <Label className="text-[14px] font-medium text-tp-secondary">
-          Add exercise (optional)
-        </Label>
-        <div className="mt-1">
-          <FileUpload
-            key={exerciseUpload?.path ?? `block-upload-${index}`}
-            bucket="exercises"
-            folder={`draft-phases/${createdBy}/block-${index + 1}`}
-            allowed={["pdf", "docx", "zip"]}
-            planColor={planColor}
-            label="Add exercise (optional)"
-            onUploadComplete={onExerciseUploadChange}
-          />
-        </div>
-        {exerciseUpload ? (
-          <div className="mt-2 flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm text-tp-secondary">
-            <span className="truncate">{exerciseUpload.fileName}</span>
-            <Button type="button" variant="ghost" size="sm" onClick={() => onExerciseUploadChange(null)}>
-              Remove
-            </Button>
+      {showExerciseUpload ? (
+        <div className="mt-3">
+          <Label className="text-[14px] font-medium text-tp-secondary">
+            Add exercise (optional)
+          </Label>
+          <div className="mt-1">
+            <FileUpload
+              key={exerciseUpload?.path ?? `block-upload-${index}`}
+              bucket="exercises"
+              folder={`draft-phases/${createdBy}/block-${index + 1}`}
+              allowed={["pdf", "docx", "zip"]}
+              planColor={planColor}
+              label="Add exercise (optional)"
+              onUploadComplete={onExerciseUploadChange}
+            />
           </div>
-        ) : null}
-      </div>
+          {exerciseUpload ? (
+            <div className="mt-2 flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm text-tp-secondary">
+              <span className="truncate">{exerciseUpload.fileName}</span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => onExerciseUploadChange(null)}
+              >
+                Remove
+              </Button>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

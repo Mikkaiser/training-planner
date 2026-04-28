@@ -38,6 +38,7 @@ export interface TrainingPlanEditorState {
   subcompetences: Subcompetence[];
   totalWeeks: number;
   onAddExistingPhase: (phase: Phase) => void;
+  onUpdatePhase: (phase: Phase) => void;
   onBackToPlans: () => void;
   onChangeDescription: (value: string) => void;
   onChangeName: (value: string) => void;
@@ -45,6 +46,7 @@ export interface TrainingPlanEditorState {
   onChangeStartDate: (value: string) => void;
   onChangeStatus: (value: TrainingPlanStatus) => void;
   onPickColor: (color: PlanDraft["color"]) => void;
+  onAssignCompetitor: (competitorId: string | null) => void;
   onRemovePhase: (phaseId: string) => void;
   onReorder: (activeId: string, overId: string) => void;
   onSave: () => void;
@@ -57,7 +59,7 @@ export function useTrainingPlanEditorState(planId?: string): TrainingPlanEditorS
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
   const personalFor = searchParams.get("personalFor");
   const from = searchParams.get("from");
-  const createPersonalPlanMutation = useCreatePersonalPlan(personalFor ?? "");
+  const createPersonalPlanMutation = useCreatePersonalPlan();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
   const [orientation, setOrientation] = useState<Orientation>("horizontal");
@@ -346,6 +348,13 @@ export function useTrainingPlanEditorState(planId?: string): TrainingPlanEditorS
     auto.markExternalDirty();
   }
 
+  function onUpdatePhase(phase: Phase) {
+    setPhaseRefs((prev) =>
+      prev.map((ref) => (ref.phase_id === phase.id ? { ...ref, phase } : ref))
+    );
+    auto.markExternalDirty();
+  }
+
   function onRemovePhase(phaseId: string) {
     const next = recomputeOffsets(phaseRefs.filter((p) => p.phase_id !== phaseId));
     setPhaseRefs(next);
@@ -411,7 +420,10 @@ export function useTrainingPlanEditorState(planId?: string): TrainingPlanEditorS
         draft.owner_competitor_id &&
         !createPersonalPlanMutation.isPending
       ) {
-        await createPersonalPlanMutation.mutateAsync({ planId: id });
+        await createPersonalPlanMutation.mutateAsync({
+          planId: id,
+          competitorId: draft.owner_competitor_id,
+        });
       }
       auto.markExternalClean();
     } catch {
@@ -466,6 +478,7 @@ export function useTrainingPlanEditorState(planId?: string): TrainingPlanEditorS
     subcompetences,
     totalWeeks,
     onAddExistingPhase,
+    onUpdatePhase,
     onBackToPlans: () => router.push(canUseFromPath ? (from as string) : "/plans"),
     onChangeDescription: (value) => setDraft((d) => ({ ...d, description: value })),
     onChangeName: (value) => setDraft((d) => ({ ...d, name: value })),
@@ -473,6 +486,13 @@ export function useTrainingPlanEditorState(planId?: string): TrainingPlanEditorS
     onChangeStartDate: (value) => setDraft((d) => ({ ...d, start_date: value })),
     onChangeStatus: (value) => setDraft((d) => ({ ...d, status: value })),
     onPickColor: (color) => setDraft((d) => ({ ...d, color })),
+    onAssignCompetitor: (competitorId) => {
+      setDraft((d) => ({
+        ...d,
+        plan_type: competitorId ? "personal" : "shared",
+        owner_competitor_id: competitorId,
+      }));
+    },
     onRemovePhase,
     onReorder,
     onSave: () => void onSave(),

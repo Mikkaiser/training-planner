@@ -10,6 +10,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type CreatePersonalPlanInput = {
   planId: string;
+  competitorId: string;
 };
 
 async function findPlanStart(planId: string) {
@@ -49,11 +50,11 @@ async function findPlanStart(planId: string) {
   };
 }
 
-export function useCreatePersonalPlan(competitorId: string) {
+export function useCreatePersonalPlan() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ planId }: CreatePersonalPlanInput) => {
+    mutationFn: async ({ planId, competitorId }: CreatePersonalPlanInput) => {
       const supabase = getSupabaseBrowserClient();
 
       const { error: archiveError } = await supabase
@@ -91,7 +92,7 @@ export function useCreatePersonalPlan(competitorId: string) {
     },
     onSuccess: (_data, variables) => {
       toast.success("Personal plan linked to competitor.");
-      queryClient.invalidateQueries({ queryKey: competitorQueryKey(competitorId) });
+      queryClient.invalidateQueries({ queryKey: competitorQueryKey(variables.competitorId) });
       queryClient.invalidateQueries({ queryKey: competitorsQueryKey(false) });
       queryClient.invalidateQueries({ queryKey: competitorsQueryKey(true) });
       queryClient.invalidateQueries({ queryKey: ["training-plans"] });

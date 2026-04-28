@@ -37,11 +37,13 @@ export function TrainingPlanEditor({ planId }: { planId?: string }): React.JSX.E
           sensors={state.sensors}
           subcompetences={state.subcompetences}
           onAddExistingPhase={state.onAddExistingPhase}
+          onUpdatePhase={state.onUpdatePhase}
           onChangeDescription={state.onChangeDescription}
           onChangeName={state.onChangeName}
           onChangeStartDate={state.onChangeStartDate}
           onChangeStatus={state.onChangeStatus}
           onPickColor={state.onPickColor}
+          onAssignCompetitor={state.onAssignCompetitor}
           onRemovePhase={state.onRemovePhase}
           onReorder={state.onReorder}
           onSave={state.onSave}
