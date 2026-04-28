@@ -77,7 +77,7 @@ export function PhasePickerExistingTab({
                     </span>
                   ) : (
                     <span className="rounded-full border border-border px-2 py-0.5 text-xs text-tp-secondary">
-                      {phase.duration_weeks ?? "—"}w
+                      {phase.blocks.length} blocks
                     </span>
                   )}
                 </div>

@@ -6,7 +6,6 @@ export type PlanDetailPlan = {
   name: string | null;
   description: string | null;
   status: "draft" | "active" | "completed";
-  start_date: string | null;
   color: PlanColorKey;
   plan_type: "shared" | "personal";
   owner_competitor_id: string | null;
@@ -58,7 +57,6 @@ export type PhaseWithChildren = {
   name: string;
   description: string | null;
   order_index: number | null;
-  duration_weeks: number | null;
   blocks: BlockItem[];
 };
 

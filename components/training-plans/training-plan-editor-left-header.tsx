@@ -61,7 +61,7 @@ export function TrainingPlanEditorLeftHeader({
           onClick={onSave}
           disabled={!autoCanSave || autoState === "saving"}
           className="tp-plan-save-btn"
-          title={!autoCanSave ? "Fill in the plan name (min 3 chars) and start date." : undefined}
+          title={!autoCanSave ? "Fill in the plan name (min 3 chars)." : undefined}
         >
           {autoState === "saving" ? (
             <>

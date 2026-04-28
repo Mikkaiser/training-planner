@@ -83,11 +83,6 @@ export function SortablePhaseCard({
               <div className="truncate text-sm font-semibold text-tp-primary">
                 {item.phase.name}
               </div>
-              {item.phase.duration_weeks ? (
-                <span className="rounded-full border border-border px-2 py-0.5 text-xs text-tp-secondary">
-                  {item.phase.duration_weeks}w
-                </span>
-              ) : null}
             </div>
 
             <div className="mt-2 flex flex-wrap gap-1.5">

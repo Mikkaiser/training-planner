@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { PlanDraft } from "@/lib/training-plans/types";
+import { toast } from "sonner";
 
 export type SaveState = "idle" | "dirty" | "saving" | "saved" | "error";
 
@@ -38,8 +39,7 @@ export function useTrainingPlanSave({
   const savedResetRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const externalDirtyRef = useRef<boolean>(false);
 
-  const canSave =
-    enabled && draft.name.trim().length >= 3 && Boolean(draft.start_date);
+  const canSave = enabled && draft.name.trim().length >= 3;
 
   const hash = useMemo(() => {
     return JSON.stringify({
@@ -47,7 +47,6 @@ export function useTrainingPlanSave({
       name: draft.name,
       description: draft.description,
       status: draft.status,
-      start_date: draft.start_date,
       color: draft.color,
       plan_type: draft.plan_type,
       owner_competitor_id: draft.owner_competitor_id,
@@ -56,7 +55,6 @@ export function useTrainingPlanSave({
     draft.color,
     draft.description,
     draft.name,
-    draft.start_date,
     draft.status,
     draft.plan_type,
     draft.owner_competitor_id,
@@ -91,7 +89,6 @@ export function useTrainingPlanSave({
             name: draft.name.trim(),
             description: draft.description?.trim() || null,
             status: draft.status,
-            start_date: draft.start_date,
             color: draft.color,
             plan_type: draft.plan_type,
             owner_competitor_id: draft.owner_competitor_id,
@@ -110,7 +107,6 @@ export function useTrainingPlanSave({
             name: draft.name.trim(),
             description: draft.description?.trim() || null,
             status: draft.status,
-            start_date: draft.start_date,
             color: draft.color,
             plan_type: draft.plan_type,
             owner_competitor_id: draft.owner_competitor_id,
@@ -124,7 +120,6 @@ export function useTrainingPlanSave({
         name: draft.name,
         description: draft.description,
         status: draft.status,
-        start_date: draft.start_date,
         color: draft.color,
         plan_type: draft.plan_type,
         owner_competitor_id: draft.owner_competitor_id,
@@ -144,6 +139,7 @@ export function useTrainingPlanSave({
           : "Save failed.";
       // eslint-disable-next-line no-console
       console.error("Training plan save failed:", err);
+      toast.error(msg);
       setErrorMessage(msg);
       setState("error");
       throw err instanceof Error ? err : new Error("save_failed");

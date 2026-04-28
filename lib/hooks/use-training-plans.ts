@@ -13,7 +13,6 @@ export type PlanListItem = {
   name: string | null;
   description: string | null;
   status: string | null;
-  start_date: string | null;
   created_at: string | null;
   color: string | null;
   plan_type: "shared" | "personal";
@@ -40,7 +39,7 @@ async function fetchPlans(): Promise<PlanListItem[]> {
   const { data: plans, error } = await supabase
     .from("training_plans")
     .select(
-      "id,name,description,status,start_date,created_at,color,created_by,plan_type,owner_competitor_id"
+      "id,name,description,status,created_at,color,created_by,plan_type,owner_competitor_id"
     )
     .eq("created_by", userId)
     .order("created_at", { ascending: false });
@@ -145,7 +144,6 @@ async function fetchPlans(): Promise<PlanListItem[]> {
     name: string | null;
     description: string | null;
     status: string | null;
-    start_date: string | null;
     created_at: string | null;
     color: string | null;
     plan_type: "shared" | "personal" | null;
@@ -167,7 +165,6 @@ async function fetchPlans(): Promise<PlanListItem[]> {
       name: p.name,
       description: p.description,
       status: p.status,
-      start_date: p.start_date,
       created_at: p.created_at,
       color: p.color,
       plan_type: p.plan_type === "personal" ? "personal" : "shared",

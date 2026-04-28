@@ -190,7 +190,6 @@ export function CompetitorProfileView({ competitorId }: { competitorId: string }
             </div>
             <div className="space-y-1 text-sm text-tp-secondary">
               <p>Status: {data.active_plan.status ?? "draft"}</p>
-              <p>Start date: {formatDate(data.active_plan.start_date)}</p>
               <p>Current block: {data.active_block_name ?? "-"}</p>
             </div>
             <div className="md:col-span-2">

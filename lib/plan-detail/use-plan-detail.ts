@@ -32,7 +32,6 @@ type RawPhase = {
   name: string;
   description: string | null;
   order_index: number | null;
-  duration_weeks: number | null;
 };
 
 type RawTopic = {
@@ -81,7 +80,7 @@ async function fetchPlanDetail(planId: string): Promise<PlanDetail> {
     await Promise.all([
       supabase
         .from("training_plans")
-        .select("id,name,description,status,start_date,color,plan_type,owner_competitor_id")
+        .select("id,name,description,status,color,plan_type,owner_competitor_id")
         .eq("id", planId)
         .maybeSingle(),
       supabase
@@ -151,7 +150,7 @@ async function fetchPlanDetail(planId: string): Promise<PlanDetail> {
     phaseIds.length
       ? supabase
           .from("phases")
-          .select("id,name,description,order_index,duration_weeks")
+          .select("id,name,description,order_index")
           .in("id", phaseIds)
       : Promise.resolve({
           // Empty fallback preserves the expected `data` item shape.
@@ -329,7 +328,6 @@ async function fetchPlanDetail(planId: string): Promise<PlanDetail> {
       name: p.name,
       description: p.description,
       order_index: p.order_index,
-      duration_weeks: p.duration_weeks,
       blocks: phaseBlocks,
     });
   }
@@ -419,8 +417,6 @@ async function fetchPlanDetail(planId: string): Promise<PlanDetail> {
     description: (planRes.data.description ?? null) as string | null,
     // Supabase enum typing isn't fully inferred here; constrain to our union.
     status: (planRes.data.status ?? "draft") as PlanDetailPlan["status"],
-    // Nullable DB columns; enforce null instead of undefined.
-    start_date: (planRes.data.start_date ?? null) as string | null,
     color: resolvePlanColor(planRes.data.color),
     plan_type:
       ((planRes.data.plan_type ?? "shared") as "shared" | "personal"),

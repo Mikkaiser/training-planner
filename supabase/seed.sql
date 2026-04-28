@@ -34,16 +34,15 @@ set
   icon = excluded.icon;
 
 -- 3) Seed 2 sample phases (fixed IDs)
-insert into public.phases (id, name, description, order_index, duration_weeks)
+insert into public.phases (id, name, description, order_index)
 values
-  ('a1000000-0000-0000-0000-000000000001', 'Foundation', 'Core fundamentals: OOP, SQL basics, WinForms intro, UML basics', 1, 4),
-  ('a1000000-0000-0000-0000-000000000002', 'Intermediate', 'API development, EF Core, MAUI intro, testing fundamentals', 2, 6)
+  ('a1000000-0000-0000-0000-000000000001', 'Foundation', 'Core fundamentals: OOP, SQL basics, WinForms intro, UML basics', 1),
+  ('a1000000-0000-0000-0000-000000000002', 'Intermediate', 'API development, EF Core, MAUI intro, testing fundamentals', 2)
 on conflict (id) do update
 set
   name = excluded.name,
   description = excluded.description,
-  order_index = excluded.order_index,
-  duration_weeks = excluded.duration_weeks;
+  order_index = excluded.order_index;
 
 -- 4) Associate subcompetences to phases
 insert into public.phase_subcompetences (phase_id, subcompetence_id)
@@ -59,15 +58,14 @@ where name in ('Development', 'Testing', 'Transversal')
 on conflict do nothing;
 
 -- 5) Seed 1 sample training plan (fixed ID)
-insert into public.training_plans (id, name, description, status, start_date)
+insert into public.training_plans (id, name, description, status)
 values
-  ('b1000000-0000-0000-0000-000000000001', 'Phase 1 — Foundation Track', 'Initial training plan for new competitors starting from scratch', 'active', current_date)
+  ('b1000000-0000-0000-0000-000000000001', 'Phase 1 — Foundation Track', 'Initial training plan for new competitors starting from scratch', 'active')
 on conflict (id) do update
 set
   name = excluded.name,
   description = excluded.description,
-  status = excluded.status,
-  start_date = excluded.start_date;
+  status = excluded.status;
 
 -- 6) Associate phases to the training plan
 insert into public.training_plan_phases (training_plan_id, phase_id, order_index, start_offset_weeks)

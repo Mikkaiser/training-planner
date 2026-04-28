@@ -19,6 +19,7 @@ import { usePhasePickerCreateForm } from "@/lib/hooks/use-phase-picker-create-fo
 import { useUpdatePhaseFromForm } from "@/lib/hooks/use-update-phase-from-form";
 import type { PlanColorKey } from "@/lib/constants/plan-colors";
 import type { Phase, Subcompetence } from "@/lib/training-plans/types";
+import { useTrainingPlanEditorShortcuts } from "@/components/training-plans/training-plan-editor-shortcuts-context";
 
 type PhaseEditDialogProps = {
   open: boolean;
@@ -56,6 +57,7 @@ export function PhaseEditDialog({
   const { form, values, blockFields, addBlock, removeBlock, toggleSubcompetenceId, subcompetenceError } =
     usePhasePickerCreateForm(initialValues);
   const updatePhase = useUpdatePhaseFromForm();
+  const { registerSaveInterceptor } = useTrainingPlanEditorShortcuts();
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -91,6 +93,28 @@ export function PhaseEditDialog({
     }
   });
 
+  useEffect(() => {
+    if (!open) return;
+
+    return registerSaveInterceptor(async () => {
+      if (saving || updatePhase.isPending) return false;
+      if (!form.formState.isDirty) return true;
+
+      const isValid = await form.trigger();
+      if (!isValid) return false;
+
+      await handleSave();
+      return true;
+    });
+  }, [
+    form,
+    handleSave,
+    open,
+    registerSaveInterceptor,
+    saving,
+    updatePhase.isPending,
+  ]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="glass-panel--strong h-[85vh] w-[80vw] max-w-[80vw] gap-0 overflow-hidden p-0">
@@ -104,7 +128,7 @@ export function PhaseEditDialog({
             event.preventDefault();
             void handleSave();
           }}
-          className="flex h-full flex-col"
+          className="flex min-h-0 flex-1 flex-col"
         >
           <div className="flex-1 space-y-4 overflow-y-auto p-5">
             <div>

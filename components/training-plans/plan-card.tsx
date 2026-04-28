@@ -81,7 +81,7 @@ export function PlanCard({ plan, onDelete, deleting }: PlanCardProps): React.JSX
         gateIcon={<ShieldCheck size={18} />}
       />
 
-      <PlanCardMeta startDate={plan.start_date} creatorName={plan.creator_name} />
+      <PlanCardMeta startDate={null} creatorName={plan.creator_name} />
 
       <PlanCardActions
         planId={plan.id}

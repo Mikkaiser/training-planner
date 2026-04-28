@@ -36,7 +36,6 @@ export type Phase = {
   id: string;
   name: string;
   description: string | null;
-  duration_weeks: number | null;
   order_index: number | null;
   subcompetences: Subcompetence[];
   blocks: BlockWithGate[];
@@ -47,7 +46,6 @@ export type PlanDraft = {
   name: string;
   description: string;
   status: TrainingPlanStatus;
-  start_date: string; // YYYY-MM-DD
   color: PlanColorKey;
   plan_type: "shared" | "personal";
   owner_competitor_id: string | null;

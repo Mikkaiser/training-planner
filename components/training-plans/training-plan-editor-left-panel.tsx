@@ -28,7 +28,6 @@ export interface TrainingPlanEditorLeftPanelProps {
   onUpdatePhase: (phase: Phase) => void;
   onChangeDescription: (value: string) => void;
   onChangeName: (value: string) => void;
-  onChangeStartDate: (value: string) => void;
   onChangeStatus: (value: TrainingPlanStatus) => void;
   onPickColor: (color: PlanColorKey) => void;
   onAssignCompetitor: (competitorId: string | null) => void;
@@ -55,7 +54,6 @@ export function TrainingPlanEditorLeftPanel({
   onUpdatePhase,
   onChangeDescription,
   onChangeName,
-  onChangeStartDate,
   onChangeStatus,
   onPickColor,
   onAssignCompetitor,
@@ -81,7 +79,6 @@ export function TrainingPlanEditorLeftPanel({
           personalContext={personalContext}
           onChangeDescription={onChangeDescription}
           onChangeName={onChangeName}
-          onChangeStartDate={onChangeStartDate}
           onChangeStatus={onChangeStatus}
           onPickColor={onPickColor}
           onAssignCompetitor={onAssignCompetitor}

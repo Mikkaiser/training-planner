@@ -7,7 +7,6 @@ export type CompetitorPlanSummary = {
   owner_competitor_id: string | null;
   color: string | null;
   status: string | null;
-  start_date: string | null;
 };
 
 export type CompetitorListItem = {

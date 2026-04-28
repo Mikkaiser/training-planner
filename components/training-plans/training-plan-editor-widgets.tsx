@@ -63,7 +63,7 @@ export function SaveIndicator({
     return (
       <div className="flex items-center gap-2 text-[12px] text-tp-muted">
         <span className="h-2 w-2 animate-pulse rounded-full bg-[var(--color-accent)]" />
-        {canSave ? "Unsaved changes" : "Fill required fields to save"}
+        {canSave ? "Unsaved changes" : "Fill plan name to save"}
       </div>
     );
   }

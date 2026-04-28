@@ -1,7 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
-
 import { subcompetenceChipStyle } from "@/lib/constants/subcompetence-tokens";
 import type { BlockItem, GateItem } from "@/lib/plan-detail/types";
 import { getSubcompetenceIcon } from "@/lib/training-plans/icons";
@@ -14,7 +12,6 @@ import { usePlanDetailContext } from "@/components/plan-detail/plan-detail-conte
 export function BlockDetail({ block }: { block: BlockItem }) {
   const { detail, tokens } = usePlanDetailContext();
 
-  const phase = detail.phases.find((p) => p.id === block.phase_id);
   const blockGate: GateItem = block.gate;
 
   const sc = block.subcompetence;
@@ -24,21 +21,11 @@ export function BlockDetail({ block }: { block: BlockItem }) {
 
   const categories = detail.exerciseCategoriesByBlock.get(block.id) ?? [];
 
-  const weekRange = useMemo(() => {
-    if (!phase?.duration_weeks || !phase.blocks.length) return null;
-    const per = phase.duration_weeks / phase.blocks.length;
-    const idx = phase.blocks.findIndex((b) => b.id === block.id);
-    if (idx < 0) return null;
-    const startWeek = Math.round(idx * per) + 1;
-    const endWeek = Math.round((idx + 1) * per);
-    return `Week ${startWeek}${endWeek > startWeek ? `–${endWeek}` : ""}`;
-  }, [phase, block.id]);
-
   return (
     <div className="plan-block-detail">
       <BlockDetailHeader
         block={block}
-        weekRange={weekRange}
+        weekRange={null}
         subcompetenceLabel={sc?.name ?? null}
         subcompetenceChipStyle={scChipStyle}
         subcompetenceColor={subcompetenceColor}

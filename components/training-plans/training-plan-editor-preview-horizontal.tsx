@@ -15,14 +15,12 @@ import type { PlanPhaseRef } from "@/lib/training-plans/types";
 export interface TrainingPlanEditorPreviewHorizontalProps {
   phaseRefs: PlanPhaseRef[];
   sensors: SensorDescriptor<Record<string, unknown>>[];
-  totalWeeks: number;
   onReorder: (activeId: string, overId: string) => void;
 }
 
 export function TrainingPlanEditorPreviewHorizontal({
   phaseRefs,
   sensors,
-  totalWeeks,
   onReorder,
 }: TrainingPlanEditorPreviewHorizontalProps): React.JSX.Element {
 
@@ -40,9 +38,7 @@ export function TrainingPlanEditorPreviewHorizontal({
           <div className="flex min-h-[180px] w-full items-stretch gap-4">
             <AnimatePresence initial={false}>
               {phaseRefs.map((r, idx) => {
-                const dur = r.phase.duration_weeks ?? 0;
-                const frac = totalWeeks ? dur / totalWeeks : 1 / Math.max(phaseRefs.length, 1);
-                const grow = Math.max(frac, 0.08);
+                const grow = 1;
                 const accent = r.phase.subcompetences[0]?.color ?? "var(--color-accent)";
                 const phaseGate =
                   r.phase.blocks[r.phase.blocks.length - 1]?.gate?.gate_type === "phase_gate"

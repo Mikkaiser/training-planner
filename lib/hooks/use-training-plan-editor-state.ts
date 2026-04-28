@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { PointerSensor, useSensor, useSensors, type SensorDescriptor } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import { recomputeOffsets } from "@/lib/utils/training-plan-editor-utils";
 import { PLAN_COLORS, resolvePlanColor } from "@/lib/constants/plan-colors";
@@ -22,6 +23,7 @@ import type {
 import { useTrainingPlanSave } from "@/lib/training-plans/use-training-plan-autosave";
 
 export type Orientation = "horizontal" | "vertical";
+const UNSAVED_CHANGES_LEAVE_MESSAGE = "You have unsaved changes. Leave this page without saving?";
 
 export interface TrainingPlanEditorState {
   auto: ReturnType<typeof useTrainingPlanSave>;
@@ -29,6 +31,7 @@ export interface TrainingPlanEditorState {
   editorStyle: React.CSSProperties;
   existingDisabled: Set<string>;
   expanded: Record<string, boolean>;
+  hasUnsavedChanges: boolean;
   orientation: Orientation;
   phases: Phase[];
   phaseRefs: PlanPhaseRef[];
@@ -68,7 +71,6 @@ export function useTrainingPlanEditorState(planId?: string): TrainingPlanEditorS
     name: "",
     description: "",
     status: "draft",
-    start_date: "",
     color: "iris",
     plan_type: "shared",
     owner_competitor_id: null,
@@ -155,7 +157,7 @@ export function useTrainingPlanEditorState(planId?: string): TrainingPlanEditorS
       const { data, error } = await supabase
         .from("phases")
         .select(
-          "id,name,description,duration_weeks,order_index, phase_subcompetences(subcompetence_id, subcompetences(id,name,description,color,icon)), topics(id,name,description,order_index,subcompetence_id, gate:gates!topics_gate_id_fkey(id,name,description,gate_type,pass_threshold))"
+          "id,name,description,order_index, phase_subcompetences(subcompetence_id, subcompetences(id,name,description,color,icon)), topics(id,name,description,order_index,subcompetence_id, gate:gates!topics_gate_id_fkey(id,name,description,gate_type,pass_threshold))"
         )
         .order("created_at", { ascending: true });
       if (error) throw error;
@@ -214,8 +216,6 @@ export function useTrainingPlanEditorState(planId?: string): TrainingPlanEditorS
           // Supabase typing for joined rows is broader than needed; constrain per field.
           description: (p["description"] as string | null) ?? null,
           // Supabase typing for joined rows is broader than needed; constrain per field.
-          duration_weeks: (p["duration_weeks"] as number | null) ?? null,
-          // Supabase typing for joined rows is broader than needed; constrain per field.
           order_index: (p["order_index"] as number | null) ?? null,
           subcompetences: scs,
           blocks,
@@ -232,7 +232,7 @@ export function useTrainingPlanEditorState(planId?: string): TrainingPlanEditorS
       if (!planId) throw new Error("Missing planId");
       const { data: planRow, error: planErr } = await supabase
         .from("training_plans")
-        .select("id,name,description,status,start_date,color,plan_type,owner_competitor_id")
+        .select("id,name,description,status,color,plan_type,owner_competitor_id")
         // Safe: this queryFn only runs when `enabled` is true, but we also guard above.
         .eq("id", planId)
         .single();
@@ -273,7 +273,6 @@ export function useTrainingPlanEditorState(planId?: string): TrainingPlanEditorS
           name: planRow.name ?? "",
           description: planRow.description ?? "",
           status: (planRow.status ?? "draft") as TrainingPlanStatus,
-          start_date: planRow.start_date ?? "",
           color: loadedColor,
           plan_type: (planRow.plan_type ?? "shared") as "shared" | "personal",
           owner_competitor_id: (planRow.owner_competitor_id ?? null) as string | null,
@@ -327,11 +326,23 @@ export function useTrainingPlanEditorState(planId?: string): TrainingPlanEditorS
   }, [personalPrefill, planId]);
 
   const existingDisabled = useMemo(() => new Set(phaseRefs.map((p) => p.phase_id)), [phaseRefs]);
+  const hasUnsavedChanges = auto.state === "dirty";
 
-  const totalWeeks = useMemo(
-    () => phaseRefs.reduce((s, r) => s + (r.phase.duration_weeks ?? 0), 0),
-    [phaseRefs]
-  );
+  const totalWeeks = useMemo(() => 0, []);
+
+  useEffect(() => {
+    if (!hasUnsavedChanges) return;
+
+    function handleBeforeUnload(event: BeforeUnloadEvent): void {
+      event.preventDefault();
+      event.returnValue = "";
+    }
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [hasUnsavedChanges]);
 
   function onAddExistingPhase(phase: Phase) {
     if (phaseRefs.some((p) => p.phase_id === phase.id)) return;
@@ -410,6 +421,11 @@ export function useTrainingPlanEditorState(planId?: string): TrainingPlanEditorS
   }
 
   async function onSave() {
+    if (auto.state === "saving") return;
+    if (!auto.canSave) {
+      toast.error("Plan name (min 3 chars) is required before saving.");
+      return;
+    }
     try {
       const isFirstSave = !draft.id;
       const id = await auto.save();
@@ -469,6 +485,7 @@ export function useTrainingPlanEditorState(planId?: string): TrainingPlanEditorS
     editorStyle,
     existingDisabled,
     expanded,
+    hasUnsavedChanges,
     orientation,
     phases,
     phaseRefs,
@@ -479,11 +496,18 @@ export function useTrainingPlanEditorState(planId?: string): TrainingPlanEditorS
     totalWeeks,
     onAddExistingPhase,
     onUpdatePhase,
-    onBackToPlans: () => router.push(canUseFromPath ? (from as string) : "/plans"),
+    onBackToPlans: () => {
+      if (hasUnsavedChanges && !window.confirm(UNSAVED_CHANGES_LEAVE_MESSAGE)) {
+        return;
+      }
+      router.push(canUseFromPath ? (from as string) : "/plans");
+    },
     onChangeDescription: (value) => setDraft((d) => ({ ...d, description: value })),
     onChangeName: (value) => setDraft((d) => ({ ...d, name: value })),
     onChangeOrientation: setOrientation,
-    onChangeStartDate: (value) => setDraft((d) => ({ ...d, start_date: value })),
+    onChangeStartDate: () => {
+      // start_date is no longer part of the training plan model.
+    },
     onChangeStatus: (value) => setDraft((d) => ({ ...d, status: value })),
     onPickColor: (color) => setDraft((d) => ({ ...d, color })),
     onAssignCompetitor: (competitorId) => {
@@ -495,7 +519,7 @@ export function useTrainingPlanEditorState(planId?: string): TrainingPlanEditorS
     },
     onRemovePhase,
     onReorder,
-    onSave: () => void onSave(),
+    onSave,
     onToggleExpanded: (phaseId) => setExpanded((e) => ({ ...e, [phaseId]: !e[phaseId] })),
   };
 }

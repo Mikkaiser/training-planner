@@ -16,7 +16,6 @@ export interface TrainingPlanEditorPreviewProps {
   orientation: Orientation;
   phaseRefs: PlanPhaseRef[];
   sensors: SensorDescriptor<Record<string, unknown>>[];
-  totalWeeks: number;
   onChangeOrientation: (orientation: Orientation) => void;
   onReorder: (activeId: string, overId: string) => void;
 }
@@ -26,7 +25,6 @@ export function TrainingPlanEditorPreview({
   orientation,
   phaseRefs,
   sensors,
-  totalWeeks,
   onChangeOrientation,
   onReorder,
 }: TrainingPlanEditorPreviewProps): React.JSX.Element {
@@ -67,7 +65,6 @@ export function TrainingPlanEditorPreview({
           <TrainingPlanEditorPreviewHorizontal
             phaseRefs={phaseRefs}
             sensors={sensors}
-            totalWeeks={totalWeeks}
             onReorder={onReorder}
           />
         ) : (

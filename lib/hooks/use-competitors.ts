@@ -25,7 +25,6 @@ type TrainingPlanRow = {
   owner_competitor_id: string | null;
   color: string | null;
   status: string | null;
-  start_date: string | null;
 };
 
 function toPlanSummary(row: TrainingPlanRow): CompetitorPlanSummary {
@@ -36,7 +35,6 @@ function toPlanSummary(row: TrainingPlanRow): CompetitorPlanSummary {
     owner_competitor_id: row.owner_competitor_id,
     color: row.color,
     status: row.status,
-    start_date: row.start_date,
   };
 }
 
@@ -74,7 +72,7 @@ async function fetchCompetitors({
       activePlanIds.length
         ? supabase
             .from("training_plans")
-            .select("id,name,plan_type,owner_competitor_id,color,status,start_date")
+            .select("id,name,plan_type,owner_competitor_id,color,status")
             .in("id", activePlanIds)
         : Promise.resolve({ data: [] as TrainingPlanRow[], error: null }),
       supabase

@@ -34,7 +34,7 @@ async function updatePhaseFromForm({
       name: parsed.name.trim(),
     })
     .eq("id", phaseId)
-    .select("id,name,description,duration_weeks,order_index")
+    .select("id,name,description,order_index")
     .single();
   if (phaseErr) throw phaseErr;
 
@@ -167,7 +167,6 @@ async function updatePhaseFromForm({
     id: String(phaseRow.id),
     name: phaseRow.name as string,
     description: (phaseRow.description as string | null) ?? null,
-    duration_weeks: (phaseRow.duration_weeks as number | null) ?? null,
     order_index: (phaseRow.order_index as number | null) ?? null,
     subcompetences: selectedSc,
     blocks: blocksWithGates,

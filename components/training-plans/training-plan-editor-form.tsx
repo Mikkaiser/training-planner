@@ -1,8 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { Calendar } from "lucide-react";
-
 import { CompetitorAssignPopover } from "@/components/competitors/competitor-assign-popover";
 import { initialsFromName } from "@/components/competitors/competitor-utils";
 import { Input } from "@/components/ui/input";
@@ -17,7 +15,6 @@ export interface TrainingPlanEditorFormProps {
   personalContext: { id: string; full_name: string; avatar_color: string | null } | null;
   onChangeDescription: (value: string) => void;
   onChangeName: (value: string) => void;
-  onChangeStartDate: (value: string) => void;
   onChangeStatus: (value: TrainingPlanStatus) => void;
   onPickColor: (color: PlanColorKey) => void;
   onAssignCompetitor: (competitorId: string | null) => void;
@@ -28,7 +25,6 @@ export function TrainingPlanEditorForm({
   personalContext,
   onChangeDescription,
   onChangeName,
-  onChangeStartDate,
   onChangeStatus,
   onPickColor,
   onAssignCompetitor,
@@ -133,26 +129,9 @@ export function TrainingPlanEditorForm({
         </div>
       </div>
 
-      <div className="tp-plan-row">
-        <div className="flex-1">
-          <Label htmlFor="tp-plan-start-date" className="tp-plan-label">
-            Start date <span className="text-negative">*</span>
-          </Label>
-          <div className="tp-plan-date-wrap">
-            <Input
-              id="tp-plan-start-date"
-              type="date"
-              value={draft.start_date}
-              onChange={(e) => onChangeStartDate(e.target.value)}
-              className="tp-plan-input"
-            />
-            <Calendar className="tp-plan-date-icon" />
-          </div>
-        </div>
-        <div>
-          <Label className="tp-plan-label">Status</Label>
-          <StatusPills value={draft.status} onChange={onChangeStatus} />
-        </div>
+      <div>
+        <Label className="tp-plan-label">Status</Label>
+        <StatusPills value={draft.status} onChange={onChangeStatus} />
       </div>
     </div>
   );

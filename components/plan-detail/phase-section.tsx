@@ -81,18 +81,6 @@ export function PhaseSection({ phase }: { phase: PhaseWithChildren }) {
             {phaseCompletedCount}/{phaseExerciseIds.length}
           </span>
         ) : null}
-        {typeof phase.duration_weeks === "number" ? (
-          <span
-            className="plan-phase-section__duration"
-            style={{
-              background: tokens.chip,
-              borderColor: tokens.chipBorder,
-              color: tokens.chipText,
-            }}
-          >
-            {phase.duration_weeks}w
-          </span>
-        ) : null}
         <div className="plan-phase-section__progress-track" aria-hidden>
           <motion.div
             className="plan-phase-section__progress-fill"

@@ -32,11 +32,10 @@ async function createPhaseFromForm({
     .insert({
       name: parsed.name.trim(),
       description: null,
-      duration_weeks: null,
       order_index: planPhaseCount + 1,
       created_by: createdBy,
     })
-    .select("id,name,description,duration_weeks,order_index")
+    .select("id,name,description,order_index")
     .single();
   if (phaseErr) throw phaseErr;
   // Insert is followed by `.single()` with a select list including `id`.
@@ -129,8 +128,6 @@ async function createPhaseFromForm({
     name: phaseRow.name as string,
     // Supabase typing for `.single()` is broader than needed; we constrain it here.
     description: (phaseRow.description as string | null) ?? null,
-    // Supabase typing for `.single()` is broader than needed; we constrain it here.
-    duration_weeks: (phaseRow.duration_weeks as number | null) ?? null,
     // Supabase typing for `.single()` is broader than needed; we constrain it here.
     order_index: (phaseRow.order_index as number | null) ?? null,
     subcompetences: selectedSc,

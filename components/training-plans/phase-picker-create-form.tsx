@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PhasePickerCreateBlocks } from "@/components/training-plans/phase-picker-create-blocks";
 import { PhasePickerCreateSubcompetences } from "@/components/training-plans/phase-picker-create-subcompetences";
+import { useTrainingPlanEditorShortcuts } from "@/components/training-plans/training-plan-editor-shortcuts-context";
 import type { PlanColorKey } from "@/lib/constants/plan-colors";
 import { useCreatePhaseFromForm } from "@/lib/hooks/use-create-phase-from-form";
 import type { UploadResult } from "@/lib/storage/storage";
@@ -41,6 +42,7 @@ export function PhasePickerCreateForm({
   const { form, values, blockFields, addBlock, removeBlock, toggleSubcompetenceId, subcompetenceError } =
     usePhasePickerCreateForm();
   const createPhase = useCreatePhaseFromForm();
+  const { registerSaveInterceptor } = useTrainingPlanEditorShortcuts();
   const [exerciseUploads, setExerciseUploads] = useState<Array<UploadResult | null>>([null]);
 
   useEffect(() => {
@@ -81,13 +83,33 @@ export function PhasePickerCreateForm({
     }
   });
 
+  useEffect(() => {
+    return registerSaveInterceptor(async () => {
+      if (creating || createPhase.isPending) return false;
+      if (!hasUnsavedChanges) return true;
+
+      const isValid = await form.trigger();
+      if (!isValid) return false;
+
+      await handleCreateAndAdd();
+      return true;
+    });
+  }, [
+    createPhase.isPending,
+    creating,
+    form,
+    handleCreateAndAdd,
+    hasUnsavedChanges,
+    registerSaveInterceptor,
+  ]);
+
   return (
     <form
       onSubmit={(event) => {
         event.preventDefault();
         void handleCreateAndAdd();
       }}
-      className="flex h-full flex-col"
+      className="flex min-h-0 flex-1 flex-col"
     >
       <div className="flex-1 space-y-4 overflow-y-auto p-5">
         <div>
