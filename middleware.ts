@@ -1,51 +1,51 @@
+import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { createSupabaseMiddlewareClient } from "@/lib/supabase/middleware";
-
-/** Auth pages that signed-in users should leave (not reset-password: recovery session). */
-const AUTH_ROUTES_REDIRECT_WHEN_AUTHENTICATED = ["/login", "/signup", "/forgot-password"];
-const PROTECTED_PREFIXES = ["/dashboard", "/plans", "/phases", "/exercises", "/competitors"] as const;
+import { APP_ROUTES } from "@/lib/routes";
 
 export async function middleware(request: NextRequest) {
-  const { supabase, response } = createSupabaseMiddlewareClient(request);
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  });
 
-  const { data } = await supabase.auth.getUser();
-  const user = data.user;
-
-  const { pathname } = request.nextUrl;
-  const isAuthRoute = AUTH_ROUTES_REDIRECT_WHEN_AUTHENTICATED.some(
-    (p) => pathname === p || pathname.startsWith(`${p}/`)
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get: (name: string) => request.cookies.get(name)?.value,
+        set: (name: string, value: string, options: Record<string, unknown>) => {
+          request.cookies.set({ name, value, ...(options as object) });
+          response.cookies.set({ name, value, ...(options as object) });
+        },
+        remove: (name: string, options: Record<string, unknown>) => {
+          request.cookies.set({ name, value: "", ...(options as object) });
+          response.cookies.set({ name, value: "", ...(options as object) });
+        },
+      },
+    },
   );
-  const isProtectedRoute = PROTECTED_PREFIXES.some(
-    (p) => pathname === p || pathname.startsWith(`${p}/`)
-  );
 
-  if (!user && isProtectedRoute) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    url.searchParams.set("next", pathname);
-    return NextResponse.redirect(url);
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  const isProtected =
+    !request.nextUrl.pathname.startsWith(APP_ROUTES.login) &&
+    !request.nextUrl.pathname.startsWith("/auth");
+
+  if (!session && isProtected) {
+    return NextResponse.redirect(new URL(APP_ROUTES.login, request.url));
   }
 
-  if (user && isAuthRoute) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/plans";
-    return NextResponse.redirect(url);
+  if (session && request.nextUrl.pathname === APP_ROUTES.login) {
+    return NextResponse.redirect(new URL(APP_ROUTES.home, request.url));
   }
 
   return response;
 }
 
 export const config = {
-  matcher: [
-    "/login",
-    "/signup",
-    "/forgot-password",
-    "/reset-password",
-    "/dashboard/:path*",
-    "/plans/:path*",
-    "/phases/:path*",
-    "/exercises/:path*",
-    "/competitors/:path*",
-  ],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };
-

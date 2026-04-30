@@ -1,0 +1,242 @@
+---
+description: Architecture, naming conventions, component patterns, data fetching, and TypeScript rules for Training Planner. Apply whenever creating or editing any file in the project.
+globs:
+alwaysApply: true
+---
+
+# Training Planner — Architecture & Coding Conventions
+
+---
+
+## Folder Structure
+
+Strictly follow Next.js 14 App Router conventions.
+
+```
+src/
+├── app/                          # All routes live here
+│   ├── layout.tsx                # Root layout (fonts, global styles)
+│   ├── page.tsx                  # / → Plan List
+│   ├── plan/
+│   │   └── [id]/
+│   │       └── page.tsx          # /plan/[id] → Plan Detail
+│   └── api/                      # API route handlers (when needed)
+│       └── [...]/route.ts
+│
+├── components/                   # Shared UI components
+│   ├── ui/                       # Restyled shadcn/ui primitives
+│   └── [feature]/                # Feature-scoped components
+│       └── PlanCard.tsx
+│
+├── lib/                          # Non-UI utilities
+│   ├── supabase/
+│   │   ├── client.ts             # Browser client (for Client Components)
+│   │   └── server.ts             # Server client (for Server Components / Actions)
+│   ├── types.ts                  # All shared TypeScript types and interfaces
+│   └── utils.ts                  # Pure utility functions
+│
+├── hooks/                        # Custom React hooks (Client only)
+│   └── usePlan.ts
+│
+└── actions/                      # Server Actions
+    └── plans.ts
+```
+
+Rules:
+- Never place business logic inside `app/` route files — keep pages thin, delegate to components and actions
+- Never import server-only modules (`lib/supabase/server.ts`) inside Client Components
+- `components/ui/` is only for restyled primitives — feature components go in `components/[feature]/`
+
+---
+
+## Naming Conventions
+
+| What | Convention | Example |
+|---|---|---|
+| React components | PascalCase | `PlanCard.tsx`, `GateMarker.tsx` |
+| Hooks | camelCase prefixed `use` | `usePlan.ts`, `usePhases.ts` |
+| Server Actions files | camelCase | `actions/plans.ts` |
+| Utility functions | camelCase | `formatProgress`, `getGateStatus` |
+| Types & Interfaces | PascalCase, no `I` prefix | `Plan`, `Phase`, `Block`, `Gate` |
+| Route files | lowercase, App Router convention | `page.tsx`, `layout.tsx`, `route.ts` |
+| CSS Modules | camelCase | `styles.module.css` → `styles.container` |
+| Supabase table refs | snake_case (matches DB) | `training_plans`, `phases` |
+
+---
+
+## Component Patterns — Server vs Client
+
+Default to **Server Components**. Add `'use client'` only when necessary.
+
+### Use Server Components for:
+- Page-level data fetching
+- Static or SSR-rendered UI
+- Anything that reads directly from Supabase without user interaction
+
+### Use Client Components (`'use client'`) for:
+- Interactive UI: modals, expand/collapse, inline editing, drag interactions
+- Hooks (`useState`, `useEffect`, `useRouter`)
+- Event handlers (`onClick`, `onChange`)
+- Real-time Supabase subscriptions
+
+### Pattern — keep Client Components lean:
+
+```tsx
+// ✅ Server Component fetches, passes data down
+// app/plan/[id]/page.tsx
+export default async function PlanPage({ params }: { params: { id: string } }) {
+  const plan = await getPlan(params.id)
+  return <PlanDetail plan={plan} />
+}
+
+// ✅ Client Component handles interaction only
+// components/plan/PlanDetail.tsx
+'use client'
+export function PlanDetail({ plan }: { plan: Plan }) {
+  const [expanded, setExpanded] = useState(false)
+  // ...
+}
+```
+
+Never fetch data inside a Client Component when a Server Component parent can do it instead.
+
+---
+
+## Data Fetching Rules
+
+### Rule: choose the pattern based on context
+
+| Context | Pattern |
+|---|---|
+| Initial page load, no interaction | Server Component + Supabase server client |
+| Form submission, mutation | Server Action (`actions/*.ts`) |
+| Client-triggered read (search, filter) | API route handler (`app/api/.../route.ts`) |
+| Real-time updates | Supabase client subscription inside Client Component |
+
+### Server Component fetch (read):
+
+```ts
+// lib/supabase/server.ts
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
+
+export function createClient() {
+  const cookieStore = cookies()
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { get: (name) => cookieStore.get(name)?.value } }
+  )
+}
+```
+
+### Server Action (mutation):
+
+```ts
+// actions/plans.ts
+'use server'
+import { createClient } from '@/lib/supabase/server'
+import { revalidatePath } from 'next/cache'
+
+export async function createPlan(data: CreatePlanInput) {
+  const supabase = createClient()
+  const { error } = await supabase.from('training_plans').insert(data)
+  if (error) throw new Error(error.message)
+  revalidatePath('/')
+}
+```
+
+Always call `revalidatePath` or `revalidateTag` after mutations so Server Components re-fetch.
+
+---
+
+## TypeScript Conventions
+
+- **Always** define types for Supabase table rows in `lib/types.ts` — never use `any`
+- Use `type` for data shapes, `interface` for component props
+- Derive types from the Supabase schema where possible (use generated types from `supabase gen types`)
+- Never cast with `as` unless unavoidable — prefer type guards
+
+```ts
+// lib/types.ts
+
+export type Plan = {
+  id: string
+  title: string
+  student_name: string
+  created_at: string
+}
+
+export type Phase = {
+  id: string
+  plan_id: string
+  title: string
+  order_index: number
+}
+
+export type Block = {
+  id: string
+  phase_id: string
+  title: string
+  verb_level: 'Recognize' | 'Apply' | 'Produce' | 'Optimize'
+  competence_type: 'Development' | 'Testing' | 'Analysis' | 'Transversal'
+  hours: number
+  order_index: number
+}
+
+export type Gate = {
+  id: string
+  plan_id: string
+  after_block_id: string
+  status: 'pending' | 'passed' | 'failed'
+  hours_threshold: number
+}
+```
+
+Component props:
+```ts
+// ✅ Use interface for props
+interface PlanCardProps {
+  plan: Plan
+  onClick: (id: string) => void
+}
+```
+
+---
+
+## Error Handling
+
+- Never let Supabase errors fail silently — always check `error` and handle it
+- In Server Actions: `throw new Error(message)` — Next.js will catch it
+- In Client Components: use `try/catch` and set local error state
+- Never expose raw Supabase error messages to the UI — map them to user-friendly strings
+- Use TypeScript's `unknown` for caught errors, not `any`
+
+```ts
+// ✅ Server Action error handling
+export async function updateBlock(id: string, data: Partial<Block>) {
+  const supabase = createClient()
+  const { error } = await supabase.from('blocks').update(data).eq('id', id)
+  if (error) throw new Error('Failed to update block. Please try again.')
+  revalidatePath('/plan/[id]')
+}
+
+// ✅ Client Component error handling
+try {
+  await updateBlock(id, data)
+} catch (err: unknown) {
+  const message = err instanceof Error ? err.message : 'Something went wrong'
+  setError(message)
+}
+```
+
+---
+
+## General Rules
+
+- No `console.log` left in committed code — use comments or remove
+- No hardcoded strings for routes — use constants or `href` helpers
+- No barrel files (`index.ts` re-exports) unless the folder has 4+ exports
+- Keep components under 200 lines — split into sub-components if longer
+- Co-locate sub-components with their parent if used nowhere else
+- All environment variables accessed via `process.env.NEXT_PUBLIC_*` must be declared in `.env.local` and `.env.example`

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "pnpm": {
-    "onlyBuiltDependencies": ["supabase"]
+    "onlyBuiltDependencies": ["sharp", "supabase", "unrs-resolver"]
   },
   "scripts": {
     "dev": "next dev",

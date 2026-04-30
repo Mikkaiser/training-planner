@@ -1,21 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
-  async redirects() {
-    return [
-      { source: "/dashboard", destination: "/plans", permanent: true },
-      { source: "/dashboard/:path*", destination: "/plans", permanent: true },
-      { source: "/phases", destination: "/plans", permanent: true },
-    ];
-  },
-  images: {
-    remotePatterns: [
-      { protocol: "https", hostname: "accounts.google.com" },
-      { protocol: "https", hostname: "lh3.googleusercontent.com" },
-      { protocol: "https", hostname: "lh4.googleusercontent.com" },
-      { protocol: "https", hostname: "lh5.googleusercontent.com" },
-      { protocol: "https", hostname: "lh6.googleusercontent.com" },
-    ],
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "2mb",
+    },
   },
 };
 

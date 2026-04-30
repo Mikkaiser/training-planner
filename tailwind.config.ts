@@ -1,85 +1,18 @@
 import type { Config } from "tailwindcss";
-import defaultTheme from "tailwindcss/defaultTheme";
 
-/** Tokens in app/globals.css. */
 const config: Config = {
-  content: [
-    "./app/**/*.{ts,tsx}",
-    "./components/**/*.{ts,tsx}",
-    "./lib/**/*.{ts,tsx}",
-  ],
+  content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
   theme: {
     extend: {
-      spacing: {
-        ...defaultTheme.spacing,
-        "1": "0.3125rem",
-        "2": "0.625rem",
-        "3": "0.9375rem",
-        "4": "1.25rem",
-        "6": "1.875rem",
-        "8": "2.5rem",
-        "10": "3.125rem",
-        "12": "3.75rem",
-        "16": "5rem",
+      colors: {
+        bg: "var(--bg)",
+        surface: "var(--surface)",
+        ink: "var(--ink)",
+        accent: "var(--accent)",
       },
       fontFamily: {
-        display: ["var(--font-display)", "sans-serif"],
-        body: ["var(--font-body)", "sans-serif"],
-      },
-      fontSize: {
-        "2xs": "11px",
-        sm: "13px",
-        base: "15px",
-        nav: ["14px", { lineHeight: "1.35" }],
-        stat: ["26px", { lineHeight: "1.2" }],
-      },
-      colors: {
-        base: "var(--color-base)",
-        surface: "var(--color-surface)",
-        "surface-raised": "var(--color-surface-raised)",
-        "tp-accent": "var(--color-accent)",
-        positive: "var(--color-positive)",
-        negative: "var(--color-negative)",
-        "accent-border": "var(--color-border)",
-
-        background: "var(--color-base)",
-        foreground: "var(--color-text-primary)",
-        card: "var(--color-surface-raised)",
-        "card-foreground": "var(--color-text-primary)",
-        popover: "var(--color-surface-raised)",
-        "popover-foreground": "var(--color-text-primary)",
-        primary: {
-          DEFAULT: "var(--color-accent)",
-          foreground: "#ffffff",
-        },
-        secondary: {
-          DEFAULT: "var(--color-accent-muted)",
-          foreground: "var(--color-text-accent)",
-        },
-        muted: {
-          DEFAULT: "var(--color-accent-muted)",
-          foreground: "var(--color-text-secondary)",
-        },
-        accent: {
-          DEFAULT: "var(--color-accent-muted)",
-          foreground: "var(--color-text-primary)",
-        },
-        destructive: {
-          DEFAULT: "var(--color-negative)",
-          foreground: "var(--color-text-primary)",
-        },
-        border: "var(--color-border)",
-        input: "var(--color-border)",
-        ring: "var(--color-border-hover)",
-      },
-      boxShadow: {
-        glow: "0 0 0 1px var(--color-border), 0 8px 30px var(--color-border-subtle)",
-        cta: "var(--cta-shadow)",
-        "cta-hover": "var(--cta-shadow-hover)",
-      },
-      borderRadius: {
-        lg: "12px",
-        xl: "16px",
+        sans: ["var(--font-sans)"],
+        mono: ["var(--font-mono)"],
       },
     },
   },

@@ -1,0 +1,1073 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Training Planner — Style Guide</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <template id="__bundler_thumbnail" data-bg-color="#f8f9f2">
+    <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+      <rect width="1200" height="800" fill="#f8f9f2"/>
+      <rect x="900" y="0" width="300" height="300" fill="#DBFD6B" opacity="0.25"/>
+      <rect x="120" y="160" width="120" height="120" rx="28" fill="#1c1f33"/>
+      <text x="180" y="248" font-family="JetBrains Mono, monospace" font-size="72" font-weight="800" fill="#DBFD6B" text-anchor="middle">T</text>
+      <text x="280" y="220" font-family="Plus Jakarta Sans, sans-serif" font-size="64" font-weight="700" fill="#1c1f33">Style Guide</text>
+      <text x="280" y="260" font-family="JetBrains Mono, monospace" font-size="20" fill="#6b7280" letter-spacing="2">TRAINING PLANNER · v1.0</text>
+      <rect x="120" y="380" width="240" height="160" rx="16" fill="#ffffff" stroke="#1c1f33" stroke-opacity="0.08"/>
+      <rect x="380" y="380" width="240" height="160" rx="16" fill="#DBFD6B"/>
+      <rect x="640" y="380" width="240" height="160" rx="16" fill="#ffffff" stroke="#1c1f33" stroke-opacity="0.08"/>
+      <rect x="900" y="380" width="180" height="160" rx="16" fill="#1c1f33"/>
+      <rect x="120" y="600" width="960" height="14" rx="7" fill="#1c1f33" fill-opacity="0.06"/>
+      <rect x="120" y="600" width="528" height="14" rx="7" fill="#DBFD6B"/>
+    </svg>
+  </template>
+  <style>
+    html, body { margin: 0; }
+    body {
+      background:
+        radial-gradient(60% 40% at 100% 0%, rgba(219, 253, 107, 0.20) 0%, rgba(219, 253, 107, 0) 60%),
+        radial-gradient(40% 30% at 0% 100%, rgba(219, 253, 107, 0.08) 0%, rgba(219, 253, 107, 0) 70%),
+        var(--bg);
+      color: var(--ink);
+      font-family: var(--font-sans);
+      letter-spacing: -0.01em;
+      min-height: 100vh;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* ── Style guide layout ────────────────────────────── */
+    .sg {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 64px 56px 120px;
+    }
+    .sg-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 32px;
+      padding-bottom: 36px;
+      margin-bottom: 56px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sg-eyebrow {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ink-2);
+      font-weight: 600;
+    }
+    .sg-title {
+      font-size: 56px;
+      font-weight: 700;
+      letter-spacing: -0.035em;
+      line-height: 1;
+      margin: 12px 0 14px;
+    }
+    .sg-lede {
+      font-size: 16px;
+      color: var(--ink-2);
+      max-width: 540px;
+      line-height: 1.55;
+    }
+    .sg-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--ink-2);
+      text-align: right;
+    }
+    .sg-meta b { color: var(--ink); font-weight: 700; }
+
+    /* Section */
+    .sg-section { margin-bottom: 88px; scroll-margin-top: 24px; }
+    .sg-section-head {
+      display: flex;
+      align-items: baseline;
+      gap: 18px;
+      margin-bottom: 28px;
+    }
+    .sg-num {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--ink-3);
+      letter-spacing: 0.1em;
+      font-weight: 600;
+    }
+    .sg-section h2 {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin: 0;
+    }
+    .sg-section-sub {
+      color: var(--ink-2);
+      max-width: 600px;
+      margin: 0 0 20px;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .sg-h3 {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink-2);
+      margin: 0 0 14px;
+    }
+
+    /* Grids */
+    .sg-grid { display: grid; gap: 14px; }
+    .sg-grid-2 { grid-template-columns: repeat(2, 1fr); }
+    .sg-grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .sg-grid-4 { grid-template-columns: repeat(4, 1fr); }
+    .sg-grid-5 { grid-template-columns: repeat(5, 1fr); }
+    .sg-grid-6 { grid-template-columns: repeat(6, 1fr); }
+
+    /* Cards (style-guide variant) */
+    .sg-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 22px;
+    }
+
+    /* ── Color tokens ─────────────────────────────────── */
+    .swatch {
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: white;
+    }
+    .swatch-chip {
+      height: 88px;
+      display: flex;
+      align-items: flex-end;
+      padding: 14px;
+    }
+    .swatch-meta {
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      font-size: 12px;
+    }
+    .swatch-name {
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      font-size: 13px;
+    }
+    .swatch-hex {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--ink-2);
+    }
+    .swatch-token {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--ink-3);
+    }
+    .swatch-onlight { color: var(--ink); }
+    .swatch-ondark  { color: white; }
+
+    /* ── Type specimens ───────────────────────────────── */
+    .spec {
+      padding: 22px 0;
+      border-bottom: 1px dashed var(--border);
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 32px;
+      align-items: baseline;
+    }
+    .spec:last-child { border-bottom: 0; }
+    .spec-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--ink-2);
+    }
+    .spec-meta b { color: var(--ink); font-weight: 700; font-size: 12px; }
+
+    /* ── Spacing scale ─────────────────────────────────── */
+    .scale-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 8px 0;
+      border-bottom: 1px dashed var(--border);
+      font-size: 13px;
+    }
+    .scale-row:last-child { border: 0; }
+    .scale-label {
+      width: 60px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--ink-2);
+    }
+    .scale-bar {
+      height: 14px;
+      background: var(--accent-soft);
+      border-radius: 4px;
+      border: 1px solid var(--accent-soft-2);
+    }
+    .scale-px {
+      width: 60px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--ink-3);
+      text-align: right;
+    }
+
+    /* ── Component preview frames ─────────────────────── */
+    .preview {
+      background: linear-gradient(180deg, var(--bg) 0%, #f3f6e6 100%);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      align-items: center;
+    }
+    .preview-stack { flex-direction: column; align-items: stretch; }
+    .preview-cap {
+      width: 100%;
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+      margin: 0 0 10px;
+      font-weight: 600;
+    }
+
+    /* ── Code-style spec rows ─────────────────────────── */
+    .kv-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .kv-table th, .kv-table td {
+      text-align: left;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .kv-table th {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--ink-2);
+      font-weight: 600;
+    }
+    .kv-table .mono {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--ink);
+    }
+    .kv-table .desc { color: var(--ink-2); line-height: 1.5; }
+
+    /* ── Voice & Principles ───────────────────────────── */
+    .principle {
+      padding: 22px;
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      position: relative;
+    }
+    .principle .num {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      color: var(--accent-ink);
+      background: var(--accent);
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-weight: 700;
+      display: inline-block;
+      margin-bottom: 12px;
+    }
+    .principle h4 {
+      font-size: 16px;
+      letter-spacing: -0.01em;
+      margin: 0 0 8px;
+    }
+    .principle p { color: var(--ink-2); line-height: 1.55; margin: 0; font-size: 13px; }
+
+    /* TOC */
+    .toc {
+      position: sticky;
+      top: 24px;
+      align-self: start;
+      width: 200px;
+      flex-shrink: 0;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.04em;
+    }
+    .toc ol { list-style: none; margin: 0; padding: 0; }
+    .toc li { margin-bottom: 8px; }
+    .toc a {
+      color: var(--ink-2);
+      text-decoration: none;
+      display: flex;
+      gap: 8px;
+      padding: 5px 8px;
+      border-radius: 6px;
+      transition: background .12s, color .12s;
+    }
+    .toc a:hover { background: rgba(28,31,51,0.04); color: var(--ink); }
+    .toc a span { color: var(--ink-3); width: 22px; flex-shrink: 0; }
+
+    .layout {
+      display: flex;
+      gap: 56px;
+      max-width: 1300px;
+      margin: 0 auto;
+      padding: 64px 40px 120px;
+    }
+    .layout-main { flex: 1; min-width: 0; }
+
+    @media (max-width: 980px) {
+      .layout { flex-direction: column; padding: 32px; }
+      .toc { position: static; width: auto; }
+    }
+
+    /* Logo lockup demo */
+    .logo-lockup {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .logo-mark-lg {
+      width: 56px; height: 56px;
+      border-radius: 14px;
+      background: var(--ink); color: var(--accent);
+      display: grid; place-items: center;
+      font-family: var(--font-mono);
+      font-weight: 800; font-size: 30px;
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="toc">
+      <div class="sg-eyebrow" style="margin-bottom: 14px;">Contents</div>
+      <ol>
+        <li><a href="#principles"><span>01</span>Principles</a></li>
+        <li><a href="#brand"><span>02</span>Brand</a></li>
+        <li><a href="#color"><span>03</span>Color</a></li>
+        <li><a href="#type"><span>04</span>Typography</a></li>
+        <li><a href="#space"><span>05</span>Space &amp; radii</a></li>
+        <li><a href="#elev"><span>06</span>Elevation</a></li>
+        <li><a href="#components"><span>07</span>Components</a></li>
+        <li><a href="#patterns"><span>08</span>Patterns</a></li>
+        <li><a href="#voice"><span>09</span>Voice</a></li>
+        <li><a href="#tokens"><span>10</span>Token map</a></li>
+      </ol>
+    </aside>
+
+    <main class="layout-main">
+
+      <!-- Header -->
+      <header class="sg-header">
+        <div>
+          <div class="sg-eyebrow">Training Planner · v1.0</div>
+          <h1 class="sg-title">Style Guide</h1>
+          <p class="sg-lede">A coaching tool for WorldSkills Software Development training. Premium project management meets high-performance sports coaching — structured, precise, warm and motivating.</p>
+        </div>
+        <div class="sg-meta">
+          <span><b>Discipline</b> · 09 Software Dev</span>
+          <span><b>Mode</b> · Light</span>
+          <span><b>Cycle</b> · Lyon 2027</span>
+        </div>
+      </header>
+
+      <!-- ── 01 PRINCIPLES ──────────────────────────────── -->
+      <section class="sg-section" id="principles">
+        <div class="sg-section-head">
+          <span class="sg-num">01</span>
+          <h2>Principles</h2>
+        </div>
+        <p class="sg-section-sub">The decisions that shaped every component. Apply these before reaching for tokens.</p>
+        <div class="sg-grid sg-grid-3">
+          <div class="principle">
+            <div class="num">01</div>
+            <h4>Inline, never away.</h4>
+            <p>Every action — adding phases, blocks, exercises, marking gates — happens in place. The only redirect is between list and detail. The only modal is plan creation.</p>
+          </div>
+          <div class="principle">
+            <div class="num">02</div>
+            <h4>Earned accent.</h4>
+            <p>Lime is for what's <em>now</em> — current phase, active block, primary CTA. If everything is highlighted, nothing is. Restraint makes it sing.</p>
+          </div>
+          <div class="principle">
+            <div class="num">03</div>
+            <h4>Warm, not white.</h4>
+            <p>The page background is a soft off-white with a lime radial bleed from the top-right. Premium and warm; never sterile or flat.</p>
+          </div>
+          <div class="principle">
+            <div class="num">04</div>
+            <h4>Mono carries data.</h4>
+            <p>JetBrains Mono signals precision: verb levels, file types, gate codes, phase indices, percentages. Sans carries voice; mono carries metric.</p>
+          </div>
+          <div class="principle">
+            <div class="num">05</div>
+            <h4>Structure beats ornament.</h4>
+            <p>Typographic hierarchy, generous space, and a strict 2-color palette do the heavy lifting. No gradient buttons, no decorative icons.</p>
+          </div>
+          <div class="principle">
+            <div class="num">06</div>
+            <h4>Cumulative truth.</h4>
+            <p>Gates are auto-generated, never invented. Status pills are emphatic — passed, pending, failed — because they describe earned mastery, not opinion.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── 02 BRAND ───────────────────────────────────── -->
+      <section class="sg-section" id="brand">
+        <div class="sg-section-head">
+          <span class="sg-num">02</span>
+          <h2>Brand</h2>
+        </div>
+        <div class="sg-grid sg-grid-2" style="gap: 24px;">
+          <div class="sg-card">
+            <div class="sg-h3">Logo lockup</div>
+            <div class="logo-lockup" style="font-size: 28px;">
+              <div class="logo-mark-lg">T</div>
+              <div>Training Planner</div>
+            </div>
+            <div class="sg-h3" style="margin-top: 28px;">Mark only</div>
+            <div style="display:flex; gap: 14px; align-items:center;">
+              <div class="logo-mark-lg" style="width:40px;height:40px;font-size:22px;border-radius:10px;">T</div>
+              <div class="logo-mark-lg" style="width:28px;height:28px;font-size:15px;border-radius:7px;">T</div>
+              <div class="logo-mark-lg" style="width:20px;height:20px;font-size:11px;border-radius:5px;">T</div>
+            </div>
+          </div>
+          <div class="sg-card">
+            <div class="sg-h3">Voice in one paragraph</div>
+            <p style="margin: 0; line-height: 1.65; font-size: 14px; color: var(--ink);">
+              You are the instructor's quiet partner. Speak like a coach taking notes on a clipboard — direct, useful, never cheerleading. Numbers are facts. Verb levels are calibrated. A failed gate isn't a setback; it's <em>remediation</em> — one specific block, named clearly, ready to retry.
+            </p>
+            <div class="sg-h3" style="margin-top: 22px;">Words we use</div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+              <span class="tp-pill tp-pill-mono">phase</span>
+              <span class="tp-pill tp-pill-mono">block</span>
+              <span class="tp-pill tp-pill-mono">gate</span>
+              <span class="tp-pill tp-pill-mono">exercise</span>
+              <span class="tp-pill tp-pill-mono">verb level</span>
+              <span class="tp-pill tp-pill-mono">cumulative</span>
+              <span class="tp-pill tp-pill-mono">remediation</span>
+              <span class="tp-pill tp-pill-mono">competitor</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── 03 COLOR ──────────────────────────────────── -->
+      <section class="sg-section" id="color">
+        <div class="sg-section-head">
+          <span class="sg-num">03</span>
+          <h2>Color</h2>
+        </div>
+        <p class="sg-section-sub">A two-tone foundation (warm off-white + dark navy ink) plus one earned accent (lime), with semantic colors reserved for gate state.</p>
+
+        <div class="sg-h3">Surfaces</div>
+        <div class="sg-grid sg-grid-4" style="margin-bottom: 36px;">
+          <div class="swatch">
+            <div class="swatch-chip" style="background: #f8f9f2;"><span class="swatch-onlight tp-mono tp-tiny">aa 16.5:1</span></div>
+            <div class="swatch-meta"><span class="swatch-name">Background</span><span class="swatch-hex">#f8f9f2</span><span class="swatch-token">--bg</span></div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-chip" style="background: #ffffff;"><span class="swatch-onlight tp-mono tp-tiny">aa 16.8:1</span></div>
+            <div class="swatch-meta"><span class="swatch-name">Surface</span><span class="swatch-hex">#ffffff</span><span class="swatch-token">--surface</span></div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-chip" style="background: #fbfcf6;"><span class="swatch-onlight tp-mono tp-tiny">aa 16.6:1</span></div>
+            <div class="swatch-meta"><span class="swatch-name">Surface 2</span><span class="swatch-hex">#fbfcf6</span><span class="swatch-token">--surface-2</span></div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-chip" style="background:
+              radial-gradient(60% 60% at 100% 0%, rgba(219, 253, 107, 0.32), rgba(219,253,107,0) 60%),
+              #f8f9f2;"><span class="swatch-onlight tp-mono tp-tiny">page wash</span></div>
+            <div class="swatch-meta"><span class="swatch-name">Page wash</span><span class="swatch-hex">bg + lime radial</span><span class="swatch-token">top-right · 32% peak</span></div>
+          </div>
+        </div>
+
+        <div class="sg-h3">Ink</div>
+        <div class="sg-grid sg-grid-4" style="margin-bottom: 36px;">
+          <div class="swatch">
+            <div class="swatch-chip" style="background: #1c1f33;"><span class="swatch-ondark tp-mono tp-tiny">primary text</span></div>
+            <div class="swatch-meta"><span class="swatch-name">Ink</span><span class="swatch-hex">#1c1f33</span><span class="swatch-token">--ink</span></div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-chip" style="background: #6b7280;"><span class="swatch-ondark tp-mono tp-tiny">secondary</span></div>
+            <div class="swatch-meta"><span class="swatch-name">Ink 2</span><span class="swatch-hex">#6b7280</span><span class="swatch-token">--ink-2</span></div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-chip" style="background: #9ca3af;"><span class="swatch-ondark tp-mono tp-tiny">tertiary</span></div>
+            <div class="swatch-meta"><span class="swatch-name">Ink 3</span><span class="swatch-hex">#9ca3af</span><span class="swatch-token">--ink-3</span></div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-chip" style="background: rgba(28,31,51,0.14); border-bottom: 1px solid rgba(28,31,51,0.14);"><span class="swatch-onlight tp-mono tp-tiny">borders</span></div>
+            <div class="swatch-meta"><span class="swatch-name">Border (strong)</span><span class="swatch-hex">rgba(28,31,51,.14)</span><span class="swatch-token">--border-strong</span></div>
+          </div>
+        </div>
+
+        <div class="sg-h3">Accent · earned, not decorative</div>
+        <div class="sg-grid sg-grid-3" style="margin-bottom: 36px;">
+          <div class="swatch">
+            <div class="swatch-chip" style="background: #DBFD6B; height: 120px;"><span class="swatch-onlight tp-mono tp-tiny">primary action · current</span></div>
+            <div class="swatch-meta"><span class="swatch-name">Accent · Lime</span><span class="swatch-hex">#DBFD6B</span><span class="swatch-token">--accent</span></div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-chip" style="background: rgba(219, 253, 107, 0.35); height: 120px;"><span class="swatch-onlight tp-mono tp-tiny">hover · soft fills</span></div>
+            <div class="swatch-meta"><span class="swatch-name">Accent · 35%</span><span class="swatch-hex">rgba(219,253,107,.35)</span><span class="swatch-token">--accent-soft-2</span></div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-chip" style="background: rgba(219, 253, 107, 0.18); height: 120px;"><span class="swatch-onlight tp-mono tp-tiny">washes · pills</span></div>
+            <div class="swatch-meta"><span class="swatch-name">Accent · 18%</span><span class="swatch-hex">rgba(219,253,107,.18)</span><span class="swatch-token">--accent-soft</span></div>
+          </div>
+        </div>
+
+        <div class="sg-h3">Semantic — reserved for gate state &amp; macro-competence tags</div>
+        <div class="sg-grid sg-grid-4">
+          <div class="swatch">
+            <div class="swatch-chip" style="background: #00a878;"><span class="swatch-ondark tp-mono tp-tiny">passed</span></div>
+            <div class="swatch-meta"><span class="swatch-name">Positive</span><span class="swatch-hex">#00a878</span><span class="swatch-token">--pos · Testing tag</span></div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-chip" style="background: #fb3640;"><span class="swatch-ondark tp-mono tp-tiny">failed</span></div>
+            <div class="swatch-meta"><span class="swatch-name">Negative</span><span class="swatch-hex">#fb3640</span><span class="swatch-token">--neg</span></div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-chip" style="background: #5a7df0;"><span class="swatch-ondark tp-mono tp-tiny">analysis</span></div>
+            <div class="swatch-meta"><span class="swatch-name">Blue</span><span class="swatch-hex">#5a7df0</span><span class="swatch-token">--blue · A&amp;D tag</span></div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-chip" style="background: #b5b8a8;"><span class="swatch-ondark tp-mono tp-tiny">transversal</span></div>
+            <div class="swatch-meta"><span class="swatch-name">Muted</span><span class="swatch-hex">#b5b8a8</span><span class="swatch-token">--muted</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── 04 TYPOGRAPHY ─────────────────────────────── -->
+      <section class="sg-section" id="type">
+        <div class="sg-section-head">
+          <span class="sg-num">04</span>
+          <h2>Typography</h2>
+        </div>
+        <p class="sg-section-sub">Two faces. Plus Jakarta Sans for everything readable; JetBrains Mono for everything measured.</p>
+
+        <div class="sg-card" style="margin-bottom: 28px;">
+          <div class="sg-h3">Plus Jakarta Sans</div>
+          <div class="spec">
+            <div class="spec-meta"><b>Display</b><span>40 / 1.0 / -.025em</span><span>Weight 700</span><span>--font-sans</span></div>
+            <div style="font-size: 40px; font-weight: 700; letter-spacing: -0.025em; line-height: 1;">Training Plans</div>
+          </div>
+          <div class="spec">
+            <div class="spec-meta"><b>H1 · page</b><span>34 / 1.05 / -.025em</span><span>Weight 700</span></div>
+            <div style="font-size: 34px; font-weight: 700; letter-spacing: -0.025em; line-height: 1.05;">Road to Lyon 2027</div>
+          </div>
+          <div class="spec">
+            <div class="spec-meta"><b>H2 · section</b><span>28 / 1.1 / -.02em</span><span>Weight 700</span></div>
+            <div style="font-size: 28px; font-weight: 700; letter-spacing: -0.02em;">Phase 2 · Intermediate</div>
+          </div>
+          <div class="spec">
+            <div class="spec-meta"><b>Card title</b><span>20 / 1.2 / -.02em</span><span>Weight 700</span></div>
+            <div style="font-size: 20px; font-weight: 700; letter-spacing: -0.02em;">Eli Vasseur</div>
+          </div>
+          <div class="spec">
+            <div class="spec-meta"><b>Block title</b><span>16 / 1.25 / -.01em</span><span>Weight 700</span></div>
+            <div style="font-size: 16px; font-weight: 700; letter-spacing: -0.01em;">API Design &amp; REST</div>
+          </div>
+          <div class="spec">
+            <div class="spec-meta"><b>Body</b><span>14 / 1.55</span><span>Weight 400</span></div>
+            <div style="font-size: 14px; line-height: 1.55; max-width: 480px;">Cumulative checkpoint after every block. Passing means the competitor demonstrated mastery of that block plus everything from previous gates.</div>
+          </div>
+          <div class="spec">
+            <div class="spec-meta"><b>Body sm</b><span>13 / 1.5</span><span>Weight 400 · ink-2</span></div>
+            <div style="font-size: 13px; line-height: 1.5; color: var(--ink-2);">Phase 2 — Intermediate · 3/5 blocks</div>
+          </div>
+          <div class="spec">
+            <div class="spec-meta"><b>Caption</b><span>11 / 1.4</span><span>Weight 400 · ink-2</span></div>
+            <div style="font-size: 11px; color: var(--ink-2);">Cumulative — Blocks 1 through 7</div>
+          </div>
+        </div>
+
+        <div class="sg-card">
+          <div class="sg-h3">JetBrains Mono — for measured things</div>
+          <div class="spec">
+            <div class="spec-meta"><b>Verb level</b><span>10.5 / .06em</span><span>Weight 600 · UPPER</span><span>--font-mono</span></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <span class="tp-pill tp-pill-mono">Recognize</span>
+              <span class="tp-pill tp-pill-mono">Reproduce</span>
+              <span class="tp-pill tp-pill-mono">Apply</span>
+              <span class="tp-pill tp-pill-mono">Adapt</span>
+              <span class="tp-pill tp-pill-mono">Create</span>
+            </div>
+          </div>
+          <div class="spec">
+            <div class="spec-meta"><b>Tag</b><span>10 / .06em</span><span>Weight 600 · UPPER</span></div>
+            <div style="display:flex;gap:8px;">
+              <span class="tp-tag tp-tag-dev">Development</span>
+              <span class="tp-tag tp-tag-test">Testing</span>
+              <span class="tp-tag tp-tag-anal">Analysis &amp; Design</span>
+              <span class="tp-tag tp-tag-trans">Transversal</span>
+            </div>
+          </div>
+          <div class="spec">
+            <div class="spec-meta"><b>Eyebrow</b><span>11 / .10em</span><span>Weight 600 · UPPER · ink-2</span></div>
+            <div class="tp-mono tp-mut" style="font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600;">WorldSkills · SD</div>
+          </div>
+          <div class="spec">
+            <div class="spec-meta"><b>Numeric</b><span>13 · tabular</span><span>Weight 500</span></div>
+            <div class="tp-mono" style="font-size: 13px; font-variant-numeric: tabular-nums;">02/03 · 55% · 3/5 · G7</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── 05 SPACE & RADII ──────────────────────────── -->
+      <section class="sg-section" id="space">
+        <div class="sg-section-head">
+          <span class="sg-num">05</span>
+          <h2>Space &amp; radii</h2>
+        </div>
+        <p class="sg-section-sub">A 4 px base. Cards breathe at 18-22 px padding; sections at 28-40 px. Radii only get larger as elements get bigger.</p>
+
+        <div class="sg-grid sg-grid-2" style="gap: 24px;">
+          <div class="sg-card">
+            <div class="sg-h3">Spacing scale</div>
+            <div>
+              <div class="scale-row"><span class="scale-label">--s-1</span><div class="scale-bar" style="width: 4px"></div><span class="scale-px">4 px</span></div>
+              <div class="scale-row"><span class="scale-label">--s-2</span><div class="scale-bar" style="width: 8px"></div><span class="scale-px">8 px</span></div>
+              <div class="scale-row"><span class="scale-label">--s-3</span><div class="scale-bar" style="width: 12px"></div><span class="scale-px">12 px</span></div>
+              <div class="scale-row"><span class="scale-label">--s-4</span><div class="scale-bar" style="width: 16px"></div><span class="scale-px">16 px</span></div>
+              <div class="scale-row"><span class="scale-label">--s-5</span><div class="scale-bar" style="width: 22px"></div><span class="scale-px">22 px</span></div>
+              <div class="scale-row"><span class="scale-label">--s-6</span><div class="scale-bar" style="width: 28px"></div><span class="scale-px">28 px</span></div>
+              <div class="scale-row"><span class="scale-label">--s-7</span><div class="scale-bar" style="width: 40px"></div><span class="scale-px">40 px</span></div>
+              <div class="scale-row"><span class="scale-label">--s-8</span><div class="scale-bar" style="width: 64px"></div><span class="scale-px">64 px</span></div>
+            </div>
+          </div>
+
+          <div class="sg-card">
+            <div class="sg-h3">Radii</div>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
+              <div style="display:flex; align-items:center; gap: 12px;">
+                <div style="width: 56px; height: 56px; background: var(--accent-soft); border: 1px solid var(--accent-soft-2); border-radius: 8px;"></div>
+                <div><b style="font-size: 13px;">8 px</b><div class="tp-mono tp-tiny tp-mut">--radius-sm · file chips</div></div>
+              </div>
+              <div style="display:flex; align-items:center; gap: 12px;">
+                <div style="width: 56px; height: 56px; background: var(--accent-soft); border: 1px solid var(--accent-soft-2); border-radius: 12px;"></div>
+                <div><b style="font-size: 13px;">12 px</b><div class="tp-mono tp-tiny tp-mut">--radius-md · gates</div></div>
+              </div>
+              <div style="display:flex; align-items:center; gap: 12px;">
+                <div style="width: 56px; height: 56px; background: var(--accent-soft); border: 1px solid var(--accent-soft-2); border-radius: 16px;"></div>
+                <div><b style="font-size: 13px;">16 px</b><div class="tp-mono tp-tiny tp-mut">--radius-lg · cards</div></div>
+              </div>
+              <div style="display:flex; align-items:center; gap: 12px;">
+                <div style="width: 56px; height: 56px; background: var(--accent-soft); border: 1px solid var(--accent-soft-2); border-radius: 999px;"></div>
+                <div><b style="font-size: 13px;">999 px</b><div class="tp-mono tp-tiny tp-mut">pills · buttons</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── 06 ELEVATION ──────────────────────────────── -->
+      <section class="sg-section" id="elev">
+        <div class="sg-section-head">
+          <span class="sg-num">06</span>
+          <h2>Elevation</h2>
+        </div>
+        <p class="sg-section-sub">Three levels. We never use heavy drop shadows; depth comes from soft, low-contrast layering.</p>
+
+        <div class="sg-grid sg-grid-3">
+          <div class="preview preview-stack" style="background: var(--bg);">
+            <div style="background: white; border-radius: 16px; padding: 24px; box-shadow: 0 1px 2px rgba(28,31,51,.04), 0 1px 3px rgba(28,31,51,.04); border: 1px solid var(--border);">
+              <div class="tp-mono tp-tiny tp-mut">--shadow-sm</div>
+              <div class="sg-h3" style="margin-top: 8px;">Resting</div>
+              <p style="margin: 0; font-size: 12px; color: var(--ink-2);">Default cards, list rows, file chips.</p>
+            </div>
+          </div>
+          <div class="preview preview-stack" style="background: var(--bg);">
+            <div style="background: white; border-radius: 16px; padding: 24px; box-shadow: 0 1px 2px rgba(28,31,51,.04), 0 8px 24px rgba(28,31,51,.06); border: 1px solid var(--border); border-left: 3px solid var(--accent);">
+              <div class="tp-mono tp-tiny tp-mut">--shadow-md</div>
+              <div class="sg-h3" style="margin-top: 8px;">Active</div>
+              <p style="margin: 0; font-size: 12px; color: var(--ink-2);">The current block — lime left edge + lifted shadow.</p>
+            </div>
+          </div>
+          <div class="preview preview-stack" style="background: var(--bg);">
+            <div style="background: white; border-radius: 16px; padding: 24px; box-shadow: 0 2px 4px rgba(28,31,51,.04), 0 24px 48px rgba(28,31,51,.10); border: 1px solid var(--border);">
+              <div class="tp-mono tp-tiny tp-mut">--shadow-lg</div>
+              <div class="sg-h3" style="margin-top: 8px;">Floating</div>
+              <p style="margin: 0; font-size: 12px; color: var(--ink-2);">Modal · dropdown · focus overlay only.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── 07 COMPONENTS ─────────────────────────────── -->
+      <section class="sg-section" id="components">
+        <div class="sg-section-head">
+          <span class="sg-num">07</span>
+          <h2>Components</h2>
+        </div>
+        <p class="sg-section-sub">Each piece used by the approved screens, with the tokens it leans on.</p>
+
+        <!-- Buttons -->
+        <div class="sg-h3" style="margin-top: 16px;">Buttons</div>
+        <div class="preview" style="margin-bottom: 28px;">
+          <button class="tp-btn tp-btn-primary"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M6 2v8M2 6h8"/></svg> New Plan</button>
+          <button class="tp-btn tp-btn-ghost">Cancel</button>
+          <button class="tp-btn tp-btn-pos tp-btn-sm">Mark Passed</button>
+          <button class="tp-btn tp-btn-neg tp-btn-sm">Mark Failed</button>
+          <button class="tp-btn tp-btn-ghost tp-btn-sm">All phases</button>
+        </div>
+
+        <div class="sg-h3">Ghost (dashed) — the only way to add things</div>
+        <div class="preview preview-stack" style="margin-bottom: 28px; padding: 22px;">
+          <p class="preview-cap">Inline add-affordance · dashed lime border at 35%</p>
+          <button class="tp-ghost"><svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M6 2v8M2 6h8"/></svg> Add Block</button>
+          <div style="height: 12px;"></div>
+          <button class="tp-ghost tp-ghost-lg"><svg width="13" height="13" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M6 2v8M2 6h8"/></svg> Add Phase</button>
+        </div>
+
+        <!-- Pills, tags, status -->
+        <div class="sg-h3">Pills · tags · status</div>
+        <div class="preview" style="margin-bottom: 28px;">
+          <span class="tp-pill">Phase 2 · Intermediate</span>
+          <span class="tp-pill">Current Phase</span>
+          <span class="tp-pill tp-pill-mono">Apply</span>
+          <span class="tp-tag tp-tag-dev">Development</span>
+          <span class="tp-tag tp-tag-test">Testing</span>
+          <span class="tp-tag tp-tag-anal">Analysis &amp; Design</span>
+          <span class="tp-tag tp-tag-trans">Transversal</span>
+          <span class="tp-status tp-status-pending">Pending</span>
+          <span class="tp-status tp-status-passed">Passed</span>
+          <span class="tp-status tp-status-failed">Failed</span>
+        </div>
+
+        <!-- Progress bar -->
+        <div class="sg-h3">Progress bar</div>
+        <div class="preview preview-stack" style="margin-bottom: 28px;">
+          <p class="preview-cap">Track 6 px · ink @ 6% · fill lime gradient</p>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="tp-bar" style="flex: 1;"><i style="width: 32%;"></i></div>
+            <span class="tp-mono tp-tiny tp-mut">32%</span>
+          </div>
+          <div style="height: 8px;"></div>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="tp-bar" style="flex: 1;"><i style="width: 55%;"></i></div>
+            <span class="tp-mono tp-tiny tp-mut">55%</span>
+          </div>
+          <div style="height: 8px;"></div>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="tp-bar" style="flex: 1;"><i style="width: 91%;"></i></div>
+            <span class="tp-mono tp-tiny tp-mut">91%</span>
+          </div>
+        </div>
+
+        <!-- Card · plan -->
+        <div class="sg-h3">Plan card · list grid</div>
+        <div class="preview" style="margin-bottom: 28px;">
+          <div style="width: 320px;">
+            <div class="tp-card" style="padding: 22px;">
+              <div style="display:flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                  <div style="font-size: 20px; font-weight: 700; letter-spacing: -0.02em;">Eli Vasseur</div>
+                  <div class="tp-tiny tp-mono tp-mut" style="text-transform: uppercase; letter-spacing: 0.08em;">Road to Lyon 2027</div>
+                </div>
+                <div class="tp-mono tp-tiny tp-mut" style="background: rgba(28,31,51,0.04); padding: 4px 8px; border-radius: 6px;">02/03</div>
+              </div>
+              <div style="display:flex; gap: 8px; align-items: baseline; margin-top: 16px;">
+                <span class="tp-pill">Phase 2 · Intermediate</span>
+                <span class="tp-tiny tp-mut">3/5 blocks</span>
+              </div>
+              <div style="display:flex; gap: 12px; margin-top: 12px;">
+                <div class="tp-bar" style="flex: 1;"><i style="width: 55%;"></i></div>
+                <span class="tp-mono tp-tiny tp-mut">55%</span>
+              </div>
+              <div style="margin-top: 16px; padding: 12px 14px; background: var(--surface-2); border-radius: 12px; border: 1px solid var(--border); display:flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <div class="tp-tiny tp-mut" style="text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;">Current block</div>
+                  <div style="font-size: 14px; font-weight: 600;">API Design &amp; REST</div>
+                </div>
+                <span class="tp-pill tp-pill-mono">Apply</span>
+              </div>
+              <div style="margin-top: 12px; display:flex; justify-content: space-between; align-items: center;">
+                <div class="tp-tiny tp-mut" style="display:flex; gap: 8px;">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2.5 4v8M13.5 4v8M2.5 6.5h11M2.5 9.5h11"/></svg>
+                  <span style="font-weight: 600;">Gate 4</span>
+                </div>
+                <span class="tp-status tp-status-pending">Pending</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- File chip -->
+        <div class="sg-h3">File chip · exercise</div>
+        <div class="preview preview-stack" style="margin-bottom: 28px;">
+          <div class="tp-file">
+            <div class="tp-file-icon">PDF</div>
+            <div style="display:flex; flex-direction: column; flex: 1; gap: 2px;">
+              <div style="font-weight: 600; font-size: 12.5px;">rest-pagination-spec.pdf</div>
+              <div class="tp-tiny tp-mut">420 kb</div>
+            </div>
+          </div>
+          <div class="tp-file" style="margin-top: 8px;">
+            <div class="tp-file-icon">DOC</div>
+            <div style="display:flex; flex-direction: column; flex: 1; gap: 2px;">
+              <div style="font-weight: 600; font-size: 12.5px;">idempotency-keys.docx</div>
+              <div class="tp-tiny tp-mut">88 kb</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gate -->
+        <div class="sg-h3">Gate · checkpoint</div>
+        <div class="preview preview-stack" style="margin-bottom: 28px;">
+          <p class="preview-cap">Pending · with mark-passed / mark-failed actions</p>
+          <div class="tp-gate">
+            <div class="tp-gate-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2.5 4v8M13.5 4v8M2.5 6.5h11M2.5 9.5h11"/></svg></div>
+            <div style="display:flex; flex-direction: column; gap: 3px; flex: 1;">
+              <div style="display:flex; gap: 8px; align-items: baseline;">
+                <div style="font-weight: 700; font-size: 14px;">Gate 7</div>
+                <span class="tp-status tp-status-pending">Pending</span>
+              </div>
+              <div class="tp-tiny tp-mut">Cumulative · Blocks 1 – 7</div>
+            </div>
+            <div style="display:flex; gap: 8px;">
+              <button class="tp-btn tp-btn-pos tp-btn-sm">Mark Passed</button>
+              <button class="tp-btn tp-btn-neg tp-btn-sm">Mark Failed</button>
+            </div>
+          </div>
+          <div style="height: 12px;"></div>
+          <p class="preview-cap">Passed · resolved</p>
+          <div class="tp-gate">
+            <div class="tp-gate-icon passed"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 7.5L5.5 10.5 11.5 4"/></svg></div>
+            <div style="display:flex; flex-direction: column; gap: 3px; flex: 1;">
+              <div style="display:flex; gap: 8px; align-items: baseline;">
+                <div style="font-weight: 700; font-size: 14px;">Gate 6</div>
+                <span class="tp-status tp-status-passed">Passed</span>
+              </div>
+              <div class="tp-tiny tp-mut">Cumulative · Blocks 1 – 6</div>
+            </div>
+          </div>
+          <div style="height: 12px;"></div>
+          <p class="preview-cap">Failed · triggers remediation</p>
+          <div class="tp-gate">
+            <div class="tp-gate-icon failed"><svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3.5 3.5l7 7M10.5 3.5l-7 7"/></svg></div>
+            <div style="display:flex; flex-direction: column; gap: 3px; flex: 1;">
+              <div style="display:flex; gap: 8px; align-items: baseline;">
+                <div style="font-weight: 700; font-size: 14px;">Gate 11</div>
+                <span class="tp-status tp-status-failed">Failed</span>
+              </div>
+              <div class="tp-tiny tp-mut">Remediate · Block 11 · System Resilience Patterns</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Avatar -->
+        <div class="sg-h3">Avatar · top bar</div>
+        <div class="preview" style="margin-bottom: 28px;">
+          <div class="tp-avatar"><span>Inés Castaing</span><div class="av">IC</div></div>
+        </div>
+
+        <!-- Form input -->
+        <div class="sg-h3">Form input · modal</div>
+        <div class="preview preview-stack" style="margin-bottom: 28px;">
+          <p class="preview-cap">Focused · 1.5 px lime border + 4 px lime halo</p>
+          <label class="tp-tiny tp-mono tp-mut" style="text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600;">Student name</label>
+          <div style="margin-top: 6px; padding: 12px 14px; background: white; border: 1.5px solid var(--accent); border-radius: 10px; font-size: 15px; font-weight: 500; box-shadow: 0 0 0 4px var(--accent-soft);">Hana Berg</div>
+          <div style="height: 14px;"></div>
+          <p class="preview-cap">Resting · placeholder · ink-3</p>
+          <label class="tp-tiny tp-mono tp-mut" style="text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600;">Plan title</label>
+          <div style="margin-top: 6px; padding: 12px 14px; background: white; border: 1px solid var(--border-strong); border-radius: 10px; font-size: 15px; color: var(--ink-3);">e.g. Road to Lyon 2027</div>
+        </div>
+      </section>
+
+      <!-- ── 08 PATTERNS ───────────────────────────────── -->
+      <section class="sg-section" id="patterns">
+        <div class="sg-section-head">
+          <span class="sg-num">08</span>
+          <h2>Patterns</h2>
+        </div>
+        <p class="sg-section-sub">Recurring layouts that knit components into screens.</p>
+
+        <div class="sg-grid sg-grid-2" style="gap: 24px;">
+          <div class="sg-card">
+            <div class="sg-h3">Top bar — list mode</div>
+            <p style="font-size: 13px; color: var(--ink-2); margin: 0 0 12px;">Logo lockup left, instructor avatar right. Page title lives <em>below</em> the bar so the bar stays consistent across screens.</p>
+            <div style="background: var(--bg); border-radius: 12px; overflow: hidden; border: 1px solid var(--border);">
+              <div class="tp-topbar"><div class="tp-logo"><div class="tp-logo-mark">T</div><span>Training Planner</span></div><div class="tp-avatar"><span>Inés Castaing</span><div class="av">IC</div></div></div>
+            </div>
+          </div>
+          <div class="sg-card">
+            <div class="sg-h3">Top bar — detail mode</div>
+            <p style="font-size: 13px; color: var(--ink-2); margin: 0 0 12px;">Back arrow, student name + plan title, overall progress bar, instructor avatar. The bar carries identity here, not the page below.</p>
+            <div style="background: var(--bg); border-radius: 12px; overflow: hidden; border: 1px solid var(--border);">
+              <div class="tp-topbar">
+                <div style="display:flex; gap: 12px; align-items: center;">
+                  <button class="tp-btn tp-btn-ghost tp-btn-sm" style="padding: 6px 8px;"><svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3L5 7l4 4"/></svg></button>
+                  <div style="display:flex; flex-direction: column; line-height: 1.2;"><div style="font-size: 14px; font-weight: 700;">Eli Vasseur</div><div class="tp-tiny tp-mut">Road to Lyon 2027</div></div>
+                </div>
+                <div style="display:flex; gap: 16px; align-items: center;">
+                  <div style="display:flex; gap: 8px; width: 220px; align-items: center;">
+                    <div class="tp-bar" style="flex: 1;"><i style="width: 55%;"></i></div>
+                    <div class="tp-tiny tp-mono tp-mut">55%</div>
+                  </div>
+                  <div class="tp-avatar"><div class="av">IC</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sg-card" style="margin-top: 24px;">
+          <div class="sg-h3">Roadmap timeline</div>
+          <p style="font-size: 13px; color: var(--ink-2); margin: 0 0 16px;">Vertical rail, gradient-fading lime line. Nodes mark each block (passed = green; current = lime + halo) and gate (smaller). The active block is the only full card; passed blocks collapse to a one-line row.</p>
+          <div style="display:flex; gap: 32px; align-items: flex-start;">
+            <div style="font-family: var(--font-mono); font-size: 11px; color: var(--ink-2); width: 140px; flex-shrink: 0;">
+              <div><b style="color: var(--ink);">Rail</b> 2 px · linear-gradient(180deg, lime 0%, lime 20%, transparent 100%)</div>
+              <div style="margin-top: 12px;"><b style="color: var(--ink);">Node passed</b> 14 · #00a878 fill</div>
+              <div style="margin-top: 12px;"><b style="color: var(--ink);">Node active</b> 14 · lime fill · 4 px lime halo</div>
+              <div style="margin-top: 12px;"><b style="color: var(--ink);">Node gate</b> 12 · white · ink-2 ring</div>
+            </div>
+            <div style="position: relative; flex: 1; padding-left: 32px;">
+              <div style="position: absolute; left: 6px; top: 6px; bottom: 0; width: 2px; background: linear-gradient(180deg, var(--accent), rgba(219,253,107,0.2));"></div>
+              <div style="position: relative; margin-bottom: 16px;">
+                <div style="position: absolute; left: -32px; top: 18px; width: 14px; height: 14px; border-radius: 50%; background: var(--pos); border: 2px solid var(--pos);"></div>
+                <div class="tp-card" style="padding: 12px 16px; border-left: 3px solid var(--pos);">
+                  <div style="display:flex; justify-content: space-between; align-items: center;">
+                    <div style="font-size: 14px; font-weight: 600;">Relational Modeling</div>
+                    <span class="tp-pill tp-pill-mono" style="background: var(--pos-soft); color: var(--pos); border-color: transparent;">Apply</span>
+                  </div>
+                </div>
+              </div>
+              <div style="position: relative; margin-bottom: 16px;">
+                <div style="position: absolute; left: -32px; top: 18px; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); border: 2px solid var(--accent); box-shadow: 0 0 0 4px var(--accent-soft);"></div>
+                <div class="tp-card tp-card-active" style="padding: 16px;">
+                  <div style="display:flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
+                    <div>
+                      <span class="tp-tag tp-tag-dev">Development</span>
+                      <div style="font-size: 16px; font-weight: 700; margin-top: 6px;">API Design &amp; REST</div>
+                    </div>
+                    <span class="tp-pill tp-pill-mono">Apply</span>
+                  </div>
+                </div>
+              </div>
+              <div style="position: relative;">
+                <div style="position: absolute; left: -30px; top: 14px; width: 12px; height: 12px; border-radius: 50%; background: white; border: 2px solid var(--border-strong);"></div>
+                <div class="tp-gate">
+                  <div class="tp-gate-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2.5 4v8M13.5 4v8M2.5 6.5h11M2.5 9.5h11"/></svg></div>
+                  <div style="display:flex; flex-direction: column; gap: 3px; flex: 1;">
+                    <div style="display:flex; gap: 8px; align-items: baseline;"><div style="font-weight: 700; font-size: 14px;">Gate 7</div><span class="tp-status tp-status-pending">Pending</span></div>
+                    <div class="tp-tiny tp-mut">Cumulative · Blocks 1 – 7</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── 09 VOICE ──────────────────────────────────── -->
+      <section class="sg-section" id="voice">
+        <div class="sg-section-head">
+          <span class="sg-num">09</span>
+          <h2>Voice in copy</h2>
+        </div>
+        <p class="sg-section-sub">A short do/don't list. The tone is a calm coach with a clipboard.</p>
+
+        <div class="sg-grid sg-grid-2" style="gap: 24px;">
+          <div class="sg-card" style="border-left: 3px solid var(--pos);">
+            <div class="tp-mono tp-tiny" style="color: var(--pos); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;">Do</div>
+            <ul style="margin: 12px 0 0; padding-left: 18px; line-height: 1.7; font-size: 14px; color: var(--ink);">
+              <li>"Cumulative — Blocks 1 through 7"</li>
+              <li>"Mark Passed" / "Mark Failed"</li>
+              <li>"3/5 blocks · Gate 4 pending"</li>
+              <li>"Start by adding your first phase."</li>
+              <li>"A blank roadmap, a clear horizon."</li>
+            </ul>
+          </div>
+          <div class="sg-card" style="border-left: 3px solid var(--neg);">
+            <div class="tp-mono tp-tiny" style="color: var(--neg); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;">Don't</div>
+            <ul style="margin: 12px 0 0; padding-left: 18px; line-height: 1.7; font-size: 14px; color: var(--ink);">
+              <li>"Awesome! 🎉 You crushed it!"</li>
+              <li>"Pass this assessment to continue"</li>
+              <li>"60% of blocks have been completed by you"</li>
+              <li>"Get started by clicking the button below"</li>
+              <li>"Don't worry if you fail — that's totally okay!"</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── 10 TOKEN MAP ──────────────────────────────── -->
+      <section class="sg-section" id="tokens">
+        <div class="sg-section-head">
+          <span class="sg-num">10</span>
+          <h2>Token map</h2>
+        </div>
+        <p class="sg-section-sub">Every CSS variable in <span class="tp-mono">styles.css</span> at a glance.</p>
+
+        <div class="sg-card" style="padding: 0;">
+          <table class="kv-table">
+            <thead>
+              <tr><th style="padding-left: 22px;">Token</th><th>Value</th><th>Used for</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="mono" style="padding-left: 22px;">--bg</td><td class="mono">#f8f9f2</td><td class="desc">Page background — warm off-white.</td></tr>
+              <tr><td class="mono" style="padding-left: 22px;">--surface</td><td class="mono">#ffffff</td><td class="desc">Cards, modals, top bar.</td></tr>
+              <tr><td class="mono" style="padding-left: 22px;">--surface-2</td><td class="mono">#fbfcf6</td><td class="desc">Inset / nested surface (current-block well).</td></tr>
+              <tr><td class="mono" style="padding-left: 22px;">--border</td><td class="mono">rgba(28,31,51,.08)</td><td class="desc">Default card &amp; row dividers.</td></tr>
+              <tr><td class="mono" style="padding-left: 22px;">--border-strong</td><td class="mono">rgba(28,31,51,.14)</td><td class="desc">Resting input borders, gate icon ring.</td></tr>
+              <tr><td class="mono" style="padding-left: 22px;">--ink</td><td class="mono">#1c1f33</td><td class="desc">Primary text, logo mark fill.</td></tr>
+              <tr><td class="mono" style="padding-left: 22px;">--ink-2</td><td class="mono">#6b7280</td><td class="desc">Secondary text, captions, mut elements.</td></tr>
+              <tr><td class="mono" style="padding-left: 22px;">--ink-3</td><td class="mono">#9ca3af</td><td class="desc">Placeholders, very-quiet labels.</td></tr>
+              <tr><td class="mono" style="padding-left: 22px;">--accent</td><td class="mono">#DBFD6B</td><td class="desc">Primary CTA, current state, active accent.</td></tr>
+              <tr><td class="mono" style="padding-left: 22px;">--accent-soft</td><td class="mono">rgba(219,253,107,.18)</td><td class="desc">Pill backgrounds, hover wash.</td></tr>
+              <tr><td class="mono" style="padding-left: 22px;">--accent-soft-2</td><td class="mono">rgba(219,253,107,.35)</td><td class="desc">Pill borders, ghost dashed border.</td></tr>
+              <tr><td class="mono" style="padding-left: 22px;">--pos</td><td class="mono">#00a878</td><td class="desc">Gate passed; Testing macro-competence.</td></tr>
+              <tr><td class="mono" style="padding-left: 22px;">--pos-soft</td><td class="mono">rgba(0,168,120,.12)</td><td class="desc">Passed status badge fill.</td></tr>
+              <tr><td class="mono" style="padding-left: 22px;">--neg</td><td class="mono">#fb3640</td><td class="desc">Gate failed; Mark-Failed CTA.</td></tr>
+              <tr><td class="mono" style="padding-left: 22px;">--neg-soft</td><td class="mono">rgba(251,54,64,.10)</td><td class="desc">Failed status badge fill.</td></tr>
+              <tr><td class="mono" style="padding-left: 22px;">--blue</td><td class="mono">#5a7df0</td><td class="desc">Analysis &amp; Design macro-competence.</td></tr>
+              <tr><td class="mono" style="padding-left: 22px;">--muted</td><td class="mono">#b5b8a8</td><td class="desc">Transversal macro-competence.</td></tr>
+              <tr><td class="mono" style="padding-left: 22px;">--shadow-sm</td><td class="mono">0 1 2 .04, 0 1 3 .04</td><td class="desc">Resting cards.</td></tr>
+              <tr><td class="mono" style="padding-left: 22px;">--shadow-md</td><td class="mono">0 1 2 .04, 0 8 24 .06</td><td class="desc">Active block, hover cards.</td></tr>
+              <tr><td class="mono" style="padding-left: 22px;">--shadow-lg</td><td class="mono">0 2 4 .04, 0 24 48 .10</td><td class="desc">Modal, dropdowns.</td></tr>
+              <tr><td class="mono" style="padding-left: 22px;">--radius-sm</td><td class="mono">8 px</td><td class="desc">File chips, small inputs.</td></tr>
+              <tr><td class="mono" style="padding-left: 22px;">--radius-md</td><td class="mono">12 px</td><td class="desc">Gate cards, inset wells.</td></tr>
+              <tr><td class="mono" style="padding-left: 22px;">--radius-lg</td><td class="mono">16 px</td><td class="desc">Plan cards, block cards, modal.</td></tr>
+              <tr><td class="mono" style="padding-left: 22px;">--font-sans</td><td class="mono">Plus Jakarta Sans</td><td class="desc">All readable text — body, headings, buttons.</td></tr>
+              <tr><td class="mono" style="padding-left: 22px;">--font-mono</td><td class="mono">JetBrains Mono</td><td class="desc">Verb levels, tags, codes, numerics, eyebrows.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <footer style="border-top: 1px solid var(--border); padding-top: 32px; margin-top: 80px; display:flex; justify-content: space-between; align-items: baseline;">
+        <div class="tp-mono tp-tiny tp-mut" style="letter-spacing: 0.1em; text-transform: uppercase;">Training Planner · Style Guide v1.0</div>
+        <a href="Training Planner.html" style="font-size: 13px; color: var(--ink); text-decoration: none; font-weight: 600;">← Back to wireframes</a>
+      </footer>
+
+    </main>
+  </div>
+</body>
+</html>
