@@ -49,6 +49,12 @@ export async function createBlock(input: CreateBlockInput) {
     .single();
 
   if (blockError) {
+    console.error("[createBlock] insert blocks failed", {
+      code: blockError.code,
+      message: blockError.message,
+      details: blockError.details,
+      hint: blockError.hint,
+    });
     throw new Error("Failed to create block. Please try again.");
   }
 
@@ -60,6 +66,12 @@ export async function createBlock(input: CreateBlockInput) {
   });
 
   if (gateError) {
+    console.error("[createBlock] insert gates failed", {
+      code: gateError.code,
+      message: gateError.message,
+      details: gateError.details,
+      hint: gateError.hint,
+    });
     throw new Error("Block created but gate creation failed. Please retry.");
   }
 
@@ -80,6 +92,12 @@ export async function updateBlock(input: UpdateBlockInput) {
     .eq("id", input.blockId);
 
   if (error) {
+    console.error("[updateBlock] update blocks failed", {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+    });
     throw new Error("Failed to update block. Please try again.");
   }
 
@@ -91,6 +109,12 @@ export async function deleteBlock(planId: string, blockId: string) {
   const { error } = await supabase.from("blocks").delete().eq("id", blockId);
 
   if (error) {
+    console.error("[deleteBlock] delete blocks failed", {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+    });
     throw new Error("Failed to delete block. Please try again.");
   }
 
@@ -102,6 +126,12 @@ export async function updateGateStatus(input: UpdateGateInput) {
   const { error } = await supabase.from("gates").update({ status: input.status }).eq("id", input.gateId);
 
   if (error) {
+    console.error("[updateGateStatus] update gates failed", {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+    });
     throw new Error("Failed to update gate status. Please try again.");
   }
 

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { ProgressBar } from "@/components/ui/ProgressBar";
+import { signOut } from "@/actions/auth";
 import { APP_ROUTES } from "@/lib/routes";
 import { getInitials } from "@/lib/utils";
 
@@ -35,6 +36,11 @@ export function TopBar({ instructorName, mode = "list", title, subtitle, progres
 
       <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
         {mode === "detail" ? <div style={{ width: "220px" }}><ProgressBar value={progress} /></div> : null}
+        <form action={signOut}>
+          <button type="submit" className="tp-btn tp-btn-ghost tp-btn-sm">
+            Log out
+          </button>
+        </form>
         <div className="tp-avatar">
           <span>{instructorName}</span>
           <div className="av">{getInitials(instructorName)}</div>

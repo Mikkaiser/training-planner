@@ -13,7 +13,18 @@ export async function createPlan(input: CreatePlanInput) {
   const supabase = createClient();
   const {
     data: { user },
+    error: userError,
   } = await supabase.auth.getUser();
+
+  if (userError) {
+    console.error("[createPlan] auth.getUser failed", {
+      code: userError.code,
+      message: userError.message,
+      name: userError.name,
+      status: userError.status,
+    });
+    throw new Error("Could not verify your session. Please sign in again.");
+  }
 
   if (!user) {
     throw new Error("You need to sign in before creating a plan.");
@@ -30,6 +41,12 @@ export async function createPlan(input: CreatePlanInput) {
     .single();
 
   if (error) {
+    console.error("[createPlan] insert training_plans failed", {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+    });
     throw new Error("Failed to create plan. Please try again.");
   }
 
@@ -44,6 +61,12 @@ export async function deletePlan(planId: string) {
   const { error } = await supabase.from("training_plans").delete().eq("id", planId);
 
   if (error) {
+    console.error("[deletePlan] delete training_plans failed", {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+    });
     throw new Error("Failed to delete plan. Please try again.");
   }
 

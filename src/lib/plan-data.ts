@@ -7,7 +7,18 @@ export async function getCurrentUserOrRedirect() {
   const supabase = createClient();
   const {
     data: { user },
+    error,
   } = await supabase.auth.getUser();
+
+  if (error) {
+    console.error("[getCurrentUserOrRedirect] auth.getUser failed", {
+      code: error.code,
+      message: error.message,
+      name: error.name,
+      status: error.status,
+    });
+    redirect(APP_ROUTES.login);
+  }
 
   if (!user) redirect(APP_ROUTES.login);
   return user;
@@ -29,7 +40,17 @@ export async function getPlansForCurrentInstructor(): Promise<PlanWithPhases[]> 
     .eq("instructor_id", user.id)
     .order("created_at", { ascending: false });
 
-  if (plansError || !planRows) {
+  if (plansError) {
+    console.error("[getPlansForCurrentInstructor] select training_plans failed", {
+      code: plansError.code,
+      message: plansError.message,
+      details: plansError.details,
+      hint: plansError.hint,
+    });
+    return [];
+  }
+
+  if (!planRows) {
     return [];
   }
 
@@ -62,7 +83,17 @@ export async function getPlanByIdForCurrentInstructor(id: string): Promise<PlanW
     .eq("instructor_id", user.id)
     .single();
 
-  if (error || !plan) {
+  if (error) {
+    console.error("[getPlanByIdForCurrentInstructor] select training_plans failed", {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+    });
+    notFound();
+  }
+
+  if (!plan) {
     notFound();
   }
 

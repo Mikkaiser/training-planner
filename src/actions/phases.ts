@@ -25,6 +25,12 @@ export async function createPhase(input: CreatePhaseInput) {
   });
 
   if (error) {
+    console.error("[createPhase] insert phases failed", {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+    });
     throw new Error("Failed to create phase. Please try again.");
   }
 
@@ -36,6 +42,12 @@ export async function updatePhase(input: UpdatePhaseInput) {
   const { error } = await supabase.from("phases").update({ title: input.title }).eq("id", input.phaseId);
 
   if (error) {
+    console.error("[updatePhase] update phases failed", {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+    });
     throw new Error("Failed to update phase. Please try again.");
   }
 
@@ -47,6 +59,12 @@ export async function deletePhase(planId: string, phaseId: string) {
   const { error } = await supabase.from("phases").delete().eq("id", phaseId);
 
   if (error) {
+    console.error("[deletePhase] delete phases failed", {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+    });
     throw new Error("Failed to delete phase. Please try again.");
   }
 

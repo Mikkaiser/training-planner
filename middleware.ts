@@ -14,32 +14,30 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get: (name: string) => request.cookies.get(name)?.value,
-        set: (name: string, value: string, options: Record<string, unknown>) => {
-          request.cookies.set({ name, value, ...(options as object) });
-          response.cookies.set({ name, value, ...(options as object) });
-        },
-        remove: (name: string, options: Record<string, unknown>) => {
-          request.cookies.set({ name, value: "", ...(options as object) });
-          response.cookies.set({ name, value: "", ...(options as object) });
+        getAll: () => request.cookies.getAll(),
+        setAll: (cookiesToSet) => {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            request.cookies.set({ name, value, ...(options ?? {}) });
+            response.cookies.set({ name, value, ...(options ?? {}) });
+          });
         },
       },
     },
   );
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const isProtected =
     !request.nextUrl.pathname.startsWith(APP_ROUTES.login) &&
     !request.nextUrl.pathname.startsWith("/auth");
 
-  if (!session && isProtected) {
+  if (!user && isProtected) {
     return NextResponse.redirect(new URL(APP_ROUTES.login, request.url));
   }
 
-  if (session && request.nextUrl.pathname === APP_ROUTES.login) {
+  if (user && request.nextUrl.pathname === APP_ROUTES.login) {
     return NextResponse.redirect(new URL(APP_ROUTES.home, request.url));
   }
 
