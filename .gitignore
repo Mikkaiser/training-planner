@@ -28,6 +28,14 @@
 /wsl/
 /\\\\wsl.localhost\\Ubuntu\\tmp\\stagehand-v3\\*/
 
+# editors
+/.idea/
+/.vscode/
+
+# supabase local cli state
+/supabase/.branches/
+/supabase/.temp/
+
 # debug
 npm-debug.log*
 yarn-debug.log*

@@ -5,6 +5,7 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 import { createBlock } from "@/actions/blocks";
 import { updatePhase } from "@/actions/phases";
 import { BlockCard } from "@/components/plan/BlockCard";
+import { BlockFormModal, type BlockFormValues } from "@/components/plan/BlockFormModal";
 import { GateMarker } from "@/components/plan/GateMarker";
 import { Button } from "@/components/ui/Button";
 import { GhostButton } from "@/components/ui/GhostButton";
@@ -17,16 +18,20 @@ interface PhaseSectionProps {
   planId: string;
   gates: Gate[];
   phaseIndex: number;
+  currentBlockId: string | null;
 }
 
-export function PhaseSection({ phase, planId, gates, phaseIndex }: PhaseSectionProps) {
+export function PhaseSection({ phase, planId, gates, phaseIndex, currentBlockId }: PhaseSectionProps) {
   const [open, setOpen] = useState(true);
+  const [addOpen, setAddOpen] = useState(false);
   const [pending, startTransition] = useTransition();
 
   const sortedBlocks = useMemo(
     () => [...phase.blocks].sort((a, b) => a.order_index - b.order_index),
     [phase.blocks],
   );
+
+  const isCurrentPhase = currentBlockId !== null && sortedBlocks.some((block) => block.id === currentBlockId);
 
   const handleRename = () => {
     const title = window.prompt("Phase title", phase.title);
@@ -37,21 +42,17 @@ export function PhaseSection({ phase, planId, gates, phaseIndex }: PhaseSectionP
     });
   };
 
-  const handleAddBlock = () => {
-    const title = window.prompt("Block title", "New block");
-    if (!title) return;
-
-    startTransition(async () => {
-      await createBlock({
-        planId,
-        phaseId: phase.id,
-        title,
-        description: "Describe what the competitor should practice in this block.",
-        verbLevel: "Apply",
-        competenceType: "Development",
-        hours: 8,
-        orderIndex: sortedBlocks.length + 1,
-      });
+  const handleAddBlock = async (values: BlockFormValues) => {
+    const nextOrderIndex = sortedBlocks.reduce((max, block) => Math.max(max, block.order_index), 0) + 1;
+    await createBlock({
+      planId,
+      phaseId: phase.id,
+      title: values.title,
+      description: values.description,
+      verbLevel: values.verbLevel,
+      competenceType: values.competenceType,
+      hours: values.hours,
+      orderIndex: nextOrderIndex,
     });
   };
 
@@ -63,7 +64,7 @@ export function PhaseSection({ phase, planId, gates, phaseIndex }: PhaseSectionP
             P{phaseIndex + 1}
           </span>
           <h3 style={{ margin: 0, fontSize: "34px", letterSpacing: "-0.02em" }}>{phase.title}</h3>
-          {phaseIndex === 1 ? <span className="tp-pill">Current Phase</span> : null}
+          {isCurrentPhase ? <span className="tp-pill">Current Phase</span> : null}
         </div>
         <div style={{ display: "flex", gap: "8px" }}>
           <Button variant="ghost" size="sm" onClick={handleRename} disabled={pending}>
@@ -85,14 +86,22 @@ export function PhaseSection({ phase, planId, gates, phaseIndex }: PhaseSectionP
             const gate = gates.find((item) => item.after_block_id === block.id);
             return (
               <div key={block.id} style={{ display: "grid", gap: "10px" }}>
-                <BlockCard block={block} planId={planId} active={phaseIndex === 1 && index === sortedBlocks.length - 1} />
+                <BlockCard block={block} planId={planId} active={block.id === currentBlockId} />
                 {gate ? <GateMarker gate={gate} index={index} planId={planId} /> : null}
               </div>
             );
           })}
-          <GhostButton onClick={handleAddBlock}>Add Block</GhostButton>
+          <GhostButton onClick={() => setAddOpen(true)}>Add Block</GhostButton>
         </div>
       ) : null}
+
+      <BlockFormModal
+        open={addOpen}
+        title="New Block"
+        submitLabel="Add Block"
+        onClose={() => setAddOpen(false)}
+        onSubmit={handleAddBlock}
+      />
     </section>
   );
 }

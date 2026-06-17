@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireUser } from "@/lib/auth";
 import { APP_ROUTES, planDetailRoute } from "@/lib/routes";
 import { createClient } from "@/lib/supabase/server";
 
@@ -57,6 +58,7 @@ export async function createPlan(input: CreatePlanInput) {
 }
 
 export async function deletePlan(planId: string) {
+  await requireUser();
   const supabase = createClient();
   const { error } = await supabase.from("training_plans").delete().eq("id", planId);
 

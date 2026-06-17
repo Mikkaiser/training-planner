@@ -1,10 +1,10 @@
 "use client";
 
-import { useTransition } from "react";
-import { Pencil, Trash2, Upload } from "lucide-react";
+import { useState, useTransition } from "react";
+import { Pencil, Trash2 } from "lucide-react";
 import { deleteBlock, updateBlock } from "@/actions/blocks";
+import { BlockFormModal, type BlockFormValues } from "@/components/plan/BlockFormModal";
 import { Button } from "@/components/ui/Button";
-import { GhostButton } from "@/components/ui/GhostButton";
 import { Tag } from "@/components/ui/Tag";
 import type { Block } from "@/lib/types";
 
@@ -15,29 +15,26 @@ interface BlockCardProps {
 }
 
 export function BlockCard({ block, planId, active = false }: BlockCardProps) {
+  const [editOpen, setEditOpen] = useState(false);
   const [pending, startTransition] = useTransition();
 
-  const handleEdit = () => {
-    const nextTitle = window.prompt("Block title", block.title);
-    if (!nextTitle) return;
-
-    startTransition(async () => {
-      await updateBlock({
-        planId,
-        blockId: block.id,
-        title: nextTitle,
-        description: block.description,
-        verbLevel: block.verb_level,
-        competenceType: block.competence_type,
-        hours: block.hours,
-      });
+  const handleEdit = async (values: BlockFormValues) => {
+    await updateBlock({
+      planId,
+      phaseId: block.phase_id,
+      blockId: block.id,
+      title: values.title,
+      description: values.description,
+      verbLevel: values.verbLevel,
+      competenceType: values.competenceType,
+      hours: values.hours,
     });
   };
 
   const handleDelete = () => {
     if (!window.confirm("Delete this block?")) return;
     startTransition(async () => {
-      await deleteBlock(planId, block.id);
+      await deleteBlock(planId, block.phase_id, block.id);
     });
   };
 
@@ -52,20 +49,10 @@ export function BlockCard({ block, planId, active = false }: BlockCardProps) {
         <span className="tp-pill tp-pill-mono">{block.verb_level}</span>
       </div>
 
-      <div style={{ marginTop: "14px", display: "grid", gap: "8px" }}>
-        <div className="tp-file">
-          <div className="tp-file-icon">PDF</div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 600 }}>Exercise pack</div>
-            <div style={{ fontSize: "12px", color: "var(--ink-2)" }}>Attach references as needed</div>
-          </div>
-          <Upload size={14} color="var(--ink-2)" />
-        </div>
-        <GhostButton>Add Exercise</GhostButton>
-      </div>
+      <div style={{ marginTop: "12px", color: "var(--ink-2)", fontSize: "12px" }}>{block.hours}h</div>
 
       <div style={{ marginTop: "14px", display: "flex", gap: "8px", justifyContent: "flex-end" }}>
-        <Button variant="ghost" size="sm" disabled={pending} onClick={handleEdit}>
+        <Button variant="ghost" size="sm" disabled={pending} onClick={() => setEditOpen(true)}>
           <Pencil size={13} />
           Edit
         </Button>
@@ -74,6 +61,21 @@ export function BlockCard({ block, planId, active = false }: BlockCardProps) {
           Delete
         </Button>
       </div>
+
+      <BlockFormModal
+        open={editOpen}
+        title="Edit Block"
+        submitLabel="Save Changes"
+        initialValues={{
+          title: block.title,
+          description: block.description,
+          verbLevel: block.verb_level,
+          competenceType: block.competence_type,
+          hours: block.hours,
+        }}
+        onClose={() => setEditOpen(false)}
+        onSubmit={handleEdit}
+      />
     </article>
   );
 }
