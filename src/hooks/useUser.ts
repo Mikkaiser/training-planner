@@ -10,17 +10,20 @@ export function useUser() {
 
   useEffect(() => {
     const supabase = createClient();
+    let active = true;
 
     const getUser = async () => {
       const {
         data: { user: currentUser },
       } = await supabase.auth.getUser();
 
+      if (!active) return;
       setUser(currentUser);
       setLoading(false);
     };
 
     getUser().catch(() => {
+      if (!active) return;
       setUser(null);
       setLoading(false);
     });
@@ -28,10 +31,14 @@ export function useUser() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!active) return;
       setUser(session?.user ?? null);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   return { user, loading };

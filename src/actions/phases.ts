@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireUser } from "@/lib/auth";
 import { planDetailRoute } from "@/lib/routes";
 import { createClient } from "@/lib/supabase/server";
 
@@ -17,6 +18,7 @@ type UpdatePhaseInput = {
 };
 
 export async function createPhase(input: CreatePhaseInput) {
+  await requireUser();
   const supabase = createClient();
   const { error } = await supabase.from("phases").insert({
     plan_id: input.planId,
@@ -38,6 +40,7 @@ export async function createPhase(input: CreatePhaseInput) {
 }
 
 export async function updatePhase(input: UpdatePhaseInput) {
+  await requireUser();
   const supabase = createClient();
   const { error } = await supabase.from("phases").update({ title: input.title }).eq("id", input.phaseId);
 
@@ -55,6 +58,7 @@ export async function updatePhase(input: UpdatePhaseInput) {
 }
 
 export async function deletePhase(planId: string, phaseId: string) {
+  await requireUser();
   const supabase = createClient();
   const { error } = await supabase.from("phases").delete().eq("id", phaseId);
 

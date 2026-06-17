@@ -33,12 +33,20 @@ export async function middleware(request: NextRequest) {
     !request.nextUrl.pathname.startsWith(APP_ROUTES.login) &&
     !request.nextUrl.pathname.startsWith("/auth");
 
+  // Carry any cookies the Supabase client refreshed onto a redirect response,
+  // otherwise a token rotation during getUser() would be lost on redirect.
+  const redirectTo = (path: string) => {
+    const redirectResponse = NextResponse.redirect(new URL(path, request.url));
+    response.cookies.getAll().forEach((cookie) => redirectResponse.cookies.set(cookie));
+    return redirectResponse;
+  };
+
   if (!user && isProtected) {
-    return NextResponse.redirect(new URL(APP_ROUTES.login, request.url));
+    return redirectTo(APP_ROUTES.login);
   }
 
   if (user && request.nextUrl.pathname === APP_ROUTES.login) {
-    return NextResponse.redirect(new URL(APP_ROUTES.home, request.url));
+    return redirectTo(APP_ROUTES.home);
   }
 
   return response;
