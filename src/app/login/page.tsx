@@ -1,19 +1,12 @@
-"use client";
-
 import { LogIn } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { signIn } from "@/auth";
 import { APP_ROUTES } from "@/lib/routes";
 
 export default function LoginPage() {
-  const supabase = createClient();
-
-  const handleGoogleSignIn = async () => {
-    const redirectTo = `${window.location.origin}${APP_ROUTES.authCallback}`;
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo },
-    });
-  };
+  async function signInWithGoogle() {
+    "use server";
+    await signIn("google", { redirectTo: APP_ROUTES.home });
+  }
 
   return (
     <main className="tp-page" style={{ justifyContent: "center", alignItems: "center", padding: "24px" }}>
@@ -28,10 +21,12 @@ export default function LoginPage() {
           Continue with your instructor account to open your plans.
         </p>
 
-        <button className="tp-btn tp-btn-primary" style={{ width: "100%", padding: "12px 16px" }} onClick={handleGoogleSignIn}>
-          <LogIn size={16} />
-          Continue with Google
-        </button>
+        <form action={signInWithGoogle}>
+          <button type="submit" className="tp-btn tp-btn-primary" style={{ width: "100%", padding: "12px 16px" }}>
+            <LogIn size={16} />
+            Continue with Google
+          </button>
+        </form>
       </section>
     </main>
   );

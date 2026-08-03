@@ -1,0 +1,73 @@
+# Local development stack: Postgres + Next.js dev server with hot reload.
+#
+#   cp .env.example .env.local     # then fill in AUTH_SECRET and the Google creds
+#   docker compose -f docker-compose.dev.yml up
+#
+# The app is served on http://localhost:3000 and the database on
+# 127.0.0.1:5437. Production uses docker-compose.yml + docker-compose.db.yml.
+
+name: training-planner-dev
+
+services:
+  db:
+    image: postgres:17.4
+    container_name: training-planner-db-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-training_planner}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-devpassword}
+      POSTGRES_DB: ${POSTGRES_DB:-training_planner}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C.UTF-8"
+    volumes:
+      - dev-pgdata:/var/lib/postgresql/data
+      # Runs only on the first boot of an empty volume, in filename order.
+      # To re-apply after changing a migration: docker compose -f
+      # docker-compose.dev.yml down -v, which wipes the dev database.
+      - ./db/migrations:/docker-entrypoint-initdb.d:ro
+    # Loopback only, and 5437 so it cannot collide with the production
+    # container on 5436 if you ever run both on the same host.
+    ports:
+      - "127.0.0.1:${PG_HOST_PORT:-5437}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-training_planner} -d ${POSTGRES_DB:-training_planner}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  web:
+    image: node:22-alpine
+    container_name: training-planner-web-dev
+    working_dir: /app
+    command: sh -c "npm install -g pnpm@10 && pnpm install && pnpm dev"
+    env_file:
+      # Optional so `up` still starts without it, but Google sign-in will fail
+      # until AUTH_SECRET and the AUTH_GOOGLE_* values are present.
+      - path: .env.local
+        required: false
+    # These override anything in .env.local so dev never points at production
+    # by accident.
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-training_planner}:${POSTGRES_PASSWORD:-devpassword}@db:5432/${POSTGRES_DB:-training_planner}
+      AUTH_URL: http://localhost:3000
+      AUTH_TRUST_HOST: "true"
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      NODE_ENV: development
+      # Bind mounts do not deliver inotify events on macOS or Windows.
+      WATCHPACK_POLLING: "true"
+    volumes:
+      - .:/app
+      # Named volumes so the container's node_modules and build cache do not
+      # fight with whatever the host has, which matters for native binaries.
+      - dev-node-modules:/app/node_modules
+      - dev-next-cache:/app/.next
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  dev-pgdata:
+  dev-node-modules:
+  dev-next-cache:

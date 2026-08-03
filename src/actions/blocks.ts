@@ -1,8 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { auth } from "@/auth";
+import { pool, queryOne } from "@/lib/db";
 import { planDetailRoute } from "@/lib/routes";
-import { createClient } from "@/lib/supabase/server";
 import type { CompetenceType, GateStatus, VerbLevel } from "@/lib/types";
 
 type CreateBlockInput = {
@@ -32,107 +33,146 @@ type UpdateGateInput = {
   status: GateStatus;
 };
 
-export async function createBlock(input: CreateBlockInput) {
-  const supabase = createClient();
-  const { data: blockData, error: blockError } = await supabase
-    .from("blocks")
-    .insert({
-      phase_id: input.phaseId,
-      title: input.title,
-      description: input.description,
-      verb_level: input.verbLevel,
-      competence_type: input.competenceType,
-      hours: input.hours,
-      order_index: input.orderIndex,
-    })
-    .select("id")
-    .single();
+async function requireUserId(): Promise<string> {
+  const session = await auth();
+  const id = session?.user?.id;
 
-  if (blockError) {
-    console.error("[createBlock] insert blocks failed", {
-      code: blockError.code,
-      message: blockError.message,
-      details: blockError.details,
-      hint: blockError.hint,
-    });
-    throw new Error("Failed to create block. Please try again.");
+  if (!id) {
+    throw new Error("You need to sign in before managing blocks.");
   }
 
-  const { error: gateError } = await supabase.from("gates").insert({
-    plan_id: input.planId,
-    after_block_id: blockData.id,
-    status: "pending",
-    hours_threshold: input.hours,
-  });
+  return id;
+}
 
-  if (gateError) {
-    console.error("[createBlock] insert gates failed", {
-      code: gateError.code,
-      message: gateError.message,
-      details: gateError.details,
-      hint: gateError.hint,
-    });
-    throw new Error("Block created but gate creation failed. Please retry.");
+export async function createBlock(input: CreateBlockInput) {
+  const userId = await requireUserId();
+
+  // Block and its gate are written together: previously two separate calls
+  // that could leave a block without a gate if the second one failed.
+  const client = await pool.connect();
+
+  try {
+    await client.query("begin");
+
+    const blockResult = await client.query<{ id: string }>(
+      `insert into blocks (phase_id, title, description, verb_level, competence_type, hours, order_index)
+       select $1, $2, $3, $4::verb_level, $5::competence_type, $6, $7
+       where exists (
+         select 1
+           from phases ph
+           join training_plans tp on tp.id = ph.plan_id
+          where ph.id = $1 and tp.id = $8 and tp.instructor_id = $9
+       )
+       returning id`,
+      [
+        input.phaseId,
+        input.title,
+        input.description,
+        input.verbLevel,
+        input.competenceType,
+        input.hours,
+        input.orderIndex,
+        input.planId,
+        userId,
+      ],
+    );
+
+    const block = blockResult.rows[0];
+
+    if (!block) {
+      await client.query("rollback");
+      throw new Error("Phase not found, or you do not have access to it.");
+    }
+
+    await client.query(
+      `insert into gates (plan_id, after_block_id, status, hours_threshold)
+       values ($1, $2, 'pending', $3)`,
+      [input.planId, block.id, input.hours],
+    );
+
+    await client.query("commit");
+  } catch (error) {
+    await client.query("rollback").catch(() => undefined);
+    console.error("[createBlock] failed", error);
+    throw error instanceof Error ? error : new Error("Failed to create block. Please try again.");
+  } finally {
+    client.release();
   }
 
   revalidatePath(planDetailRoute(input.planId));
 }
 
 export async function updateBlock(input: UpdateBlockInput) {
-  const supabase = createClient();
-  const { error } = await supabase
-    .from("blocks")
-    .update({
-      title: input.title,
-      description: input.description,
-      verb_level: input.verbLevel,
-      competence_type: input.competenceType,
-      hours: input.hours,
-    })
-    .eq("id", input.blockId);
+  const userId = await requireUserId();
 
-  if (error) {
-    console.error("[updateBlock] update blocks failed", {
-      code: error.code,
-      message: error.message,
-      details: error.details,
-      hint: error.hint,
-    });
-    throw new Error("Failed to update block. Please try again.");
+  const row = await queryOne<{ id: string }>(
+    `update blocks as b
+        set title = $2,
+            description = $3,
+            verb_level = $4::verb_level,
+            competence_type = $5::competence_type,
+            hours = $6
+       from phases ph
+       join training_plans tp on tp.id = ph.plan_id
+      where b.id = $1
+        and ph.id = b.phase_id
+        and tp.instructor_id = $7
+     returning b.id`,
+    [
+      input.blockId,
+      input.title,
+      input.description,
+      input.verbLevel,
+      input.competenceType,
+      input.hours,
+      userId,
+    ],
+  );
+
+  if (!row) {
+    throw new Error("Block not found, or you do not have access to it.");
   }
 
   revalidatePath(planDetailRoute(input.planId));
 }
 
 export async function deleteBlock(planId: string, blockId: string) {
-  const supabase = createClient();
-  const { error } = await supabase.from("blocks").delete().eq("id", blockId);
+  const userId = await requireUserId();
 
-  if (error) {
-    console.error("[deleteBlock] delete blocks failed", {
-      code: error.code,
-      message: error.message,
-      details: error.details,
-      hint: error.hint,
-    });
-    throw new Error("Failed to delete block. Please try again.");
+  const row = await queryOne<{ id: string }>(
+    `delete from blocks as b
+      using phases ph, training_plans tp
+      where b.id = $1
+        and ph.id = b.phase_id
+        and tp.id = ph.plan_id
+        and tp.instructor_id = $2
+     returning b.id`,
+    [blockId, userId],
+  );
+
+  if (!row) {
+    throw new Error("Block not found, or you do not have access to it.");
   }
 
   revalidatePath(planDetailRoute(planId));
 }
 
 export async function updateGateStatus(input: UpdateGateInput) {
-  const supabase = createClient();
-  const { error } = await supabase.from("gates").update({ status: input.status }).eq("id", input.gateId);
+  const userId = await requireUserId();
 
-  if (error) {
-    console.error("[updateGateStatus] update gates failed", {
-      code: error.code,
-      message: error.message,
-      details: error.details,
-      hint: error.hint,
-    });
-    throw new Error("Failed to update gate status. Please try again.");
+  const row = await queryOne<{ id: string }>(
+    `update gates as g
+        set status = $2::gate_status
+       from training_plans tp
+      where g.id = $1
+        and tp.id = g.plan_id
+        and tp.instructor_id = $3
+     returning g.id`,
+    [input.gateId, input.status, userId],
+  );
+
+  if (!row) {
+    throw new Error("Gate not found, or you do not have access to it.");
   }
 
   revalidatePath(planDetailRoute(input.planId));

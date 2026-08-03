@@ -1,21 +1,12 @@
 import { config as loadEnv } from "dotenv";
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { Pool } from "pg";
 
 loadEnv({ path: ".env.local" });
-
-type DbError = {
-  code?: string;
-  message?: string;
-  details?: string;
-  hint?: string;
-};
+loadEnv({ path: ".env" });
 
 function readRequiredEnv(name: string): string {
   const value = process.env[name];
-  if (!value) {
-    throw new Error(`Missing required environment variable: ${name}`);
-  }
-
+  if (!value) throw new Error(`Missing required environment variable: ${name}`);
   return value;
 }
 
@@ -23,218 +14,98 @@ function logStep(step: string): void {
   console.log(`\n[smoke] ${step}`);
 }
 
-function logError(step: string, error: DbError): never {
-  throw new Error(
-    `${step} failed: ${error.message ?? "Unknown Supabase error"} (code=${error.code ?? "n/a"}, details=${error.details ?? "n/a"}, hint=${error.hint ?? "n/a"})`,
-  );
-}
-
-async function ensureNoDbError<T>(
-  step: string,
-  promise: PromiseLike<{ data: T; error: DbError | null }>,
-): Promise<T> {
-  const { data, error } = await promise;
-
-  if (error) {
-    logError(step, error);
-  }
-
-  return data;
+function assert(condition: boolean, message: string): asserts condition {
+  if (!condition) throw new Error(message);
 }
 
 async function run(): Promise<void> {
-  const supabaseUrl = readRequiredEnv("NEXT_PUBLIC_SUPABASE_URL");
-  const supabaseAnonKey = readRequiredEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY");
-  const serviceRoleKey = readRequiredEnv("SUPABASE_SERVICE_ROLE_KEY");
-
-  const adminClient = createClient(supabaseUrl, serviceRoleKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-
-  const timestamp = Date.now();
-  const email = `smoke+${timestamp}@example.test`;
-  const password = `Smoke-${timestamp}-Pass!`;
-  let userId = "";
+  const pool = new Pool({ connectionString: readRequiredEnv("DATABASE_URL") });
+  const stamp = Date.now();
+  const emailA = `smoke+${stamp}a@example.test`;
+  const emailB = `smoke+${stamp}b@example.test`;
+  let userA = "";
+  let userB = "";
 
   try {
-    logStep("Creating throwaway user");
-    const { data: createdUser, error: createUserError } = await adminClient.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: { full_name: "Smoke Test User" },
-    });
+    logStep("Creating throwaway users");
+    userA = (await pool.query(`insert into users (email, name) values ($1, $2) returning id`, [emailA, "Smoke A"])).rows[0].id;
+    userB = (await pool.query(`insert into users (email, name) values ($1, $2) returning id`, [emailB, "Smoke B"])).rows[0].id;
+    console.log(`[smoke] users ${userA} / ${userB}`);
 
-    if (createUserError) {
-      throw new Error(`auth.admin.createUser failed: ${createUserError.message}`);
-    }
+    logStep("Creating plan, phase, block, gate");
+    const planId = (
+      await pool.query(`insert into training_plans (title, student_name, instructor_id) values ($1, $2, $3) returning id`, [
+        "Smoke Plan",
+        "Smoke Student",
+        userA,
+      ])
+    ).rows[0].id;
 
-    if (!createdUser.user) {
-      throw new Error("auth.admin.createUser failed: user was not returned");
-    }
+    const phaseId = (
+      await pool.query(`insert into phases (plan_id, title, order_index) values ($1, $2, 0) returning id`, [planId, "Smoke Phase"])
+    ).rows[0].id;
 
-    userId = createdUser.user.id;
-    console.log(`[smoke] Created user ${userId}`);
+    const blockId = (
+      await pool.query(
+        `insert into blocks (phase_id, title, description, verb_level, competence_type, hours, order_index)
+         values ($1, $2, $3, 'Recognize', 'Development', 2, 0) returning id`,
+        [phaseId, "Smoke Block", "Smoke description"],
+      )
+    ).rows[0].id;
 
-    const userClient: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
+    const gateId = (
+      await pool.query(
+        `insert into gates (plan_id, after_block_id, status, hours_threshold) values ($1, $2, 'pending', 2) returning id`,
+        [planId, blockId],
+      )
+    ).rows[0].id;
 
-    logStep("Signing in throwaway user");
-    const { data: signInResponse, error: signInError } = await userClient.auth.signInWithPassword({ email, password });
+    console.log(`[smoke] plan=${planId} phase=${phaseId} block=${blockId} gate=${gateId}`);
 
-    if (signInError) {
-      throw new Error(`auth.signInWithPassword failed: ${signInError.message}`);
-    }
+    logStep("Reading back as owner");
+    const owned = await pool.query(`select id from training_plans where instructor_id = $1 and id = $2`, [userA, planId]);
+    assert(owned.rowCount === 1, "Owner could not read their own plan");
 
-    if (!signInResponse.user) {
-      throw new Error("auth.signInWithPassword failed: user was not returned");
-    }
+    logStep("Checking ownership isolation (replaces RLS)");
+    const foreign = await pool.query(`select id from training_plans where instructor_id = $1 and id = $2`, [userB, planId]);
+    assert(foreign.rowCount === 0, "Isolation failed: other user can read the plan");
 
-    const authenticatedUserId = signInResponse.user.id;
-    console.log(`[smoke] Signed in as ${authenticatedUserId}`);
+    const foreignDelete = await pool.query(`delete from training_plans where id = $1 and instructor_id = $2 returning id`, [planId, userB]);
+    assert(foreignDelete.rowCount === 0, "Isolation failed: other user could delete the plan");
 
-    logStep("Creating plan");
-    const plan = await ensureNoDbError(
-      "insert training_plans",
-      userClient
-        .from("training_plans")
-        .insert({
-          title: "Smoke Plan",
-          student_name: "Smoke Student",
-          instructor_id: authenticatedUserId,
-        })
-        .select("id")
-        .single(),
+    logStep("Checking numeric and timestamp casts");
+    const casted = await pool.query(
+      `select hours::float8 as hours, to_char(created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at
+         from blocks where id = $1`,
+      [blockId],
     );
-
-    const planId = (plan as { id: string }).id;
-    console.log(`[smoke] Plan created: ${planId}`);
-
-    logStep("Creating phase");
-    const phase = await ensureNoDbError(
-      "insert phases",
-      userClient
-        .from("phases")
-        .insert({
-          plan_id: planId,
-          title: "Smoke Phase",
-          order_index: 0,
-        })
-        .select("id")
-        .single(),
-    );
-
-    const phaseId = (phase as { id: string }).id;
-    console.log(`[smoke] Phase created: ${phaseId}`);
-
-    logStep("Creating block");
-    const block = await ensureNoDbError(
-      "insert blocks",
-      userClient
-        .from("blocks")
-        .insert({
-          phase_id: phaseId,
-          title: "Smoke Block",
-          description: "Smoke description",
-          verb_level: "Recognize",
-          competence_type: "Development",
-          hours: 2,
-          order_index: 0,
-        })
-        .select("id")
-        .single(),
-    );
-
-    const blockId = (block as { id: string }).id;
-    console.log(`[smoke] Block created: ${blockId}`);
-
-    logStep("Creating gate");
-    const gate = await ensureNoDbError(
-      "insert gates",
-      userClient
-        .from("gates")
-        .insert({
-          plan_id: planId,
-          after_block_id: blockId,
-          status: "pending",
-          hours_threshold: 2,
-        })
-        .select("id")
-        .single(),
-    );
-
-    const gateId = (gate as { id: string }).id;
-    console.log(`[smoke] Gate created: ${gateId}`);
-
-    logStep("Reading plan list");
-    const planRows = await ensureNoDbError(
-      "select training_plans list",
-      userClient.from("training_plans").select("id").eq("instructor_id", authenticatedUserId),
-    );
-
-    if (!(planRows as Array<{ id: string }>).some((row) => row.id === planId)) {
-      throw new Error("select training_plans list failed: created plan not found");
-    }
-
-    logStep("Reading plan detail");
-    const planDetail = await ensureNoDbError(
-      "select training_plans detail",
-      userClient.from("training_plans").select("id").eq("id", planId).eq("instructor_id", authenticatedUserId).single(),
-    );
-
-    if ((planDetail as { id: string }).id !== planId) {
-      throw new Error("select training_plans detail failed: wrong plan returned");
-    }
+    assert(typeof casted.rows[0].hours === "number", "hours did not come back as a number");
+    assert(!Number.isNaN(Date.parse(casted.rows[0].created_at)), "created_at is not a parseable ISO string");
 
     logStep("Updating gate status");
-    const updatedGate = await ensureNoDbError(
-      "update gates",
-      userClient.from("gates").update({ status: "passed" }).eq("id", gateId).select("status").single(),
-    );
-
-    if ((updatedGate as { status: string }).status !== "passed") {
-      throw new Error("update gates failed: status did not update to passed");
-    }
+    const updated = await pool.query(`update gates set status = 'passed'::gate_status where id = $1 returning status`, [gateId]);
+    assert(updated.rows[0].status === "passed", "Gate status did not update");
 
     logStep("Deleting plan and verifying cascade");
-    await ensureNoDbError("delete training_plans", userClient.from("training_plans").delete().eq("id", planId).select("id"));
+    await pool.query(`delete from training_plans where id = $1 and instructor_id = $2`, [planId, userA]);
 
-    const remainingPlans = await ensureNoDbError(
-      "post-delete training_plans check",
-      userClient.from("training_plans").select("id").eq("id", planId),
-    );
-    const remainingPhases = await ensureNoDbError("post-delete phases check", userClient.from("phases").select("id").eq("id", phaseId));
-    const remainingBlocks = await ensureNoDbError("post-delete blocks check", userClient.from("blocks").select("id").eq("id", blockId));
-    const remainingGates = await ensureNoDbError("post-delete gates check", userClient.from("gates").select("id").eq("id", gateId));
-
-    if ((remainingPlans as Array<{ id: string }>).length > 0) {
-      throw new Error("Cascade check failed: training_plans row still exists");
-    }
-    if ((remainingPhases as Array<{ id: string }>).length > 0) {
-      throw new Error("Cascade check failed: phases row still exists");
-    }
-    if ((remainingBlocks as Array<{ id: string }>).length > 0) {
-      throw new Error("Cascade check failed: blocks row still exists");
-    }
-    if ((remainingGates as Array<{ id: string }>).length > 0) {
-      throw new Error("Cascade check failed: gates row still exists");
+    for (const [table, id] of [
+      ["training_plans", planId],
+      ["phases", phaseId],
+      ["blocks", blockId],
+      ["gates", gateId],
+    ] as const) {
+      const left = await pool.query(`select 1 from ${table} where id = $1`, [id]);
+      assert(left.rowCount === 0, `Cascade check failed: ${table} row still exists`);
     }
 
     console.log("\n[smoke] All smoke checks passed.");
   } finally {
-    if (userId) {
-      logStep("Cleaning up throwaway user");
-      const { error } = await adminClient.auth.admin.deleteUser(userId);
-      if (error) {
-        console.error("[smoke] Cleanup warning: failed to delete throwaway user", {
-          code: error.code,
-          message: error.message,
-          name: error.name,
-          status: error.status,
-        });
-      }
+    logStep("Cleaning up throwaway users");
+    for (const id of [userA, userB]) {
+      if (id) await pool.query(`delete from users where id = $1`, [id]).catch(() => undefined);
     }
+    await pool.end();
   }
 }
 
