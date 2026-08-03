@@ -11,6 +11,10 @@ import { deleteObjects } from "@/lib/exercise-storage";
 import {
   MAX_FILE_BYTES,
   MAX_FILES_PER_BLOCK,
+  MAX_LABEL_LENGTH,
+  MAX_URL_LENGTH,
+  labelForUrl,
+  normaliseExerciseUrl,
   slugifyFileName,
   validateUploadCandidate,
 } from "@/lib/exercise-files";
@@ -112,6 +116,52 @@ export async function presignExerciseUpload(input: z.input<typeof presignSchema>
   return { exerciseId, uploadUrl, contentType: validation.contentType };
 }
 
+const linkSchema = z.object({
+  planId: z.string().uuid(),
+  blockId: z.string().uuid(),
+  url: z.string().min(1).max(MAX_URL_LENGTH),
+  label: z.string().max(MAX_LABEL_LENGTH).optional(),
+});
+
+/**
+ * Attaches a link instead of a file.
+ *
+ * The URL is normalised and scheme-checked here, not only in the form: the
+ * action is a public endpoint, so the browser's validation is a convenience and
+ * this is the control. It lands as 'ready' immediately — there is no object to
+ * confirm, so there is nothing to be pending about.
+ */
+export async function createExerciseLink(input: z.input<typeof linkSchema>): Promise<void> {
+  const userId = await requireUserId();
+  const parsed = linkSchema.parse(input);
+
+  const normalised = normaliseExerciseUrl(parsed.url);
+  if (!normalised.ok) throw new Error(normalised.reason);
+
+  const label = (parsed.label ?? "").trim() || labelForUrl(normalised.url);
+
+  const row = await queryOne<{ id: string }>(
+    `insert into exercises (block_id, file_name, kind, url, size_bytes, status, uploaded_by, uploaded_at)
+     select $1, $2, 'link', $3, 0, 'ready', $4, now()
+      where exists (
+        select 1
+          from blocks b
+          join phases ph on ph.id = b.phase_id
+          join training_plans tp on tp.id = ph.plan_id
+         where b.id = $1 and tp.id = $5 and tp.instructor_id = $4
+      )
+        and (select count(*) from exercises where block_id = $1) < $6
+     returning id`,
+    [parsed.blockId, label, normalised.url, userId, parsed.planId, MAX_FILES_PER_BLOCK],
+  );
+
+  if (!row) {
+    throw new Error("Block not found, already full, or you do not have access to it.");
+  }
+
+  revalidatePath(planDetailRoute(parsed.planId));
+}
+
 const confirmSchema = z.object({
   planId: z.string().uuid(),
   exerciseId: z.string().uuid(),
@@ -169,7 +219,7 @@ export async function deleteExercise(input: z.input<typeof deleteSchema>): Promi
   const userId = await requireUserId();
   const parsed = deleteSchema.parse(input);
 
-  const row = await queryOne<{ storage_key: string }>(
+  const row = await queryOne<{ storage_key: string | null }>(
     `delete from exercises e
       using blocks b, phases ph, training_plans tp
       where e.id = $1
@@ -183,6 +233,7 @@ export async function deleteExercise(input: z.input<typeof deleteSchema>): Promi
 
   if (!row) throw new Error("Exercise not found, or you do not have access to it.");
 
-  await deleteObjects([row.storage_key]);
+  // A link has no object; filtering keeps us from asking S3 to delete "null".
+  await deleteObjects(row.storage_key ? [row.storage_key] : []);
   revalidatePath(planDetailRoute(parsed.planId));
 }

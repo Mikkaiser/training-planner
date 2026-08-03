@@ -27,6 +27,8 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
   const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!uuid.test(params.id)) return new NextResponse(null, { status: 404 });
 
+  // kind = 'file' above: a link has no object to sign, and it is already
+  // reachable as an ordinary anchor.
   const row = await queryOne<{ storage_key: string; file_name: string; content_type: string }>(
     `select e.storage_key, e.file_name, e.content_type
        from exercises e
@@ -35,6 +37,7 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
        join training_plans tp on tp.id = ph.plan_id
       where e.id = $1
         and e.status = 'ready'
+        and e.kind = 'file'
         and tp.instructor_id = $2`,
     [params.id, userId],
   );

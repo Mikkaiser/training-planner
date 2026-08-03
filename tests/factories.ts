@@ -49,13 +49,28 @@ export function makeExercise(blockId: string, index: number): Exercise {
     id: `${blockId}-e${index}`,
     block_id: blockId,
     file_name: `brief-${index}.pdf`,
+    kind: "file",
     storage_key: `plans/p/blocks/${blockId}/${blockId}-e${index}/brief-${index}.pdf`,
     content_type: "application/pdf",
+    url: null,
     size_bytes: 1024 * index,
     status: "ready",
     uploaded_by: null,
     created_at: ISO,
     uploaded_at: ISO,
+  };
+}
+
+export function makeLinkExercise(blockId: string, index: number): Exercise {
+  return {
+    ...makeExercise(blockId, index),
+    id: `${blockId}-l${index}`,
+    file_name: `reference-${index}`,
+    kind: "link",
+    storage_key: null,
+    content_type: null,
+    url: `https://example.com/exercise-${index}`,
+    size_bytes: 0,
   };
 }
 

@@ -181,6 +181,25 @@ export function TrashIcon({ size = 12, className }: IconProps) {
   );
 }
 
+export function ExternalLinkIcon({ size = 12, className }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 12 12"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M9.5 6.75v3a.75.75 0 0 1-.75.75h-6a.75.75 0 0 1-.75-.75v-6a.75.75 0 0 1 .75-.75h3M7.25 2h3v3M5 7l5-5" />
+    </svg>
+  );
+}
+
 export function SearchIcon({ size = 12, className }: IconProps) {
   return (
     <svg

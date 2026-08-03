@@ -46,13 +46,14 @@ export async function collectStorageKeys(
 ): Promise<string[]> {
   const where = scope === "plan" ? "tp.id = $1" : scope === "phase" ? "ph.id = $1" : "b.id = $1";
 
+  // Links have no storage_key; only rows with an object need cleaning up.
   const { rows } = await pool.query<{ storage_key: string }>(
     `select e.storage_key
        from exercises e
        join blocks b on b.id = e.block_id
        join phases ph on ph.id = b.phase_id
        join training_plans tp on tp.id = ph.plan_id
-      where ${where} and tp.instructor_id = $2`,
+      where ${where} and tp.instructor_id = $2 and e.storage_key is not null`,
     [id, userId],
   );
 
@@ -81,12 +82,14 @@ export async function copyExercisesForClone(
   const { rows } = await pool.query<{
     block_id: string;
     file_name: string;
-    storage_key: string;
-    content_type: string;
+    kind: "file" | "link";
+    storage_key: string | null;
+    content_type: string | null;
+    url: string | null;
     size_bytes: number;
     uploaded_by: string | null;
   }>(
-    `select block_id, file_name, storage_key, content_type, size_bytes, uploaded_by
+    `select block_id, file_name, kind, storage_key, content_type, url, size_bytes, uploaded_by
        from exercises
       where block_id = any($1::uuid[]) and status = 'ready'`,
     [sourceBlockIds],
@@ -95,6 +98,20 @@ export async function copyExercisesForClone(
   for (const row of rows) {
     const targetBlockId = blockMap.get(row.block_id);
     if (!targetBlockId) continue;
+
+    // A link is just a row: nothing to copy in storage, and no failure mode.
+    if (row.kind === "link") {
+      await pool.query(
+        `insert into exercises (block_id, file_name, kind, url, size_bytes, status, uploaded_by, uploaded_at)
+         values ($1, $2, 'link', $3, 0, 'ready', $4, now())`,
+        [targetBlockId, row.file_name, row.url, row.uploaded_by],
+      );
+      continue;
+    }
+
+    // Belt and braces: the DB constraint guarantees a file row has a key, but
+    // the type is nullable so the compiler cannot know that.
+    if (!row.storage_key) continue;
 
     const newId = randomUUID();
     const newKey = `plans/${targetPlanId}/blocks/${targetBlockId}/${newId}/${slugifyFileName(row.file_name)}`;
@@ -107,14 +124,14 @@ export async function copyExercisesForClone(
           // containing spaces or unicode fails with an opaque 404.
           CopySource: encodeURI(`${bucket()}/${row.storage_key}`),
           Key: newKey,
-          ContentType: row.content_type,
+          ContentType: row.content_type ?? undefined,
           MetadataDirective: "REPLACE",
         }),
       );
 
       await pool.query(
-        `insert into exercises (id, block_id, file_name, storage_key, content_type, size_bytes, status, uploaded_by, uploaded_at)
-         values ($1, $2, $3, $4, $5, $6, 'ready', $7, now())`,
+        `insert into exercises (id, block_id, file_name, kind, storage_key, content_type, size_bytes, status, uploaded_by, uploaded_at)
+         values ($1, $2, $3, 'file', $4, $5, $6, 'ready', $7, now())`,
         [newId, targetBlockId, row.file_name, newKey, row.content_type, row.size_bytes, row.uploaded_by],
       );
     } catch (error) {

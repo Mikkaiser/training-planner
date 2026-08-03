@@ -744,6 +744,20 @@ a {
   color: var(--ink-2);
 }
 
+/* Drag target laid over an SVG station. Centred on the station's coordinates,
+   which is why the offset is applied here rather than in the inline position. */
+.tp-station-grip {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+}
+
+.tp-station-grip:hover {
+  background: var(--accent-soft-2);
+}
+
 .tp-grip:focus-visible {
   outline: 2px solid var(--ink);
   outline-offset: 2px;

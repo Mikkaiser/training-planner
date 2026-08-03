@@ -8,7 +8,7 @@ import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import { InlineEdit } from "@/components/ui/InlineEdit";
 import { SelectPill } from "@/components/ui/SelectPill";
 import { competenceTagClass } from "@/components/ui/Tag";
-import { DownloadIcon, PlusIcon, TrashIcon } from "@/components/ui/icons";
+import { DownloadIcon, ExternalLinkIcon, PlusIcon, TrashIcon } from "@/components/ui/icons";
 import { fileKind } from "@/lib/exercise-files";
 import type { BlockVM } from "@/lib/plan-view-model";
 import { COMPETENCE_TYPES, VERB_LEVELS, type CompetenceType, type VerbLevel } from "@/lib/types";
@@ -85,7 +85,7 @@ export function BlockCard({ block, planId, phaseLabel, active = false, handle }:
           <div className="tp-eyebrow">Exercises</div>
           {block.exercises.map((exercise) => (
             <div key={exercise.id} className="tp-file">
-              <div className="tp-file-icon">{fileKind(exercise.file_name)}</div>
+              <div className="tp-file-icon">{exercise.kind === "link" ? "URL" : fileKind(exercise.file_name)}</div>
               <div className="tp-col" style={{ gap: 2, flex: 1, minWidth: 0 }}>
                 <div
                   style={{
@@ -98,27 +98,52 @@ export function BlockCard({ block, planId, phaseLabel, active = false, handle }:
                 >
                   {exercise.file_name}
                 </div>
-                <div className="tp-tiny tp-mut">{formatBytes(exercise.size_bytes)}</div>
+                <div
+                  className="tp-tiny tp-mut"
+                  style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+                >
+                  {exercise.kind === "link" ? exercise.url : formatBytes(exercise.size_bytes)}
+                </div>
               </div>
               {/* Both stay visible. Hiding the remove button behind a hover
                   made it undiscoverable — the file looked permanent. */}
-              <a
-                href={`/api/exercises/${exercise.id}/download`}
-                className="tp-btn tp-btn-ghost tp-btn-sm"
-                style={{ padding: "4px 8px", borderColor: "transparent", color: "var(--ink-2)" }}
-                aria-label={`Download ${exercise.file_name}`}
-                title="Download"
-              >
-                <DownloadIcon size={12} />
-              </a>
+              {exercise.kind === "link" && exercise.url ? (
+                <a
+                  href={exercise.url}
+                  target="_blank"
+                  // noreferrer as well as noopener: without it the destination
+                  // learns which plan the link was opened from.
+                  rel="noopener noreferrer"
+                  className="tp-btn tp-btn-ghost tp-btn-sm"
+                  style={{ padding: "4px 8px", borderColor: "transparent", color: "var(--ink-2)" }}
+                  aria-label={`Open ${exercise.file_name}`}
+                  title="Open in a new tab"
+                >
+                  <ExternalLinkIcon size={12} />
+                </a>
+              ) : (
+                <a
+                  href={`/api/exercises/${exercise.id}/download`}
+                  className="tp-btn tp-btn-ghost tp-btn-sm"
+                  style={{ padding: "4px 8px", borderColor: "transparent", color: "var(--ink-2)" }}
+                  aria-label={`Download ${exercise.file_name}`}
+                  title="Download"
+                >
+                  <DownloadIcon size={12} />
+                </a>
+              )}
               <ConfirmButton
                 className="tp-btn tp-btn-ghost tp-btn-sm"
                 style={{ padding: "4px 8px", borderColor: "transparent", color: "var(--ink-2)" }}
                 label="Remove"
                 ariaLabel={`Remove ${exercise.file_name}`}
                 title={`Remove "${exercise.file_name}"?`}
-                body="This deletes the file from storage as well as the block. It cannot be undone."
-                confirmLabel="Remove file"
+                body={
+                  exercise.kind === "link"
+                    ? "This removes the link from the block. Whatever it points at is untouched."
+                    : "This deletes the file from storage as well as the block. It cannot be undone."
+                }
+                confirmLabel={exercise.kind === "link" ? "Remove link" : "Remove file"}
                 disabled={pending}
                 onConfirm={() =>
                   startTransition(async () => {

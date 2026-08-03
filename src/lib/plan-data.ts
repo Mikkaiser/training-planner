@@ -9,7 +9,7 @@ const PLAN_COLS = `id, instructor_id, title, student_name, ${TS("created_at", "c
 const PHASE_COLS = `id, plan_id, title, order_index, ${TS("created_at", "created_at")}`;
 const BLOCK_COLS = `id, phase_id, title, description, verb_level, competence_type, hours::float8 as hours, order_index, ${TS("created_at", "created_at")}`;
 const GATE_COLS = `id, plan_id, after_block_id, status, hours_threshold::float8 as hours_threshold, ${TS("created_at", "created_at")}`;
-const EXERCISE_COLS = `id, block_id, file_name, storage_key, content_type, size_bytes, status, uploaded_by, ${TS("created_at", "created_at")}, ${TS("uploaded_at", "uploaded_at")}`;
+const EXERCISE_COLS = `id, block_id, file_name, kind, storage_key, content_type, url, size_bytes, status, uploaded_by, ${TS("created_at", "created_at")}, ${TS("uploaded_at", "uploaded_at")}`;
 
 /**
  * Only 'ready' rows are returned: a reserved-but-not-uploaded row has no bytes

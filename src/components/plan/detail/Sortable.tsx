@@ -1,7 +1,16 @@
 "use client";
 
 import { createContext, useContext, type ReactNode } from "react";
-import { KeyboardSensor, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import {
+  KeyboardSensor,
+  PointerSensor,
+  closestCorners,
+  pointerWithin,
+  rectIntersection,
+  useSensor,
+  useSensors,
+  type CollisionDetection,
+} from "@dnd-kit/core";
 import { sortableKeyboardCoordinates, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
@@ -19,6 +28,19 @@ type SortableHandle = Pick<
 /** Lets a nested handle reach the useSortable instance of its own item. */
 const HandleContext = createContext<SortableHandle | null>(null);
 
+/**
+ * Pointer-first, falling back to rectangles.
+ *
+ * closestCorners on its own happily picks a container far from the cursor when
+ * the pointer is over empty space, which makes a cross-phase drop land
+ * somewhere the user never aimed at.
+ */
+export const planCollisionDetection: CollisionDetection = (args) => {
+  const pointer = pointerWithin(args);
+  if (pointer.length > 0) return closestCorners(args);
+  return rectIntersection(args);
+};
+
 export function useSortableSensors() {
   return useSensors(
     // A small distance so a click on a card's own buttons is not swallowed by
@@ -33,11 +55,19 @@ export function useSortableSensors() {
 export function SortableItem({
   id,
   data,
+  style,
   children,
 }: {
   id: string;
   /** Carries the item's kind and container so the drag handlers can route it. */
   data?: Record<string, unknown>;
+  /**
+   * Merged into the wrapper. The route view positions its items absolutely over
+   * the map, and that has to happen here: an absolute child of this wrapper
+   * would anchor to the wrapper itself, giving every item the same rect and
+   * leaving dnd-kit unable to tell them apart.
+   */
+  style?: React.CSSProperties;
   children: ReactNode;
 }) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
@@ -57,6 +87,7 @@ export function SortableItem({
           // Kept in the flow but faded, so the gap it will leave stays visible
           // while the overlay follows the pointer.
           opacity: isDragging ? 0.4 : 1,
+          ...style,
         }}
       >
         {children}

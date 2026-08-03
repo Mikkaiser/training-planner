@@ -78,6 +78,52 @@ export function slugifyFileName(fileName: string): string {
   return extension ? `${safeStem}.${extension}` : safeStem;
 }
 
+export const MAX_URL_LENGTH = 2048;
+export const MAX_LABEL_LENGTH = 200;
+
+/**
+ * Accepts only http and https.
+ *
+ * The stored URL is rendered as an anchor, so anything else is an injection
+ * vector: javascript: executes on click, data: can serve HTML from our own
+ * origin's context, and file:/blob: point at the reader's machine. Allowlisting
+ * two schemes is the whole control — blocklisting is a losing game once you
+ * account for whitespace, casing and unicode tricks in the scheme.
+ */
+export function normaliseExerciseUrl(raw: string): { ok: true; url: string } | { ok: false; reason: string } {
+  const trimmed = raw.trim();
+  if (!trimmed) return { ok: false, reason: "Paste a link first" };
+  if (trimmed.length > MAX_URL_LENGTH) return { ok: false, reason: "That link is too long" };
+
+  // A bare "example.com/x" is what people actually paste; assume https rather
+  // than rejecting it, but never assume a scheme for anything already carrying
+  // one, or "javascript:alert(1)" would become "https://javascript:alert(1)".
+  const candidate = /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(trimmed) ? trimmed : `https://${trimmed}`;
+
+  let parsed: URL;
+  try {
+    parsed = new URL(candidate);
+  } catch {
+    return { ok: false, reason: "That does not look like a link" };
+  }
+
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    return { ok: false, reason: "Only http and https links are allowed" };
+  }
+  if (!parsed.hostname) return { ok: false, reason: "That link has no address" };
+
+  return { ok: true, url: parsed.toString() };
+}
+
+/** A readable default label: the host, with the leading www. dropped. */
+export function labelForUrl(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "Link";
+  }
+}
+
 /**
  * Runs on the client to reject files before uploading and again on the server
  * before signing anything. The client copy is a courtesy; the server copy is

@@ -1,12 +1,13 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { createExerciseLink } from "@/actions/exercises";
 import { Modal } from "@/components/ui/Modal";
 import { Tag } from "@/components/ui/Tag";
 import { CheckIcon, CrossIcon, UploadIcon } from "@/components/ui/icons";
 import { useExerciseUpload, type QueueItem } from "@/hooks/useExerciseUpload";
-import { ACCEPT_ATTRIBUTE, fileKind } from "@/lib/exercise-files";
+import { ACCEPT_ATTRIBUTE, MAX_LABEL_LENGTH, fileKind, normaliseExerciseUrl } from "@/lib/exercise-files";
 import type { BlockVM } from "@/lib/plan-view-model";
 import { formatBytes } from "@/lib/utils";
 
@@ -23,6 +24,10 @@ export function ExerciseUploadPanel({ open, onClose, planId, phaseLabel, block }
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
+  const [url, setUrl] = useState("");
+  const [label, setLabel] = useState("");
+  const [linkError, setLinkError] = useState<string | null>(null);
+  const [linkPending, startTransition] = useTransition();
 
   const { queue, enqueue, cancel, retry } = useExerciseUpload(planId, block.id, () => router.refresh());
 
@@ -119,6 +124,66 @@ export function ExerciseUploadPanel({ open, onClose, planId, phaseLabel, block }
             event.target.value = "";
           }}
         />
+
+        {/* Not every exercise is a document the instructor owns. Re-uploading a
+            copy of something that already lives at a URL only makes it stale. */}
+        <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--border)" }}>
+          <div className="tp-eyebrow" style={{ marginBottom: 8 }}>
+            Or link to it
+          </div>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              setLinkError(null);
+
+              const checked = normaliseExerciseUrl(url);
+              if (!checked.ok) {
+                setLinkError(checked.reason);
+                return;
+              }
+
+              startTransition(async () => {
+                try {
+                  await createExerciseLink({ planId, blockId: block.id, url: checked.url, label });
+                  setUrl("");
+                  setLabel("");
+                  router.refresh();
+                } catch (error) {
+                  setLinkError(error instanceof Error ? error.message : "Could not add that link.");
+                }
+              });
+            }}
+          >
+            <div className="tp-row tp-gap-2" style={{ flexWrap: "wrap" }}>
+              <input
+                className="tp-input"
+                value={url}
+                onChange={(event) => setUrl(event.target.value)}
+                placeholder="https://example.com/exercise"
+                aria-label="Exercise link"
+                inputMode="url"
+                style={{ flex: "2 1 220px", padding: "9px 12px", fontSize: 13 }}
+              />
+              <input
+                className="tp-input"
+                value={label}
+                onChange={(event) => setLabel(event.target.value)}
+                placeholder="Label (optional)"
+                aria-label="Link label"
+                maxLength={MAX_LABEL_LENGTH}
+                style={{ flex: "1 1 130px", padding: "9px 12px", fontSize: 13 }}
+              />
+              <button type="submit" className="tp-btn tp-btn-primary" disabled={linkPending || !url.trim()}>
+                {linkPending ? "Adding…" : "Add link"}
+              </button>
+            </div>
+            {linkError ? (
+              <div className="tp-tiny tp-mt-2" style={{ color: "var(--neg)" }}>
+                {linkError}
+              </div>
+            ) : null}
+          </form>
+        </div>
       </div>
 
       {queue.length > 0 ? (

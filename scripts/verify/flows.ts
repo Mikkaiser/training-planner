@@ -233,6 +233,31 @@ async function main(): Promise<void> {
       download.headers()["content-disposition"],
     );
 
+    // ── Attach a link ────────────────────────────────────────────────────
+    await page.getByRole("button", { name: "Add Exercise" }).first().click();
+    await page.getByLabel("Exercise link").fill("javascript:alert(1)");
+    await page.getByRole("button", { name: "Add link" }).click();
+    await page.waitForTimeout(600);
+    check(
+      "a javascript: URL is refused",
+      await page.getByText(/Only http and https/).isVisible().catch(() => false),
+    );
+
+    await page.getByLabel("Exercise link").fill("https://example.com/rest-pagination");
+    await page.getByLabel("Link label").fill("REST pagination notes");
+    await page.getByRole("button", { name: "Add link" }).click();
+    await page.waitForTimeout(1500);
+    await page.getByRole("button", { name: "Done" }).click();
+    await gotoAuthed(page, planPath);
+
+    check("a link attaches to the block", await page.getByText("REST pagination notes").first().isVisible());
+    const linkHref = await page
+      .getByRole("link", { name: /Open REST pagination notes/ })
+      .getAttribute("href");
+    check("the link points where it was set", linkHref === "https://example.com/rest-pagination", String(linkHref));
+    const linkRel = await page.getByRole("link", { name: /Open REST pagination notes/ }).getAttribute("rel");
+    check("the link opens without leaking the referrer", (linkRel ?? "").includes("noreferrer"), String(linkRel));
+
     // ── Remove the attached file ─────────────────────────────────────────
     // Opacity is asserted, not just presence. Playwright clicks an
     // opacity-0 element quite happily, so a "remove works" check can pass on a

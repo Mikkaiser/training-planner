@@ -6,9 +6,12 @@ import { describe, expect, it } from "vitest";
 import {
   ACCEPT_ATTRIBUTE,
   MAX_FILE_BYTES,
+  MAX_URL_LENGTH,
   extensionOf,
   fileKind,
   isAllowedExtension,
+  labelForUrl,
+  normaliseExerciseUrl,
   resolveContentType,
   slugifyFileName,
   validateUploadCandidate,
@@ -143,6 +146,72 @@ describe("validateUploadCandidate", () => {
 
   it("rejects a non-integer size rather than passing it to the signer", () => {
     expect(validateUploadCandidate("spec.pdf", 10.5).ok).toBe(false);
+  });
+});
+
+describe("normaliseExerciseUrl", () => {
+  it("accepts http and https", () => {
+    expect(normaliseExerciseUrl("https://example.com/a")).toEqual({ ok: true, url: "https://example.com/a" });
+    expect(normaliseExerciseUrl("http://example.com/a")).toEqual({ ok: true, url: "http://example.com/a" });
+  });
+
+  it("assumes https for a bare host, which is what people paste", () => {
+    expect(normaliseExerciseUrl("example.com/exercise")).toEqual({ ok: true, url: "https://example.com/exercise" });
+  });
+
+  it("trims surrounding whitespace", () => {
+    expect(normaliseExerciseUrl("  https://example.com  ")).toEqual({ ok: true, url: "https://example.com/" });
+  });
+
+  // The stored value is rendered as an anchor, so the scheme allowlist is the
+  // control that stops an attachment from executing when someone clicks it.
+  it.each([
+    "javascript:alert(1)",
+    "JavaScript:alert(1)",
+    "  javascript:alert(1)",
+    "data:text/html,<script>alert(1)</script>",
+    "vbscript:msgbox(1)",
+    "file:///etc/passwd",
+    "blob:https://example.com/abc",
+  ])("rejects %s", (hostile) => {
+    const result = normaliseExerciseUrl(hostile);
+    expect(result.ok).toBe(false);
+  });
+
+  it("does not turn a dangerous scheme into a valid host by prefixing https", () => {
+    // The guard is that anything already carrying a scheme is left alone;
+    // otherwise "javascript:alert(1)" would become a plausible https URL.
+    const result = normaliseExerciseUrl("javascript:alert(1)");
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toContain("http");
+  });
+
+  it("rejects empty input", () => {
+    expect(normaliseExerciseUrl("   ").ok).toBe(false);
+  });
+
+  it("rejects a link past the length cap", () => {
+    expect(normaliseExerciseUrl(`https://example.com/${"a".repeat(MAX_URL_LENGTH)}`).ok).toBe(false);
+  });
+
+  it("rejects something that is not a URL at all", () => {
+    expect(normaliseExerciseUrl("https://").ok).toBe(false);
+  });
+
+  it("keeps the query string and fragment intact", () => {
+    const result = normaliseExerciseUrl("https://example.com/a?b=1#c");
+    expect(result.ok && result.url).toBe("https://example.com/a?b=1#c");
+  });
+});
+
+describe("labelForUrl", () => {
+  it("uses the host without www", () => {
+    expect(labelForUrl("https://www.example.com/deep/path")).toBe("example.com");
+    expect(labelForUrl("https://docs.example.co.uk/x")).toBe("docs.example.co.uk");
+  });
+
+  it("falls back rather than throwing on nonsense", () => {
+    expect(labelForUrl("not a url")).toBe("Link");
   });
 });
 

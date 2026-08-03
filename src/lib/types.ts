@@ -47,12 +47,21 @@ export type Gate = {
 /** 'pending' = row reserved, bytes not confirmed in the bucket yet. */
 export type ExerciseStatus = "pending" | "ready";
 
+/** An uploaded document, or a link to material that already lives elsewhere. */
+export type ExerciseKind = "file" | "link";
+
 export type Exercise = {
   id: string;
   block_id: string;
+  /** For a link this holds its label. */
   file_name: string;
-  storage_key: string;
-  content_type: string;
+  kind: ExerciseKind;
+  /** Null for links. */
+  storage_key: string | null;
+  content_type: string | null;
+  /** Null for files. */
+  url: string | null;
+  /** Always 0 for links. */
   size_bytes: number;
   status: ExerciseStatus;
   uploaded_by: string | null;

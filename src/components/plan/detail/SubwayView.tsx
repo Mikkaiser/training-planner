@@ -1,9 +1,19 @@
 "use client";
 
-import { useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { DndContext, DragOverlay } from "@dnd-kit/core";
+import { restrictToWindowEdges } from "@dnd-kit/modifiers";
+import { SortableContext, rectSortingStrategy } from "@dnd-kit/sortable";
 import { AddGateButton } from "@/components/plan/detail/AddGateButton";
 import { BlockCard } from "@/components/plan/detail/BlockCard";
 import { GateMarker } from "@/components/plan/detail/GateMarker";
+import {
+  DragHandle,
+  SortableItem,
+  planCollisionDetection,
+  useSortableSensors,
+} from "@/components/plan/detail/Sortable";
+import { usePlanReorder } from "@/components/plan/detail/usePlanReorder";
 import { layoutSubway, type Station } from "@/lib/layout/subway-layout";
 import type { PhaseStatus, PlanVM } from "@/lib/plan-view-model";
 
@@ -15,9 +25,45 @@ const PHASE_STROKE: Record<PhaseStatus, string> = {
 
 /** Design artboard: detail-v3 "Subway map (wildcard)". */
 export function SubwayView({ plan }: { plan: PlanVM }) {
-  const layout = useMemo(() => layoutSubway(plan), [plan]);
+  const sensors = useSortableSensors();
+  const { activeId, blocksByPhase, orderedPhases, isPhase, handlers } = usePlanReorder(plan);
+
+  const blockById = useMemo(() => new Map(plan.blocks.map((block) => [block.id, block])), [plan.blocks]);
+
+  // Lay out from the local order so the line redraws as the drag happens.
+  const layout = useMemo(() => {
+    const phases = orderedPhases.map((phase) => ({
+      ...phase,
+      blocks: (blocksByPhase[phase.id] ?? [])
+        .map((id) => blockById.get(id))
+        .filter((block): block is NonNullable<ReturnType<typeof blockById.get>> => Boolean(block)),
+    }));
+    return layoutSubway({ ...plan, phases, blocks: phases.flatMap((phase) => phase.blocks) });
+  }, [plan, orderedPhases, blocksByPhase, blockById]);
+
+  // The stations are SVG, which dnd-kit cannot drag. Transparent HTML targets
+  // sit over them instead, positioned by converting viewBox units to rendered
+  // pixels — hence measuring the drawn width rather than assuming it.
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [scale, setScale] = useState(1);
+
+  const measure = useCallback(() => {
+    const width = svgRef.current?.getBoundingClientRect().width ?? 0;
+    if (width > 0 && layout.width > 0) setScale(width / layout.width);
+  }, [layout.width]);
+
+  useEffect(() => {
+    measure();
+    const svg = svgRef.current;
+    if (!svg) return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(svg);
+    return () => observer.disconnect();
+  }, [measure]);
+
   const current = plan.currentBlock;
   const currentPhase = plan.currentPhase;
+  const activeBlock = activeId && !isPhase(activeId) ? blockById.get(activeId) : null;
 
   return (
     <div>
@@ -47,8 +93,23 @@ export function SubwayView({ plan }: { plan: PlanVM }) {
         </div>
       </div>
 
+      <DndContext
+        id={`route-${plan.id}`}
+        sensors={sensors}
+        collisionDetection={planCollisionDetection}
+        modifiers={[restrictToWindowEdges]}
+        {...handlers}
+        accessibility={{
+          screenReaderInstructions: {
+            draggable:
+              "Press space to pick up a station. Use the arrow keys to move it along the route, including into another phase. Press space to drop, escape to cancel.",
+          },
+        }}
+      >
       <div className="tp-card tp-svg-scroll" style={{ padding: "20px 16px", position: "relative" }}>
+        <div style={{ position: "relative", minWidth: 620 }}>
         <svg
+          ref={svgRef}
           viewBox={`0 0 ${layout.width} ${layout.height}`}
           width="100%"
           // Below this the station labels stop being readable, so the map
@@ -110,7 +171,59 @@ export function SubwayView({ plan }: { plan: PlanVM }) {
             <StationMark key={station.key} station={station} />
           ))}
         </svg>
+
+        {/* One transparent grip per station, laid over the drawing. */}
+        {orderedPhases.map((phase) => (
+          <SortableContext
+            key={phase.id}
+            items={blocksByPhase[phase.id] ?? []}
+            strategy={rectSortingStrategy}
+          >
+            {(blocksByPhase[phase.id] ?? []).map((blockId) => {
+              const station = layout.stations.find((entry) => entry.blockId === blockId);
+              const block = blockById.get(blockId);
+              if (!station || !block) return null;
+
+              return (
+                <SortableItem
+                  key={blockId}
+                  id={blockId}
+                  data={{ type: "block", phaseId: phase.id }}
+                  style={{
+                    position: "absolute",
+                    left: station.x * scale,
+                    top: station.y * scale,
+                    transform: "translate(-50%, -50%)",
+                  }}
+                >
+                  <div className="tp-station-grip tp-reveal-host">
+                    <DragHandle label={`block ${block.title}`} />
+                  </div>
+                </SortableItem>
+              );
+            })}
+          </SortableContext>
+        ))}
+        </div>
       </div>
+
+        <DragOverlay dropAnimation={null}>
+          {activeBlock ? (
+            <div
+              className="tp-card"
+              style={{
+                padding: "10px 14px",
+                boxShadow: "var(--shadow-lg)",
+                borderLeft: "3px solid var(--accent)",
+                cursor: "grabbing",
+              }}
+            >
+              <div style={{ fontSize: 13, fontWeight: 700 }}>{activeBlock.title}</div>
+              <div className="tp-tiny tp-mut">{activeBlock.verbLevel}</div>
+            </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
 
       {current ? (
         <div style={{ marginTop: 24, maxWidth: 540, marginLeft: "auto", marginRight: "auto" }}>
