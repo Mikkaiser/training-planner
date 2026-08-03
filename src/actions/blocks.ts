@@ -178,48 +178,76 @@ export async function deleteBlock(planId: string, blockId: string) {
  * position in the plan. That is intended — "Gate 7" means the checkpoint after
  * the seventh block, not a fixed label.
  */
-export async function reorderBlocks(input: { planId: string; phaseId: string; orderedIds: string[] }) {
+export async function reorderBlocks(input: {
+  planId: string;
+  /**
+   * Complete block ordering for every phase the drag touched. Moving a block
+   * between phases submits both the source and the destination, so the two
+   * halves of the move commit together — the alternative, one call per phase,
+   * can leave a block in neither list or in both.
+   */
+  phases: { phaseId: string; orderedIds: string[] }[];
+}) {
   const userId = await requireUserId();
-  if (input.orderedIds.length === 0) return;
+  if (input.phases.length === 0) return;
+
+  const phaseIds = input.phases.map((phase) => phase.phaseId);
+  const flat = input.phases.flatMap((phase) =>
+    phase.orderedIds.map((blockId, index) => ({ blockId, phaseId: phase.phaseId, idx: index + 1 })),
+  );
+  if (flat.length === 0) return;
 
   const client = await pool.connect();
 
   try {
     await client.query("begin");
 
-    // The whole list must be supplied; a subset would leave the omitted blocks
-    // holding positions that no longer relate to their siblings. Comparing id
-    // sets also rejects a duplicate and an id borrowed from another phase.
-    const current = await client.query<{ id: string }>(
-      `select b.id
-         from blocks b
-         join phases ph on ph.id = b.phase_id
+    // Every submitted phase must belong to this plan and this instructor.
+    const ownedPhases = await client.query<{ id: string }>(
+      `select ph.id
+         from phases ph
          join training_plans tp on tp.id = ph.plan_id
-        where b.phase_id = $1 and tp.id = $2 and tp.instructor_id = $3`,
-      [input.phaseId, input.planId, userId],
+        where ph.id = any($1::uuid[]) and tp.id = $2 and tp.instructor_id = $3`,
+      [phaseIds, input.planId, userId],
     );
 
-    if (!isSameMembership(current.rows.map((row) => row.id), input.orderedIds)) {
+    if (ownedPhases.rowCount !== phaseIds.length) {
       await client.query("rollback");
-      throw new Error("That ordering does not match the phase's blocks. Reload and try again.");
+      throw new Error("Phase not found, or you do not have access to it.");
     }
 
-    const updated = await client.query(
-      `update blocks b
-          set order_index = v.idx
-         from unnest($2::uuid[]) with ordinality as v(id, idx),
-              phases ph,
-              training_plans tp
-        where b.id = v.id
-          and b.phase_id = $1
-          and ph.id = b.phase_id
-          and tp.id = ph.plan_id
-          and tp.id = $3
-          and tp.instructor_id = $4`,
-      [input.phaseId, input.orderedIds, input.planId, userId],
+    // The submitted blocks must be exactly the blocks currently living in those
+    // phases. A subset would leave the omitted ones holding positions that no
+    // longer relate to their siblings; an extra would drag in a block from a
+    // phase the user never touched.
+    const current = await client.query<{ id: string }>(
+      "select id from blocks where phase_id = any($1::uuid[])",
+      [phaseIds],
     );
 
-    if (updated.rowCount !== input.orderedIds.length) {
+    if (!isSameMembership(current.rows.map((row) => row.id), flat.map((entry) => entry.blockId))) {
+      await client.query("rollback");
+      throw new Error("That ordering does not match the blocks in those phases. Reload and try again.");
+    }
+
+    // phase_id and order_index move together, which is what makes this one
+    // statement cover both a reorder and a cross-phase move.
+    const updated = await client.query(
+      `update blocks b
+          set phase_id = v.phase_id,
+              order_index = v.idx
+         from unnest($1::uuid[], $2::uuid[], $3::int[]) as v(block_id, phase_id, idx)
+        where b.id = v.block_id
+          and b.phase_id = any($4::uuid[])`,
+      [
+        flat.map((entry) => entry.blockId),
+        flat.map((entry) => entry.phaseId),
+        flat.map((entry) => entry.idx),
+        phaseIds,
+      ],
+    );
+
+    if (updated.rowCount !== flat.length) {
       await client.query("rollback");
       throw new Error("Block not found, or you do not have access to it.");
     }
@@ -228,7 +256,7 @@ export async function reorderBlocks(input: { planId: string; phaseId: string; or
   } catch (error) {
     await client.query("rollback").catch(() => undefined);
     console.error("[reorderBlocks] failed", error);
-    throw error instanceof Error ? error : new Error("Failed to reorder blocks. Please try again.");
+    throw error instanceof Error ? error : new Error("Failed to move blocks. Please try again.");
   } finally {
     client.release();
   }

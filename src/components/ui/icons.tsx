@@ -138,6 +138,49 @@ export function UploadIcon({ size = 12, className }: IconProps) {
   );
 }
 
+/**
+ * Arrow into a tray. The design reused its upload glyph for the action on an
+ * attached file, which points the wrong way: from the instructor's side that
+ * row is something to take, not something to send.
+ */
+export function DownloadIcon({ size = 12, className }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 12 12"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M6 2v6M3.5 5.5L6 8l2.5-2.5M2 10.5h8" />
+    </svg>
+  );
+}
+
+export function TrashIcon({ size = 12, className }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 12 12"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M2 3.25h8M4.75 3.25V2.25h2.5v1M3.25 3.25l.5 6.5h4.5l.5-6.5M5 5.25v2.75M7 5.25v2.75" />
+    </svg>
+  );
+}
+
 export function SearchIcon({ size = 12, className }: IconProps) {
   return (
     <svg

@@ -8,7 +8,7 @@ import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import { InlineEdit } from "@/components/ui/InlineEdit";
 import { SelectPill } from "@/components/ui/SelectPill";
 import { competenceTagClass } from "@/components/ui/Tag";
-import { CrossIcon, PlusIcon, UploadIcon } from "@/components/ui/icons";
+import { DownloadIcon, PlusIcon, TrashIcon } from "@/components/ui/icons";
 import { fileKind } from "@/lib/exercise-files";
 import type { BlockVM } from "@/lib/plan-view-model";
 import { COMPETENCE_TYPES, VERB_LEVELS, type CompetenceType, type VerbLevel } from "@/lib/types";
@@ -84,7 +84,7 @@ export function BlockCard({ block, planId, phaseLabel, active = false, handle }:
         <div className="tp-mt-3 tp-col tp-gap-2">
           <div className="tp-eyebrow">Exercises</div>
           {block.exercises.map((exercise) => (
-            <div key={exercise.id} className="tp-file tp-reveal-host">
+            <div key={exercise.id} className="tp-file">
               <div className="tp-file-icon">{fileKind(exercise.file_name)}</div>
               <div className="tp-col" style={{ gap: 2, flex: 1, minWidth: 0 }}>
                 <div
@@ -100,27 +100,34 @@ export function BlockCard({ block, planId, phaseLabel, active = false, handle }:
                 </div>
                 <div className="tp-tiny tp-mut">{formatBytes(exercise.size_bytes)}</div>
               </div>
+              {/* Both stay visible. Hiding the remove button behind a hover
+                  made it undiscoverable — the file looked permanent. */}
               <a
                 href={`/api/exercises/${exercise.id}/download`}
                 className="tp-btn tp-btn-ghost tp-btn-sm"
                 style={{ padding: "4px 8px", borderColor: "transparent", color: "var(--ink-2)" }}
                 aria-label={`Download ${exercise.file_name}`}
+                title="Download"
               >
-                <UploadIcon size={11} />
+                <DownloadIcon size={12} />
               </a>
-              <button
-                type="button"
-                className="tp-btn tp-btn-ghost tp-btn-sm tp-reveal"
-                style={{ padding: "4px 7px", borderColor: "transparent", color: "var(--ink-2)" }}
-                aria-label={`Remove ${exercise.file_name}`}
-                onClick={() =>
+              <ConfirmButton
+                className="tp-btn tp-btn-ghost tp-btn-sm"
+                style={{ padding: "4px 8px", borderColor: "transparent", color: "var(--ink-2)" }}
+                label="Remove"
+                ariaLabel={`Remove ${exercise.file_name}`}
+                title={`Remove "${exercise.file_name}"?`}
+                body="This deletes the file from storage as well as the block. It cannot be undone."
+                confirmLabel="Remove file"
+                disabled={pending}
+                onConfirm={() =>
                   startTransition(async () => {
                     await deleteExercise({ planId, exerciseId: exercise.id });
                   })
                 }
               >
-                <CrossIcon size={11} />
-              </button>
+                <TrashIcon size={12} />
+              </ConfirmButton>
             </div>
           ))}
         </div>

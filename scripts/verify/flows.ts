@@ -28,6 +28,20 @@ function check(name: string, ok: boolean, detail = ""): void {
 const STUDENT = `Verify Competitor ${process.pid}`;
 const PLAN_TITLE = `Verify Plan ${process.pid}`;
 
+/**
+ * Opens every collapsed phase. Completed and locked phases collapse by design,
+ * so anything inside them is genuinely not visible until they are opened —
+ * assertions that span phases have to do this first.
+ */
+async function expandAllPhases(page: Page): Promise<void> {
+  for (let i = 0; i < 8; i += 1) {
+    const next = page.getByRole("button", { name: /^Expand / }).first();
+    if (!(await next.isVisible().catch(() => false))) return;
+    await next.click();
+    await page.waitForTimeout(300);
+  }
+}
+
 async function createPlan(page: Page): Promise<string> {
   await gotoAuthed(page, "/");
   await page.getByRole("button", { name: "New Plan" }).click();
@@ -160,6 +174,38 @@ async function main(): Promise<void> {
       await page.getByText("Cumulative · Blocks 1 – 2").first().isVisible(),
     );
 
+    // ── Move a block into another phase ──────────────────────────────────
+    await page.getByRole("button", { name: "Add Phase" }).click();
+    await page.getByRole("button", { name: "Advanced", exact: true }).click();
+    await page.waitForSelector("text=Not started", { timeout: 15_000 });
+
+    // Open the destination so its rail is a drop target.
+    const expandAdvanced = page.getByRole("button", { name: "Expand Advanced" });
+    if (await expandAdvanced.isVisible().catch(() => false)) {
+      await expandAdvanced.click();
+      await page.waitForTimeout(500);
+    }
+
+    const lastHandle = page.getByRole("button", { name: /^Reorder block/ }).last();
+    await lastHandle.scrollIntoViewIfNeeded();
+    await lastHandle.focus();
+    await page.keyboard.press("Space");
+    await page.waitForTimeout(450);
+    // Enough presses to leave this phase's list and enter the next one.
+    for (let i = 0; i < 4; i += 1) {
+      await page.keyboard.press("ArrowDown");
+      await page.waitForTimeout(400);
+    }
+    await page.keyboard.press("Space");
+    await page.waitForTimeout(2000);
+
+    await gotoAuthed(page, planPath);
+    check(
+      "a block can be moved into another phase",
+      !(await page.getByText("Not started").first().isVisible().catch(() => false)),
+      "the destination phase still reports 'Not started'",
+    );
+
     // ── Upload a real file to MinIO ──────────────────────────────────────
     const dir = mkdtempSync(join(tmpdir(), "tp-verify-"));
     const filePath = join(dir, "verification-brief.pdf");
@@ -187,6 +233,46 @@ async function main(): Promise<void> {
       download.headers()["content-disposition"],
     );
 
+    // ── Remove the attached file ─────────────────────────────────────────
+    // Opacity is asserted, not just presence. Playwright clicks an
+    // opacity-0 element quite happily, so a "remove works" check can pass on a
+    // control no human can see — which is exactly how this shipped once.
+    // Written without inner helper functions: tsx compiles named function
+    // expressions with an esbuild `__name` shim that does not exist in the page.
+    const fileControls = await page.evaluate(() => {
+      const nodes = Array.from(document.querySelectorAll("[aria-label]"));
+      const out: Record<string, { found: boolean; opacity: number }> = {
+        remove: { found: false, opacity: 0 },
+        download: { found: false, opacity: 0 },
+      };
+      for (const node of nodes) {
+        const label = node.getAttribute("aria-label") ?? "";
+        const key = label.startsWith("Remove verification-brief.pdf")
+          ? "remove"
+          : label.startsWith("Download verification-brief.pdf")
+            ? "download"
+            : null;
+        if (key && !out[key].found) {
+          out[key] = { found: true, opacity: Number(getComputedStyle(node as HTMLElement).opacity) };
+        }
+      }
+      return out;
+    });
+
+    check("the download control is visible", fileControls.download.found && fileControls.download.opacity > 0.9,
+      JSON.stringify(fileControls.download));
+    check("the remove control is visible without hovering", fileControls.remove.found && fileControls.remove.opacity > 0.9,
+      JSON.stringify(fileControls.remove));
+
+    await page.getByRole("button", { name: /Remove verification-brief.pdf/ }).first().click();
+    await page.getByRole("button", { name: "Remove file", exact: true }).click();
+    await page.waitForTimeout(1500);
+    await gotoAuthed(page, planPath);
+    check(
+      "removing an attached file takes it off the block",
+      !(await page.getByText("verification-brief.pdf").first().isVisible().catch(() => false)),
+    );
+
     // ── Gate pass moves progress ─────────────────────────────────────────
     const progressBefore = await page.locator("header .tp-mono").first().innerText();
     await page.getByRole("button", { name: "Mark Passed" }).first().click();
@@ -194,8 +280,11 @@ async function main(): Promise<void> {
     const progressAfter = await page.locator("header .tp-mono").first().innerText();
     check("passing a gate moves the progress figure", progressBefore !== progressAfter, `${progressBefore} -> ${progressAfter}`);
 
-    // Pass whatever is still outstanding; the plan has two blocks by now.
-    for (let i = 0; i < 6; i += 1) {
+    // Pass whatever is still outstanding. Blocks now live in two phases, and a
+    // completed phase collapses, so open everything first.
+    await expandAllPhases(page);
+    for (let i = 0; i < 8; i += 1) {
+      await expandAllPhases(page);
       const next = page.getByRole("button", { name: "Mark Passed" }).first();
       if (!(await next.isVisible().catch(() => false))) break;
       await next.click();
@@ -226,6 +315,7 @@ async function main(): Promise<void> {
     await page.waitForURL(/\/plan\/[0-9a-f-]{36}/, { timeout: 20_000 });
     const clonePath = new URL(page.url()).pathname;
 
+    await expandAllPhases(page);
     check("the clone copies the block", await page.getByText("Verification Block").first().isVisible());
     const cloneProgress = (await page.locator("header .tp-mono").first().innerText()).trim();
     check("the clone starts with every gate pending", cloneProgress === "0%", cloneProgress);
