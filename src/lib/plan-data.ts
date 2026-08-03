@@ -2,12 +2,30 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { query, queryOne, TS } from "@/lib/db";
 import { APP_ROUTES } from "@/lib/routes";
-import type { Block, Gate, Phase, Plan, PlanWithPhases } from "@/lib/types";
+import type { Block, Exercise, Gate, Phase, Plan, PlanWithPhases } from "@/lib/types";
 
 const PLAN_COLS = `id, instructor_id, title, student_name, ${TS("created_at", "created_at")}`;
 const PHASE_COLS = `id, plan_id, title, order_index, ${TS("created_at", "created_at")}`;
 const BLOCK_COLS = `id, phase_id, title, description, verb_level, competence_type, hours::float8 as hours, order_index, ${TS("created_at", "created_at")}`;
 const GATE_COLS = `id, plan_id, after_block_id, status, hours_threshold::float8 as hours_threshold, ${TS("created_at", "created_at")}`;
+const EXERCISE_COLS = `id, block_id, file_name, storage_key, content_type, size_bytes, status, uploaded_by, ${TS("created_at", "created_at")}, ${TS("uploaded_at", "uploaded_at")}`;
+
+/**
+ * Only 'ready' rows are returned: a reserved-but-not-uploaded row has no bytes
+ * behind it, so surfacing it would offer the instructor a broken download.
+ */
+async function getExercisesForBlocks(blockIds: string[]): Promise<Exercise[]> {
+  if (blockIds.length === 0) return [];
+
+  return query<Exercise>(
+    `select ${EXERCISE_COLS}
+       from exercises
+      where block_id = any($1::uuid[])
+        and status = 'ready'
+      order by created_at`,
+    [blockIds],
+  );
+}
 
 export type SessionUser = { id: string; email: string; name: string | null };
 
@@ -62,7 +80,68 @@ export async function getPlansForCurrentInstructor(): Promise<PlanWithPhases[]> 
     [planIds],
   );
 
-  return mapPlanTree(plans, phases, blocks, gates);
+  const exercises = await getExercisesForBlocks(blocks.map((block) => block.id));
+
+  return mapPlanTree(plans, phases, blocks, gates, exercises);
+}
+
+export type InstructorStats = {
+  activeCompetitors: number;
+  blocksCompleted30d: number;
+  gatesPassedFirstTry: number;
+  gatesDecided: number;
+  inRemediation: number;
+};
+
+/**
+ * Numbers for the table view's stat strip. Every one is read from real rows —
+ * "first try" and the 30-day window are only answerable because gate_events
+ * records outcomes; gates.status alone holds no history.
+ */
+export async function getInstructorStats(): Promise<InstructorStats> {
+  const user = await getCurrentUserOrRedirect();
+
+  const row = await queryOne<{
+    active_competitors: string;
+    blocks_completed_30d: string;
+    gates_passed_first_try: string;
+    gates_decided: string;
+    in_remediation: string;
+  }>(
+    `with my_plans as (
+       select id from training_plans where instructor_id = $1
+     ),
+     -- One row per gate, holding only its earliest recorded outcome, so a gate
+     -- that was failed then later passed is not counted as a first-try pass.
+     first_outcome as (
+       select distinct on (gate_id) gate_id, status
+         from gate_events
+        where plan_id in (select id from my_plans)
+        order by gate_id, created_at, id
+     )
+     select
+       (select count(*) from my_plans p
+         where exists (select 1 from phases ph where ph.plan_id = p.id))            as active_competitors,
+       -- distinct gate: re-passing the same gate inside the window is still one
+       -- block completed, not two.
+       (select count(distinct gate_id) from gate_events
+         where plan_id in (select id from my_plans)
+           and status = 'passed'
+           and created_at >= now() - interval '30 days')                            as blocks_completed_30d,
+       (select count(*) from first_outcome where status = 'passed')                 as gates_passed_first_try,
+       (select count(*) from first_outcome)                                         as gates_decided,
+       (select count(distinct g.plan_id) from gates g
+         where g.plan_id in (select id from my_plans) and g.status = 'failed')      as in_remediation`,
+    [user.id],
+  );
+
+  return {
+    activeCompetitors: Number(row?.active_competitors ?? 0),
+    blocksCompleted30d: Number(row?.blocks_completed_30d ?? 0),
+    gatesPassedFirstTry: Number(row?.gates_passed_first_try ?? 0),
+    gatesDecided: Number(row?.gates_decided ?? 0),
+    inRemediation: Number(row?.in_remediation ?? 0),
+  };
 }
 
 export async function getPlanByIdForCurrentInstructor(id: string): Promise<PlanWithPhases> {
@@ -93,17 +172,42 @@ export async function getPlanByIdForCurrentInstructor(id: string): Promise<PlanW
 
   const gates = await query<Gate>(`select ${GATE_COLS} from gates where plan_id = $1`, [id]);
 
-  return mapPlanTree([plan], phases, blocks, gates)[0];
+  const exercises = await getExercisesForBlocks(blocks.map((block) => block.id));
+
+  return mapPlanTree([plan], phases, blocks, gates, exercises)[0];
 }
 
-function mapPlanTree(plans: Plan[], phases: Phase[], blocks: Block[], gates: Gate[]): PlanWithPhases[] {
+/**
+ * Ordering carries a tiebreak on top of order_index. createPhase/createBlock
+ * derive order_index from the current length, so deleting an item and adding
+ * another reuses a number; without the tiebreak two renders of identical data
+ * could disagree on block order, which would shuffle gate numbers and the
+ * subway map's station positions.
+ */
+function byOrder<T extends { order_index: number; created_at: string; id: string }>(a: T, b: T): number {
+  return a.order_index - b.order_index || a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id);
+}
+
+function mapPlanTree(
+  plans: Plan[],
+  phases: Phase[],
+  blocks: Block[],
+  gates: Gate[],
+  exercises: Exercise[],
+): PlanWithPhases[] {
   return plans.map((plan) => {
     const planPhases = phases
       .filter((phase) => phase.plan_id === plan.id)
-      .sort((a, b) => a.order_index - b.order_index)
+      .sort(byOrder)
       .map((phase) => ({
         ...phase,
-        blocks: blocks.filter((block) => block.phase_id === phase.id).sort((a, b) => a.order_index - b.order_index),
+        blocks: blocks
+          .filter((block) => block.phase_id === phase.id)
+          .sort(byOrder)
+          .map((block) => ({
+            ...block,
+            exercises: exercises.filter((exercise) => exercise.block_id === block.id),
+          })),
       }));
 
     return {

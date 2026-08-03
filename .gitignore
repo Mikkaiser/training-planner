@@ -46,3 +46,6 @@ yarn-error.log*
 next-env.d.ts
 # pnpm local store
 /.pnpm-store/
+
+# browser verification output
+/.verify/

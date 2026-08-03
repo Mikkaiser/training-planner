@@ -1,48 +1,36 @@
-"use client";
-
-import { useTransition } from "react";
-import { createPhase } from "@/actions/phases";
 import { EmptyState } from "@/components/plan/EmptyState";
-import { PhaseSection } from "@/components/plan/PhaseSection";
-import { GhostButton } from "@/components/ui/GhostButton";
-import type { PlanWithPhases } from "@/lib/types";
+import { DeletePlanButton } from "@/components/plan/detail/DeletePlanButton";
+import { SubwayView } from "@/components/plan/detail/SubwayView";
+import { TimelineView } from "@/components/plan/detail/TimelineView";
+import { TreeView } from "@/components/plan/detail/TreeView";
+import type { PlanVM } from "@/lib/plan-view-model";
+import type { DetailView } from "@/lib/view-modes";
 
-interface PlanDetailProps {
-  plan: PlanWithPhases;
-}
-
-export function PlanDetail({ plan }: PlanDetailProps) {
-  const [pending, startTransition] = useTransition();
-  const phases = [...plan.phases].sort((a, b) => a.order_index - b.order_index);
-  const hasPhases = phases.length > 0;
-
-  const handleAddPhase = (defaultTitle?: string) => {
-    const title = window.prompt("Phase title", defaultTitle ?? `Phase ${phases.length + 1}`);
-    if (!title) return;
-
-    startTransition(async () => {
-      await createPhase({
-        planId: plan.id,
-        title,
-        orderIndex: phases.length + 1,
-      });
-    });
-  };
-
-  if (!hasPhases) {
-    return <EmptyState onAddPhase={handleAddPhase} />;
+/**
+ * Picks the presentation. All three read the same PlanVM, so a number shown in
+ * one is the same number shown in the others by construction.
+ */
+export function PlanDetail({ plan, view }: { plan: PlanVM; view: DetailView }) {
+  // A plan with no phases has nothing to lay out in any of the three shapes.
+  if (plan.isEmpty) {
+    return (
+      <section style={{ padding: "60px 40px" }}>
+        <EmptyState planId={plan.id} />
+        <DeletePlanButton plan={plan} />
+      </section>
+    );
   }
 
   return (
-    <section style={{ padding: "28px 24px 40px" }}>
-      <div style={{ maxWidth: "760px", margin: "0 auto", display: "grid", gap: "16px" }}>
-        {phases.map((phase, phaseIndex) => (
-          <PhaseSection key={phase.id} phase={phase} planId={plan.id} gates={plan.gates} phaseIndex={phaseIndex} />
-        ))}
-        <GhostButton large onClick={() => handleAddPhase()} disabled={pending}>
-          Add Phase
-        </GhostButton>
-      </div>
+    <section style={{ padding: view === "timeline" ? "28px 40px 80px" : "24px 32px 60px" }}>
+      {view === "timeline" ? (
+        <TimelineView plan={plan} />
+      ) : view === "tree" ? (
+        <TreeView plan={plan} />
+      ) : (
+        <SubwayView plan={plan} />
+      )}
+      <DeletePlanButton plan={plan} />
     </section>
   );
 }

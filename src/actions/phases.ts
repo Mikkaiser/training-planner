@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { queryOne } from "@/lib/db";
+import { collectStorageKeys, deleteObjects } from "@/lib/exercise-storage";
 import { planDetailRoute } from "@/lib/routes";
 
 type CreatePhaseInput = {
@@ -74,6 +75,9 @@ export async function updatePhase(input: UpdatePhaseInput) {
 export async function deletePhase(planId: string, phaseId: string) {
   const userId = await requireUserId();
 
+  // Before the cascade removes the blocks and their exercise rows.
+  const storageKeys = await collectStorageKeys("phase", phaseId, userId);
+
   const row = await queryOne<{ id: string }>(
     `delete from phases as ph
       using training_plans as tp
@@ -88,5 +92,6 @@ export async function deletePhase(planId: string, phaseId: string) {
     throw new Error("Phase not found, or you do not have access to it.");
   }
 
+  await deleteObjects(storageKeys);
   revalidatePath(planDetailRoute(planId));
 }
