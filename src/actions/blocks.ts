@@ -166,6 +166,61 @@ export async function deleteBlock(planId: string, blockId: string) {
   revalidatePath(planDetailRoute(planId));
 }
 
+/**
+ * Re-adds a checkpoint to a block that has none, so removing a gate is not a
+ * one-way door. Does nothing if the block already has one — the schema has no
+ * unique constraint on gates.after_block_id, so nothing else would stop a
+ * second gate appearing on the same block and doubling its checkpoints.
+ */
+export async function createGate(input: { planId: string; blockId: string }) {
+  const userId = await requireUserId();
+
+  const row = await queryOne<{ id: string }>(
+    `insert into gates (plan_id, after_block_id, status, hours_threshold)
+     select $1, $2, 'pending', b.hours
+       from blocks b
+       join phases ph on ph.id = b.phase_id
+       join training_plans tp on tp.id = ph.plan_id
+      where b.id = $2
+        and tp.id = $1
+        and tp.instructor_id = $3
+        and not exists (select 1 from gates g where g.after_block_id = b.id)
+     returning id`,
+    [input.planId, input.blockId, userId],
+  );
+
+  if (!row) {
+    throw new Error("Block not found, already has a gate, or you do not have access to it.");
+  }
+
+  revalidatePath(planDetailRoute(input.planId));
+}
+
+/**
+ * Removes a checkpoint. Its recorded outcomes go with it via cascade, which is
+ * intended: the history describes a gate that no longer exists, and keeping it
+ * would leave the stat strip counting verdicts for a checkpoint nobody can see.
+ */
+export async function deleteGate(input: { planId: string; gateId: string }) {
+  const userId = await requireUserId();
+
+  const row = await queryOne<{ id: string }>(
+    `delete from gates as g
+      using training_plans tp
+      where g.id = $1
+        and tp.id = g.plan_id
+        and tp.instructor_id = $2
+     returning g.id`,
+    [input.gateId, userId],
+  );
+
+  if (!row) {
+    throw new Error("Gate not found, or you do not have access to it.");
+  }
+
+  revalidatePath(planDetailRoute(input.planId));
+}
+
 export async function updateGateStatus(input: UpdateGateInput) {
   const userId = await requireUserId();
 

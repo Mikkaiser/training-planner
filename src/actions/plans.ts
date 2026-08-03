@@ -42,6 +42,39 @@ export async function createPlan(input: CreatePlanInput) {
   return row;
 }
 
+type UpdatePlanInput = {
+  planId: string;
+  title: string;
+  studentName: string;
+};
+
+/** Rename a plan or correct the competitor's name after it was created. */
+export async function updatePlan(input: UpdatePlanInput) {
+  const userId = await requireUserId();
+
+  const title = input.title.trim();
+  const studentName = input.studentName.trim();
+
+  if (!title || !studentName) {
+    throw new Error("A plan needs both a competitor name and a title.");
+  }
+
+  const row = await queryOne<{ id: string }>(
+    `update training_plans
+        set title = $2, student_name = $3
+      where id = $1 and instructor_id = $4
+     returning id`,
+    [input.planId, title, studentName, userId],
+  );
+
+  if (!row) {
+    throw new Error("Plan not found, or you do not have access to it.");
+  }
+
+  revalidatePath(APP_ROUTES.home);
+  revalidatePath(planDetailRoute(input.planId));
+}
+
 type ClonePlanInput = {
   sourcePlanId: string;
   studentName: string;

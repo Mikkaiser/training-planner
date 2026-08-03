@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { AddGateButton } from "@/components/plan/detail/AddGateButton";
 import { BlockCard } from "@/components/plan/detail/BlockCard";
 import { GateMarker } from "@/components/plan/detail/GateMarker";
 import { layoutSubway, type Station } from "@/lib/layout/subway-layout";
@@ -122,11 +123,13 @@ export function SubwayView({ plan }: { plan: PlanVM }) {
             phaseLabel={currentPhase ? `Phase ${currentPhase.index} · ${currentPhase.title}` : ""}
             active
           />
-          {current.gate ? (
-            <div className="tp-mt-3">
+          <div className="tp-mt-3">
+            {current.gate ? (
               <GateMarker gate={current.gate} planId={plan.id} />
-            </div>
-          ) : null}
+            ) : (
+              <AddGateButton planId={plan.id} blockId={current.id} />
+            )}
+          </div>
         </div>
       ) : (
         <div className="tp-mt-4 tp-mut tp-sm" style={{ textAlign: "center" }}>

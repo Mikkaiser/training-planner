@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTransition } from "react";
 import { createBlock } from "@/actions/blocks";
 import { createPhase } from "@/actions/phases";
+import { AddGateButton } from "@/components/plan/detail/AddGateButton";
 import { AddInline } from "@/components/plan/detail/AddInline";
 import { Tag } from "@/components/ui/Tag";
 import { CheckIcon, CrossIcon, GateIcon, PlusIcon } from "@/components/ui/icons";
@@ -151,7 +152,11 @@ function TreePhase({
               column.block ? (
                 <div key={column.block.id} className="tp-col" style={{ width: TREE.BLOCK_W, gap: 10 }}>
                   <BlockNode block={column.block} />
-                  {column.block.gate ? <GateNode gate={column.block.gate} /> : null}
+                  {column.block.gate ? (
+                    <GateNode gate={column.block.gate} />
+                  ) : (
+                    <AddGateButton planId={planId} blockId={column.block.id} />
+                  )}
                 </div>
               ) : (
                 <div key={`add-${i}`} className="tp-col" style={{ width: TREE.BLOCK_W, gap: 10, paddingTop: 30 }}>

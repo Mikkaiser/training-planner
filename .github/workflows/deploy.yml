@@ -15,9 +15,28 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_KEY }}
+          # -e so a failed build or migration aborts the deploy instead of
+          # carrying on and recreating web against a schema it cannot use.
+          # -o pipefail so a failure inside a pipeline is not masked by the
+          # exit status of the last command in it.
+          script_stop: true
           script: |
+            set -eo pipefail
             cd /root/projects/training-planner
             git pull origin main
-            docker compose build --no-cache
+
+            # Build both images before anything is swapped, so a broken build
+            # leaves the running site untouched.
+            docker compose --profile tools build --no-cache
+
+            # Migrations run BEFORE web is recreated. This ordering matters: new
+            # code against an old schema fails on every request, whereas the old
+            # code against a newly migrated schema keeps working for the few
+            # seconds until it is replaced. `--rm` propagates the exit code, so
+            # a failed migration stops the deploy here with the old site still
+            # up. The runner is idempotent — it skips whatever is already
+            # recorded in schema_migrations.
+            docker compose --profile tools run --rm migrate
+
             docker compose up -d --force-recreate
             docker image prune -f

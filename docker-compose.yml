@@ -18,6 +18,29 @@ services:
       driver: json-file
       options: { max-size: "10m", max-file: "3" }
 
+  # Run once per deploy, before web is recreated:
+  #   docker compose --profile tools run --rm migrate
+  #
+  # It has to be a container rather than a host-side `pnpm migrate`: DATABASE_URL
+  # points at training-planner-db:5432, which only resolves on this network. The
+  # database port is bound to the server's loopback, not exposed.
+  #
+  # The "tools" profile keeps `docker compose up` from ever starting it, so the
+  # migration only runs when the deploy explicitly asks for it.
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: migrator
+    image: training-planner-migrate:latest
+    env_file:
+      - .env
+    networks:
+      - training-planner-network
+    profiles:
+      - tools
+    restart: "no"
+
 networks:
   training-planner-network:
     external: true

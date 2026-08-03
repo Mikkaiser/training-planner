@@ -85,6 +85,40 @@ async function main(): Promise<void> {
     const verbText = await page.getByRole("button", { name: /Verb level for Verification Block/ }).innerText();
     check("changing the verb level persists across a reload", verbText.trim().toLowerCase() === "create", verbText);
 
+    // ── Rename the plan and the competitor ───────────────────────────────
+    await page.getByRole("button", { name: /Competitor name:/ }).click();
+    await page.getByLabel("Competitor name").fill(`${STUDENT} Renamed`);
+    await page.getByLabel("Competitor name").press("Enter");
+    await page.waitForTimeout(800);
+    await gotoAuthed(page, planPath);
+    check(
+      "renaming the competitor persists",
+      (await page.getByRole("button", { name: /Competitor name:/ }).innerText()).includes("Renamed"),
+    );
+
+    await page.getByRole("button", { name: /^Plan title:/ }).click();
+    await page.getByLabel("Plan title").fill(`${PLAN_TITLE} Renamed`);
+    await page.getByLabel("Plan title").press("Enter");
+    await page.waitForTimeout(800);
+    await gotoAuthed(page, planPath);
+    check(
+      "renaming the plan persists",
+      (await page.getByRole("button", { name: /^Plan title:/ }).innerText()).includes("Renamed"),
+    );
+
+    // ── Remove a gate, then add it back ──────────────────────────────────
+    await page.getByRole("button", { name: /Remove Gate 1/ }).click();
+    await page.getByRole("button", { name: "Remove gate", exact: true }).click();
+    await page.waitForSelector("text=Add Gate", { timeout: 15_000 });
+    check("removing a gate leaves the block without a checkpoint", !(await page.getByText("Gate 1").isVisible()));
+
+    await page.getByRole("button", { name: "Add Gate" }).first().click();
+    await page.waitForSelector("text=Gate 1", { timeout: 15_000 });
+    check(
+      "adding a gate back restores a pending checkpoint",
+      await page.getByText("Cumulative · Block 1").first().isVisible(),
+    );
+
     // ── Upload a real file to MinIO ──────────────────────────────────────
     const dir = mkdtempSync(join(tmpdir(), "tp-verify-"));
     const filePath = join(dir, "verification-brief.pdf");

@@ -9,11 +9,21 @@ interface TopBarProps {
   title?: string;
   subtitle?: string;
   progress?: number;
+  /** Replaces the static title/subtitle, so the detail page can make them editable. */
+  titleSlot?: React.ReactNode;
   /** Slot before the avatar — the detail page puts its view switcher here. */
   children?: React.ReactNode;
 }
 
-export function TopBar({ instructorName, mode = "list", title, subtitle, progress = 0, children }: TopBarProps) {
+export function TopBar({
+  instructorName,
+  mode = "list",
+  title,
+  subtitle,
+  progress = 0,
+  titleSlot,
+  children,
+}: TopBarProps) {
   return (
     <header className="tp-topbar">
       {mode === "list" ? (
@@ -31,10 +41,12 @@ export function TopBar({ instructorName, mode = "list", title, subtitle, progres
           >
             <BackArrowIcon size={12} />
           </Link>
-          <div className="tp-col" style={{ lineHeight: 1.2 }}>
-            <div style={{ fontSize: 14, fontWeight: 700 }}>{title}</div>
-            {subtitle ? <div className="tp-tiny tp-mut">{subtitle}</div> : null}
-          </div>
+          {titleSlot ?? (
+            <div className="tp-col" style={{ lineHeight: 1.2 }}>
+              <div style={{ fontSize: 14, fontWeight: 700 }}>{title}</div>
+              {subtitle ? <div className="tp-tiny tp-mut">{subtitle}</div> : null}
+            </div>
+          )}
         </div>
       )}
 

@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { TopBar } from "@/components/layout/TopBar";
 import { PlanDetail } from "@/components/plan/PlanDetail";
+import { PlanIdentity } from "@/components/plan/detail/PlanIdentity";
 import { ViewSwitcher } from "@/components/plan/ViewSwitcher";
 import { getInstructorName, getPlanByIdForCurrentInstructor } from "@/lib/plan-data";
 import { buildPlanVM } from "@/lib/plan-view-model";
@@ -33,9 +34,8 @@ export default async function PlanPage({ params, searchParams }: PlanPageProps) 
       <TopBar
         instructorName={instructorName}
         mode="detail"
-        title={vm.studentName}
-        subtitle={vm.title}
         progress={vm.progress}
+        titleSlot={<PlanIdentity planId={vm.id} studentName={vm.studentName} title={vm.title} />}
       >
         {/* Hidden on an empty plan: there is nothing to present three ways. */}
         {vm.isEmpty ? null : (

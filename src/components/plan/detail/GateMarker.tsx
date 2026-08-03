@@ -1,7 +1,8 @@
 "use client";
 
 import { useTransition } from "react";
-import { updateGateStatus } from "@/actions/blocks";
+import { deleteGate, updateGateStatus } from "@/actions/blocks";
+import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { CheckIcon, CrossIcon, GateIcon } from "@/components/ui/icons";
 import type { GateVM } from "@/lib/plan-view-model";
@@ -28,8 +29,29 @@ export function GateMarker({ gate, planId }: GateMarkerProps) {
     });
   };
 
+  const remove = (
+    <ConfirmButton
+      className="tp-btn tp-btn-ghost tp-btn-sm tp-reveal"
+      label="Remove"
+      ariaLabel={`Remove ${gate.label}`}
+      title={`Remove ${gate.label}?`}
+      body={
+        decided
+          ? `This deletes the checkpoint after block ${gate.index} and its recorded verdict. Progress will fall, since the block no longer has a gate to pass.`
+          : `This deletes the checkpoint after block ${gate.index}. You can add it back afterwards.`
+      }
+      confirmLabel="Remove gate"
+      disabled={pending}
+      onConfirm={() =>
+        startTransition(async () => {
+          await deleteGate({ planId, gateId: gate.id });
+        })
+      }
+    />
+  );
+
   return (
-    <div className="tp-gate" style={{ flexWrap: "wrap" }}>
+    <div className="tp-gate tp-reveal-host" style={{ flexWrap: "wrap" }}>
       <div className={`tp-gate-icon ${iconClass}`}>
         {gate.status === "passed" ? (
           <CheckIcon size={14} />
@@ -50,6 +72,7 @@ export function GateMarker({ gate, planId }: GateMarkerProps) {
 
       {decided ? (
         <div className="tp-gate-actions">
+          {remove}
           <button
             type="button"
             className="tp-btn tp-btn-ghost tp-btn-sm"
@@ -61,6 +84,7 @@ export function GateMarker({ gate, planId }: GateMarkerProps) {
         </div>
       ) : (
         <div className="tp-gate-actions">
+          {remove}
           <button
             type="button"
             className="tp-btn tp-btn-pos tp-btn-sm"

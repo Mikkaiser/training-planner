@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { createBlock } from "@/actions/blocks";
 import { createPhase } from "@/actions/phases";
+import { AddGateButton } from "@/components/plan/detail/AddGateButton";
 import { AddInline } from "@/components/plan/detail/AddInline";
 import { BlockCard } from "@/components/plan/detail/BlockCard";
 import { CompactBlockRow } from "@/components/plan/detail/CompactBlockRow";
@@ -105,13 +106,15 @@ function PhaseRail({ phase, planId }: { phase: PhaseVM; planId: string }) {
             )}
           </TimelineNode>
 
-          {block.gate ? (
-            // Gate dots stay hollow in the design regardless of the block
-            // before them — the filled dots mark blocks, not checkpoints.
-            <TimelineNode state="upcoming" small>
+          {/* Gate dots stay hollow in the design regardless of the block
+              before them — the filled dots mark blocks, not checkpoints. */}
+          <TimelineNode state="upcoming" small>
+            {block.gate ? (
               <GateMarker gate={block.gate} planId={planId} />
-            </TimelineNode>
-          ) : null}
+            ) : (
+              <AddGateButton planId={planId} blockId={block.id} />
+            )}
+          </TimelineNode>
         </div>
       ))}
 
