@@ -1,7 +1,9 @@
 # Local development stack: Postgres + Next.js dev server with hot reload.
 #
 #   cp .env.example .env.local     # then fill in AUTH_SECRET and the Google creds
-#   docker compose -f docker-compose.dev.yml up
+#   docker compose -f docker-compose.dev.yml up -d db
+#   pnpm migrate                   # applies db/migrations, tracked in schema_migrations
+#   docker compose -f docker-compose.dev.yml up web
 #
 # The app is served on http://localhost:3000 and the database on
 # 127.0.0.1:5437. Production uses docker-compose.yml + docker-compose.db.yml.
@@ -20,10 +22,12 @@ services:
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C.UTF-8"
     volumes:
       - dev-pgdata:/var/lib/postgresql/data
-      # Runs only on the first boot of an empty volume, in filename order.
-      # To re-apply after changing a migration: docker compose -f
-      # docker-compose.dev.yml down -v, which wipes the dev database.
-      - ./db/migrations:/docker-entrypoint-initdb.d:ro
+      # db/migrations is deliberately NOT mounted into docker-entrypoint-initdb.d.
+      # That hook only fires on the first boot of an empty volume, so it and
+      # `pnpm migrate` would each apply the same files with no shared record of
+      # what ran — on a fresh volume both would fire and the second pass would
+      # re-run 0003 against already-migrated data. `pnpm migrate` is the single
+      # path, and it matches how production applies migrations.
     # Loopback only, and 5437 so it cannot collide with the production
     # container on 5436 if you ever run both on the same host.
     ports:

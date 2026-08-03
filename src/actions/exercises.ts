@@ -1,0 +1,188 @@
+"use server";
+
+import { randomUUID } from "node:crypto";
+import { revalidatePath } from "next/cache";
+import { HeadObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { z } from "zod";
+import { auth } from "@/auth";
+import { queryOne } from "@/lib/db";
+import { deleteObjects } from "@/lib/exercise-storage";
+import {
+  MAX_FILE_BYTES,
+  MAX_FILES_PER_BLOCK,
+  slugifyFileName,
+  validateUploadCandidate,
+} from "@/lib/exercise-files";
+import { planDetailRoute } from "@/lib/routes";
+import { bucket, s3Internal, s3Public } from "@/lib/s3";
+
+/** Long enough for a 25 mb upload on a poor link, short enough to be a weak capability. */
+const UPLOAD_URL_TTL_SECONDS = 600;
+
+async function requireUserId(): Promise<string> {
+  const session = await auth();
+  const id = session?.user?.id;
+  if (!id) throw new Error("You need to sign in before managing exercises.");
+  return id;
+}
+
+const presignSchema = z.object({
+  planId: z.string().uuid(),
+  blockId: z.string().uuid(),
+  fileName: z.string().min(1).max(255),
+  sizeBytes: z.number().int().positive().max(MAX_FILE_BYTES),
+  contentType: z.string().max(255).default(""),
+});
+
+export type PresignResult = {
+  exerciseId: string;
+  uploadUrl: string;
+  contentType: string;
+};
+
+/**
+ * Reserves a row and returns a presigned PUT for it.
+ *
+ * The ownership check and the insert are one statement on purpose: a presigned
+ * URL is a bearer credential, so the authorization decision and the act of
+ * issuing it must not be separable. If the caller does not own the block the
+ * insert matches nothing, and no URL is ever signed.
+ */
+export async function presignExerciseUpload(input: z.input<typeof presignSchema>): Promise<PresignResult> {
+  const userId = await requireUserId();
+  const parsed = presignSchema.parse(input);
+
+  const validation = validateUploadCandidate(parsed.fileName, parsed.sizeBytes, parsed.contentType);
+  if (!validation.ok) throw new Error(validation.reason);
+
+  const exerciseId = randomUUID();
+  const storageKey = `plans/${parsed.planId}/blocks/${parsed.blockId}/${exerciseId}/${slugifyFileName(parsed.fileName)}`;
+
+  const row = await queryOne<{ id: string }>(
+    `insert into exercises (id, block_id, file_name, storage_key, content_type, size_bytes, status, uploaded_by)
+     select $1, $2, $3, $4, $5, $6, 'pending', $7
+      where exists (
+        select 1
+          from blocks b
+          join phases ph on ph.id = b.phase_id
+          join training_plans tp on tp.id = ph.plan_id
+         where b.id = $2
+           and tp.id = $8
+           and tp.instructor_id = $7
+      )
+        and (select count(*) from exercises where block_id = $2) < $9
+     returning id`,
+    [
+      exerciseId,
+      parsed.blockId,
+      parsed.fileName,
+      storageKey,
+      validation.contentType,
+      parsed.sizeBytes,
+      userId,
+      parsed.planId,
+      MAX_FILES_PER_BLOCK,
+    ],
+  );
+
+  if (!row) {
+    throw new Error("Block not found, or you do not have access to it.");
+  }
+
+  const uploadUrl = await getSignedUrl(
+    s3Public(),
+    new PutObjectCommand({
+      Bucket: bucket(),
+      Key: storageKey,
+      ContentType: validation.contentType,
+      // Signed, and browsers set Content-Length themselves from the File and
+      // cannot be made to lie about it. This is what actually enforces the size
+      // limit at the storage layer rather than only in our own UI.
+      ContentLength: parsed.sizeBytes,
+    }),
+    {
+      expiresIn: UPLOAD_URL_TTL_SECONDS,
+      // Content-Type is in the SDK's unsignable set by default, so without this
+      // the signature would not bind it and any type could be uploaded.
+      signableHeaders: new Set(["content-type"]),
+    },
+  );
+
+  return { exerciseId, uploadUrl, contentType: validation.contentType };
+}
+
+const confirmSchema = z.object({
+  planId: z.string().uuid(),
+  exerciseId: z.string().uuid(),
+});
+
+/**
+ * Flips a reserved row to ready, but only after asking the bucket whether the
+ * object is really there and really the size we signed for. Trusting the
+ * browser's "upload finished" would let a cancelled or truncated PUT show up
+ * as an attached file that 404s on download.
+ */
+export async function confirmExerciseUpload(input: z.input<typeof confirmSchema>): Promise<void> {
+  const userId = await requireUserId();
+  const parsed = confirmSchema.parse(input);
+
+  const row = await queryOne<{ storage_key: string; size_bytes: number }>(
+    `select e.storage_key, e.size_bytes
+       from exercises e
+       join blocks b on b.id = e.block_id
+       join phases ph on ph.id = b.phase_id
+       join training_plans tp on tp.id = ph.plan_id
+      where e.id = $1 and tp.instructor_id = $2`,
+    [parsed.exerciseId, userId],
+  );
+
+  if (!row) throw new Error("Exercise not found, or you do not have access to it.");
+
+  const head = await s3Internal().send(new HeadObjectCommand({ Bucket: bucket(), Key: row.storage_key }));
+
+  if (head.ContentLength !== Number(row.size_bytes)) {
+    throw new Error("Upload did not complete — the stored file size does not match.");
+  }
+
+  await queryOne(
+    `update exercises set status = 'ready', uploaded_at = now()
+      where id = $1 and status = 'pending'
+     returning id`,
+    [parsed.exerciseId],
+  );
+
+  revalidatePath(planDetailRoute(parsed.planId));
+}
+
+const deleteSchema = z.object({
+  planId: z.string().uuid(),
+  exerciseId: z.string().uuid(),
+});
+
+/**
+ * Row first, then the object. Failing that way round leaves a file nothing
+ * references, which the sweeper can find; the reverse would leave a row whose
+ * download is permanently broken.
+ */
+export async function deleteExercise(input: z.input<typeof deleteSchema>): Promise<void> {
+  const userId = await requireUserId();
+  const parsed = deleteSchema.parse(input);
+
+  const row = await queryOne<{ storage_key: string }>(
+    `delete from exercises e
+      using blocks b, phases ph, training_plans tp
+      where e.id = $1
+        and b.id = e.block_id
+        and ph.id = b.phase_id
+        and tp.id = ph.plan_id
+        and tp.instructor_id = $2
+     returning e.storage_key`,
+    [parsed.exerciseId, userId],
+  );
+
+  if (!row) throw new Error("Exercise not found, or you do not have access to it.");
+
+  await deleteObjects([row.storage_key]);
+  revalidatePath(planDetailRoute(parsed.planId));
+}

@@ -62,9 +62,16 @@ a {
     radial-gradient(40% 40% at 0% 100%, rgba(219, 253, 107, 0.1) 0%, rgba(219, 253, 107, 0) 70%),
     var(--bg);
   color: var(--ink);
+  /* ss01/cv11 are what give Plus Jakarta Sans the design's single-storey 'a'
+     and straight-tailed 'l'. refs/styles.css sets them on the page wrapper. */
+  font-feature-settings: "ss01" on, "cv11" on;
+  letter-spacing: -0.01em;
   display: flex;
   flex-direction: column;
 }
+
+/* The design's artboards are fixed-size, so refs/styles.css uses height:100%
+   with overflow:hidden. A real page scrolls, hence min-height above. */
 
 .tp-shell {
   max-width: 1080px;
@@ -390,6 +397,31 @@ a {
   color: var(--neg);
 }
 
+.tp-gate-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  /* Wraps rather than compressing: squeezed to nothing, the status badge ends
+     up underneath the buttons. */
+  flex: 1 1 190px;
+  min-width: 0;
+}
+
+.tp-gate-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 560px) {
+  /* Drop the verdict buttons onto their own line so the gate label, its status
+     and its scope all keep full width. */
+  .tp-gate-actions {
+    flex-basis: 100%;
+    justify-content: flex-end;
+  }
+}
+
 .tp-input {
   width: 100%;
   border: 1px solid var(--border-strong);
@@ -408,4 +440,299 @@ a {
 .tp-input:focus {
   border: 1.5px solid var(--accent);
   box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+/* ── Layout utilities ──────────────────────────────────────────────
+   Ported from refs/styles.css. The design's components compose from these
+   rather than inline styles, so they have to exist before the screens do. */
+
+.tp-row {
+  display: flex;
+  align-items: center;
+}
+
+.tp-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.tp-gap-2 {
+  gap: 8px;
+}
+
+.tp-gap-3 {
+  gap: 12px;
+}
+
+.tp-gap-4 {
+  gap: 16px;
+}
+
+.tp-gap-6 {
+  gap: 24px;
+}
+
+.tp-mt-1 {
+  margin-top: 4px;
+}
+
+.tp-mt-2 {
+  margin-top: 8px;
+}
+
+.tp-mt-3 {
+  margin-top: 12px;
+}
+
+.tp-mt-4 {
+  margin-top: 16px;
+}
+
+.tp-mut {
+  color: var(--ink-2);
+}
+
+.tp-tiny {
+  font-size: 11px;
+}
+
+.tp-sm {
+  font-size: 12px;
+}
+
+/* Uppercase mono eyebrow: "WORLDSKILLS · SD", "CURRENT BLOCK", column heads. */
+.tp-eyebrow {
+  font-family: var(--font-mono), "JetBrains Mono", monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.tp-self-start {
+  align-self: flex-start;
+}
+
+.tp-chev {
+  transition: transform 0.2s;
+  flex-shrink: 0;
+  color: var(--ink-2);
+}
+
+.tp-chev.open {
+  transform: rotate(90deg);
+}
+
+/* ── Segmented control ─────────────────────────────────────────────
+   The design has no view switcher — it presents each variant as its own
+   artboard. Built here from the same tokens as .tp-pill and .tp-btn-ghost so
+   it reads as part of the system rather than a bolted-on control. */
+
+.tp-seg {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(28, 31, 51, 0.04);
+  border: 1px solid var(--border);
+}
+
+.tp-seg-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+  white-space: nowrap;
+}
+
+.tp-seg-item:hover {
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.tp-seg-item[aria-current="true"] {
+  background: var(--surface);
+  color: var(--ink);
+  border-color: var(--accent-soft-2);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── Responsive ────────────────────────────────────────────────────
+   The design ships desktop artboards only, so these rules have no reference
+   to match; the goal is that nothing overflows, clips or becomes unreachable
+   on a phone. Layout that needs to respond lives in these classes rather than
+   inline styles, since a media query cannot reach a style attribute. */
+
+.tp-page-section {
+  padding: 36px 40px 60px;
+  width: 100%;
+}
+
+.tp-page-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.tp-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.tp-card-grid {
+  display: grid;
+  /* min() is what stops a 420px minimum from forcing the page wider than the
+     viewport on a 390px phone. */
+  grid-template-columns: repeat(auto-fill, minmax(min(420px, 100%), 1fr));
+  gap: 18px;
+}
+
+.tp-stat-strip {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 22px;
+  align-items: stretch;
+}
+
+.tp-stat-strip > * {
+  flex: 1;
+  min-width: 0;
+}
+
+/* The table keeps its full width and scrolls inside the card. The card itself
+   stays overflow:hidden for its rounded corners, which would otherwise clip
+   the right-hand columns away entirely rather than letting them scroll. */
+.tp-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tp-table-wrap > table {
+  min-width: 760px;
+}
+
+/* Wide SVG diagrams scroll rather than shrink below legible type. */
+.tp-svg-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tp-progress-inline {
+  width: 220px;
+}
+
+/* The gutter, the rail line and the node dots have to move together, so all
+   three read from the same two variables. */
+.tp-timeline-rail {
+  position: relative;
+  --rail-gutter: 38px;
+  --rail-line: 14px;
+  --rail-dot: -32px;
+  padding-left: var(--rail-gutter);
+}
+
+.tp-modal-pad {
+  padding: 28px;
+}
+
+@media (max-width: 860px) {
+  .tp-progress-inline {
+    width: 110px;
+  }
+}
+
+@media (max-width: 720px) {
+  .tp-page-section {
+    padding: 24px 16px 48px;
+  }
+
+  .tp-page-head {
+    flex-direction: column;
+    align-items: stretch;
+    margin-bottom: 20px;
+  }
+
+  .tp-head-actions {
+    justify-content: flex-start;
+  }
+
+  .tp-topbar {
+    padding: 12px 16px;
+    gap: 10px;
+  }
+
+  .tp-stat-strip {
+    flex-wrap: wrap;
+  }
+
+  /* Two per row instead of four squeezed into one. */
+  .tp-stat-strip > * {
+    flex: 1 1 calc(50% - 7px);
+  }
+
+  .tp-modal-pad {
+    padding: 20px;
+  }
+
+  /* Reclaim the rail's gutter; the line and dots move in with it. */
+  .tp-timeline-rail {
+    --rail-gutter: 24px;
+    --rail-line: 7px;
+    --rail-dot: -21px;
+  }
+}
+
+@media (max-width: 560px) {
+  /* The progress bar is the first thing to go: the roadmap below states the
+     same thing in more detail, and the top bar needs the room for the view
+     switcher, which has no equivalent elsewhere. */
+  .tp-progress-inline {
+    display: none;
+  }
+
+  .tp-avatar-name {
+    display: none;
+  }
+
+  .tp-seg-item {
+    padding: 6px 10px;
+  }
+}
+
+/* Destructive affordances stay out of the resting state — the design's cards
+   show no Edit/Delete chrome — but must remain reachable by keyboard, so they
+   appear on hover *and* on focus-within. */
+.tp-reveal {
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.tp-reveal-host:hover .tp-reveal,
+.tp-reveal-host:focus-within .tp-reveal,
+.tp-reveal:focus-visible {
+  opacity: 1;
+}
+
+/* Keyboard focus has to stay visible on every interactive element; the design
+   only ever shows mouse states. */
+.tp-btn:focus-visible,
+.tp-ghost:focus-visible,
+.tp-seg-item:focus-visible,
+.tp-input:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
 }

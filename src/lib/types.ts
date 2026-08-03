@@ -1,8 +1,11 @@
 export type GateStatus = "pending" | "passed" | "failed";
 
-export type VerbLevel = "Recognize" | "Apply" | "Produce" | "Optimize";
+/** Ordered low → high, matching the design's verb-level pill. */
+export const VERB_LEVELS = ["Recognize", "Reproduce", "Apply", "Adapt", "Create"] as const;
+export type VerbLevel = (typeof VERB_LEVELS)[number];
 
-export type CompetenceType = "Development" | "Testing" | "Analysis & Design" | "Transversal";
+export const COMPETENCE_TYPES = ["Development", "Testing", "Analysis & Design", "Transversal"] as const;
+export type CompetenceType = (typeof COMPETENCE_TYPES)[number];
 
 export type Plan = {
   id: string;
@@ -41,7 +44,34 @@ export type Gate = {
   created_at: string;
 };
 
+/** 'pending' = row reserved, bytes not confirmed in the bucket yet. */
+export type ExerciseStatus = "pending" | "ready";
+
+export type Exercise = {
+  id: string;
+  block_id: string;
+  file_name: string;
+  storage_key: string;
+  content_type: string;
+  size_bytes: number;
+  status: ExerciseStatus;
+  uploaded_by: string | null;
+  created_at: string;
+  uploaded_at: string | null;
+};
+
+export type GateEvent = {
+  id: string;
+  gate_id: string;
+  plan_id: string;
+  status: GateStatus;
+  changed_by: string | null;
+  created_at: string;
+};
+
+export type BlockWithExercises = Block & { exercises: Exercise[] };
+
 export type PlanWithPhases = Plan & {
-  phases: (Phase & { blocks: Block[] })[];
+  phases: (Phase & { blocks: BlockWithExercises[] })[];
   gates: Gate[];
 };

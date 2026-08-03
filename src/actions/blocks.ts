@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { pool, queryOne } from "@/lib/db";
+import { collectStorageKeys, deleteObjects } from "@/lib/exercise-storage";
 import { planDetailRoute } from "@/lib/routes";
 import type { CompetenceType, GateStatus, VerbLevel } from "@/lib/types";
 
@@ -24,7 +25,9 @@ type UpdateBlockInput = {
   description: string;
   verbLevel: VerbLevel;
   competenceType: CompetenceType;
-  hours: number;
+  /** Omitted by the UI — the design never shows hours, and passing a default
+   *  here would quietly overwrite whatever the row already holds. */
+  hours?: number;
 };
 
 type UpdateGateInput = {
@@ -111,7 +114,7 @@ export async function updateBlock(input: UpdateBlockInput) {
             description = $3,
             verb_level = $4::verb_level,
             competence_type = $5::competence_type,
-            hours = $6
+            hours = coalesce($6, b.hours)
        from phases ph
        join training_plans tp on tp.id = ph.plan_id
       where b.id = $1
@@ -124,7 +127,7 @@ export async function updateBlock(input: UpdateBlockInput) {
       input.description,
       input.verbLevel,
       input.competenceType,
-      input.hours,
+      input.hours ?? null,
       userId,
     ],
   );
@@ -138,6 +141,11 @@ export async function updateBlock(input: UpdateBlockInput) {
 
 export async function deleteBlock(planId: string, blockId: string) {
   const userId = await requireUserId();
+
+  // Collected before the delete: `on delete cascade` removes the exercise rows
+  // but knows nothing about the bucket, so without this every deleted block
+  // silently leaks its files.
+  const storageKeys = await collectStorageKeys("block", blockId, userId);
 
   const row = await queryOne<{ id: string }>(
     `delete from blocks as b
@@ -154,25 +162,56 @@ export async function deleteBlock(planId: string, blockId: string) {
     throw new Error("Block not found, or you do not have access to it.");
   }
 
+  await deleteObjects(storageKeys);
   revalidatePath(planDetailRoute(planId));
 }
 
 export async function updateGateStatus(input: UpdateGateInput) {
   const userId = await requireUserId();
 
-  const row = await queryOne<{ id: string }>(
-    `update gates as g
-        set status = $2::gate_status
-       from training_plans tp
-      where g.id = $1
-        and tp.id = g.plan_id
-        and tp.instructor_id = $3
-     returning g.id`,
-    [input.gateId, input.status, userId],
-  );
+  // The status update and its history row go together: gates.status only holds
+  // the current value, and the list view's stat strip reads gate_events for
+  // "passed first try" and the 30-day window.
+  const client = await pool.connect();
 
-  if (!row) {
-    throw new Error("Gate not found, or you do not have access to it.");
+  try {
+    await client.query("begin");
+
+    const result = await client.query<{ id: string; plan_id: string }>(
+      `update gates as g
+          set status = $2::gate_status
+         from training_plans tp
+        where g.id = $1
+          and tp.id = g.plan_id
+          and tp.instructor_id = $3
+       returning g.id, g.plan_id`,
+      [input.gateId, input.status, userId],
+    );
+
+    const gate = result.rows[0];
+
+    if (!gate) {
+      await client.query("rollback");
+      throw new Error("Gate not found, or you do not have access to it.");
+    }
+
+    // 'pending' means the instructor cleared a previous verdict rather than
+    // reaching one, so it is not an outcome worth recording.
+    if (input.status !== "pending") {
+      await client.query(
+        `insert into gate_events (gate_id, plan_id, status, changed_by)
+         values ($1, $2, $3::gate_status, $4)`,
+        [gate.id, gate.plan_id, input.status, userId],
+      );
+    }
+
+    await client.query("commit");
+  } catch (error) {
+    await client.query("rollback").catch(() => undefined);
+    console.error("[updateGateStatus] failed", error);
+    throw error instanceof Error ? error : new Error("Failed to update the gate. Please try again.");
+  } finally {
+    client.release();
   }
 
   revalidatePath(planDetailRoute(input.planId));

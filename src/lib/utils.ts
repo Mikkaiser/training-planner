@@ -1,6 +1,10 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import type { Block, Gate, GateStatus, PlanWithPhases } from "@/lib/types";
+
+// Plan derivations (progress, current block, gate status) deliberately do NOT
+// live here — they are in @/lib/plan-view-model so that all five views read the
+// same numbers. A second copy in this file was how the list card and the detail
+// header ended up disagreeing.
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -15,31 +19,12 @@ export function getInitials(name: string): string {
     .join("");
 }
 
-export function getPlanProgress(plan: PlanWithPhases): number {
-  const blocks = plan.phases.flatMap((phase) => phase.blocks);
-  if (blocks.length === 0) return 0;
+const UNITS = ["b", "kb", "mb", "gb"] as const;
 
-  const gatesByBlock = new Map(plan.gates.map((gate) => [gate.after_block_id, gate]));
-  const passedCount = blocks.reduce((count, block) => {
-    const status = gatesByBlock.get(block.id)?.status;
-    return status === "passed" ? count + 1 : count;
-  }, 0);
-
-  return Math.round((passedCount / blocks.length) * 100);
-}
-
-export function getCurrentBlock(plan: PlanWithPhases): Block | null {
-  for (const phase of plan.phases) {
-    for (const block of phase.blocks) {
-      const gate = plan.gates.find((item) => item.after_block_id === block.id);
-      if (!gate || gate.status === "pending") return block;
-    }
-  }
-
-  const allBlocks = plan.phases.flatMap((phase) => phase.blocks);
-  return allBlocks.at(-1) ?? null;
-}
-
-export function getGateStatus(gate?: Gate): GateStatus {
-  return gate?.status ?? "pending";
+/** "420 kb", "1.2 mb" — lowercase units, matching the design's file chips. */
+export function formatBytes(bytes: number): string {
+  if (bytes <= 0) return "0 b";
+  const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), UNITS.length - 1);
+  const value = bytes / 1024 ** exponent;
+  return `${value >= 10 || exponent === 0 ? Math.round(value) : value.toFixed(1)} ${UNITS[exponent]}`;
 }

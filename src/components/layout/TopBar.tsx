@@ -1,9 +1,7 @@
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
-import { ProgressBar } from "@/components/ui/ProgressBar";
-import { signOut } from "@/actions/auth";
+import { UserMenu } from "@/components/layout/UserMenu";
+import { BackArrowIcon } from "@/components/ui/icons";
 import { APP_ROUTES } from "@/lib/routes";
-import { getInitials } from "@/lib/utils";
 
 interface TopBarProps {
   instructorName: string;
@@ -11,40 +9,48 @@ interface TopBarProps {
   title?: string;
   subtitle?: string;
   progress?: number;
+  /** Slot before the avatar — the detail page puts its view switcher here. */
+  children?: React.ReactNode;
 }
 
-export function TopBar({ instructorName, mode = "list", title, subtitle, progress = 0 }: TopBarProps) {
+export function TopBar({ instructorName, mode = "list", title, subtitle, progress = 0, children }: TopBarProps) {
   return (
     <header className="tp-topbar">
-      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-        {mode === "detail" ? (
-          <Link href={APP_ROUTES.home} className="tp-btn tp-btn-ghost tp-btn-sm" aria-label="Back to plans">
-            <ArrowLeft size={14} />
-          </Link>
-        ) : null}
-
+      {mode === "list" ? (
         <div className="tp-logo">
-          {mode === "list" ? <div className="tp-logo-mark tp-mono">T</div> : null}
-          <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.15 }}>
-            <span style={{ fontWeight: 700 }}>{mode === "list" ? "Training Planner" : title}</span>
-            {subtitle ? (
-              <span style={{ fontSize: "12px", color: "var(--ink-2)", fontWeight: 500 }}>{subtitle}</span>
-            ) : null}
+          <div className="tp-logo-mark tp-mono">T</div>
+          <span>Training Planner</span>
+        </div>
+      ) : (
+        <div className="tp-row tp-gap-3">
+          <Link
+            href={APP_ROUTES.home}
+            className="tp-btn tp-btn-ghost tp-btn-sm"
+            style={{ padding: "6px 8px" }}
+            aria-label="Back to plans"
+          >
+            <BackArrowIcon size={12} />
+          </Link>
+          <div className="tp-col" style={{ lineHeight: 1.2 }}>
+            <div style={{ fontSize: 14, fontWeight: 700 }}>{title}</div>
+            {subtitle ? <div className="tp-tiny tp-mut">{subtitle}</div> : null}
           </div>
         </div>
-      </div>
+      )}
 
-      <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-        {mode === "detail" ? <div style={{ width: "220px" }}><ProgressBar value={progress} /></div> : null}
-        <form action={signOut}>
-          <button type="submit" className="tp-btn tp-btn-ghost tp-btn-sm">
-            Log out
-          </button>
-        </form>
-        <div className="tp-avatar">
-          <span>{instructorName}</span>
-          <div className="av">{getInitials(instructorName)}</div>
-        </div>
+      <div className="tp-row tp-gap-4">
+        {mode === "detail" ? (
+          <div className="tp-row tp-gap-2 tp-progress-inline">
+            <div className="tp-bar" style={{ flex: 1 }}>
+              <i style={{ width: `${progress}%` }} />
+            </div>
+            <div className="tp-tiny tp-mono tp-mut">{progress}%</div>
+          </div>
+        ) : null}
+
+        {children}
+
+        <UserMenu instructorName={instructorName} />
       </div>
     </header>
   );
