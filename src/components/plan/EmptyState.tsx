@@ -14,6 +14,11 @@ const PHASE_SUGGESTIONS = ["Foundation", "Intermediate", "Advanced"] as const;
 export function EmptyState({ planId }: { planId: string }) {
   const [pending, startTransition] = useTransition();
 
+  const addPhase = (title: string) =>
+    startTransition(async () => {
+      await createPhase({ planId, title, orderIndex: 1 });
+    });
+
   return (
     <div
       className="tp-col"
@@ -47,13 +52,34 @@ export function EmptyState({ planId }: { planId: string }) {
           label="Add Phase"
           placeholder="Phase name, e.g. Foundation"
           disabled={pending}
-          suggestions={PHASE_SUGGESTIONS}
-          onSubmit={(title) =>
-            startTransition(async () => {
-              await createPhase({ planId, title, orderIndex: 1 });
-            })
-          }
+          onSubmit={(title) => addPhase(title)}
         />
+      </div>
+
+      {/* The design keeps these visible at rest, not tucked inside the form —
+          on a blank plan they are the fastest path to a first phase. */}
+      <div className="tp-mt-4 tp-tiny tp-mut tp-row tp-gap-3" style={{ flexWrap: "wrap", justifyContent: "center" }}>
+        <span>Quick add:</span>
+        {PHASE_SUGGESTIONS.map((suggestion) => (
+          <button
+            key={suggestion}
+            type="button"
+            className="tp-mono"
+            disabled={pending}
+            onClick={() => addPhase(suggestion)}
+            style={{
+              background: "white",
+              border: "1px solid var(--border)",
+              borderRadius: 999,
+              padding: "3px 10px",
+              fontSize: 11,
+              cursor: "pointer",
+              color: "var(--ink)",
+            }}
+          >
+            {suggestion}
+          </button>
+        ))}
       </div>
     </div>
   );
