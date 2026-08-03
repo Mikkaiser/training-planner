@@ -19,7 +19,8 @@
     "verify:capture": "tsx scripts/verify/capture.ts",
     "verify:s3": "NODE_OPTIONS=--conditions=react-server tsx scripts/verify/s3-roundtrip.ts",
     "verify:flows": "tsx scripts/verify/flows.ts",
-    "verify:orphans": "NODE_OPTIONS=--conditions=react-server tsx scripts/verify/orphans.ts"
+    "verify:orphans": "NODE_OPTIONS=--conditions=react-server tsx scripts/verify/orphans.ts",
+    "verify:responsive": "tsx scripts/verify/responsive.ts"
   },
   "dependencies": {
     "@auth/pg-adapter": "^1.11.3",

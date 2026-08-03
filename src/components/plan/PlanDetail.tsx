@@ -14,7 +14,7 @@ export function PlanDetail({ plan, view }: { plan: PlanVM; view: DetailView }) {
   // A plan with no phases has nothing to lay out in any of the three shapes.
   if (plan.isEmpty) {
     return (
-      <section style={{ padding: "60px 40px" }}>
+      <section className="tp-page-section">
         <EmptyState planId={plan.id} />
         <DeletePlanButton plan={plan} />
       </section>
@@ -22,7 +22,7 @@ export function PlanDetail({ plan, view }: { plan: PlanVM; view: DetailView }) {
   }
 
   return (
-    <section style={{ padding: view === "timeline" ? "28px 40px 80px" : "24px 32px 60px" }}>
+    <section className="tp-page-section">
       {view === "timeline" ? (
         <TimelineView plan={plan} />
       ) : view === "tree" ? (

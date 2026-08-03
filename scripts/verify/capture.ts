@@ -26,6 +26,17 @@ const SHOTS: Shot[] = [
   { name: "empty", path: "__EMPTY_PLAN__", width: 1100, height: 780 },
 ];
 
+// The design ships desktop artboards only, so these have no reference to match.
+// They exist to prove nothing overflows, clips or collapses on a phone.
+const MOBILE: Shot[] = [
+  { name: "m-list-cards", path: "/?view=cards", width: 390, height: 844 },
+  { name: "m-list-table", path: "/?view=table", width: 390, height: 844 },
+  { name: "m-detail-timeline", path: "__FIRST_PLAN__?view=timeline", width: 390, height: 844 },
+  { name: "m-detail-tree", path: "__FIRST_PLAN__?view=tree", width: 390, height: 844 },
+  { name: "m-detail-route", path: "__FIRST_PLAN__?view=route", width: 390, height: 844 },
+  { name: "m-empty", path: "__EMPTY_PLAN__", width: 390, height: 844 },
+];
+
 async function main(): Promise<void> {
   await withContext(async (context) => {
     const page = await context.newPage();
@@ -41,7 +52,13 @@ async function main(): Promise<void> {
       throw new Error("No plans on the list page — run `pnpm seed:demo` first.");
     }
 
-    const resolved = SHOTS.map((shot) => ({
+    const wanted = process.argv.includes("--mobile")
+      ? MOBILE
+      : process.argv.includes("--all")
+        ? [...SHOTS, ...MOBILE]
+        : SHOTS;
+
+    const resolved = wanted.map((shot) => ({
       ...shot,
       path: shot.path
         .replace("__FIRST_PLAN__", planHrefs[0])

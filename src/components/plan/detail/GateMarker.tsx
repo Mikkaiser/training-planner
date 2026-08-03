@@ -29,7 +29,7 @@ export function GateMarker({ gate, planId }: GateMarkerProps) {
   };
 
   return (
-    <div className="tp-gate">
+    <div className="tp-gate" style={{ flexWrap: "wrap" }}>
       <div className={`tp-gate-icon ${iconClass}`}>
         {gate.status === "passed" ? (
           <CheckIcon size={14} />
@@ -40,25 +40,27 @@ export function GateMarker({ gate, planId }: GateMarkerProps) {
         )}
       </div>
 
-      <div className="tp-col" style={{ gap: 3, flex: 1, minWidth: 0 }}>
+      <div className="tp-gate-body">
         <div className="tp-row tp-gap-2" style={{ alignItems: "baseline", flexWrap: "wrap" }}>
-          <div style={{ fontWeight: 700, fontSize: 14 }}>{gate.label}</div>
+          <div style={{ fontWeight: 700, fontSize: 14, whiteSpace: "nowrap" }}>{gate.label}</div>
           <StatusBadge status={gate.status} />
         </div>
         <div className="tp-tiny tp-mut">{gate.scopeLabel}</div>
       </div>
 
       {decided ? (
-        <button
-          type="button"
-          className="tp-btn tp-btn-ghost tp-btn-sm"
-          disabled={pending}
-          onClick={() => setStatus("pending")}
-        >
-          Reopen
-        </button>
+        <div className="tp-gate-actions">
+          <button
+            type="button"
+            className="tp-btn tp-btn-ghost tp-btn-sm"
+            disabled={pending}
+            onClick={() => setStatus("pending")}
+          >
+            Reopen
+          </button>
+        </div>
       ) : (
-        <div className="tp-row tp-gap-2">
+        <div className="tp-gate-actions">
           <button
             type="button"
             className="tp-btn tp-btn-pos tp-btn-sm"

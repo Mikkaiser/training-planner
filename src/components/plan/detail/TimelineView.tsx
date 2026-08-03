@@ -73,7 +73,7 @@ function PhaseRail({ phase, planId }: { phase: PhaseVM; planId: string }) {
     });
 
   return (
-    <div style={{ position: "relative", paddingLeft: 38 }}>
+    <div className="tp-timeline-rail">
       {/* The rail fades out toward the future, as in the design. It is purely
           decorative, so it is hidden from assistive tech. */}
       {phase.blocks.length > 0 ? (
@@ -81,7 +81,7 @@ function PhaseRail({ phase, planId }: { phase: PhaseVM; planId: string }) {
           aria-hidden="true"
           style={{
             position: "absolute",
-            left: 14,
+            left: "var(--rail-line)",
             top: 8,
             bottom: 60,
             width: 2,
@@ -145,7 +145,7 @@ function TimelineNode({
         aria-hidden="true"
         style={{
           position: "absolute",
-          left: -32,
+          left: "var(--rail-dot)",
           top: small ? 14 : 22,
           width: small ? 12 : 14,
           height: small ? 12 : 14,

@@ -20,7 +20,7 @@ export function SubwayView({ plan }: { plan: PlanVM }) {
 
   return (
     <div>
-      <div className="tp-row" style={{ justifyContent: "space-between", marginBottom: 16, gap: 16 }}>
+      <div className="tp-row" style={{ justifyContent: "space-between", marginBottom: 16, gap: 16, flexWrap: "wrap" }}>
         <div className="tp-col">
           <div className="tp-eyebrow">Route view</div>
           {/* The design's hand-written "The line to Lyon" does not generalise —
@@ -46,11 +46,13 @@ export function SubwayView({ plan }: { plan: PlanVM }) {
         </div>
       </div>
 
-      <div className="tp-card" style={{ padding: "20px 16px", position: "relative", overflow: "hidden" }}>
+      <div className="tp-card tp-svg-scroll" style={{ padding: "20px 16px", position: "relative" }}>
         <svg
           viewBox={`0 0 ${layout.width} ${layout.height}`}
           width="100%"
-          style={{ display: "block" }}
+          // Below this the station labels stop being readable, so the map
+          // scrolls sideways instead of shrinking any further.
+          style={{ display: "block", minWidth: 620 }}
           role="img"
           aria-label={`Route map of ${plan.totals.blocks} blocks across ${plan.totals.phases} phases`}
         >

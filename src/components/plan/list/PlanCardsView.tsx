@@ -13,7 +13,7 @@ export function PlanCardsView({ plans }: { plans: PlanSummaryVM[] }) {
   }
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(420px, 1fr))", gap: 18 }}>
+    <div className="tp-card-grid">
       {plans.map((plan) => (
         <PlanCard key={plan.id} plan={plan} />
       ))}

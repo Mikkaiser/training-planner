@@ -35,7 +35,8 @@ export function PlanTableView({ plans, stats }: { plans: PlanSummaryVM[]; stats:
       <StatStrip stats={stats} />
 
       <div className="tp-card" style={{ padding: 0, overflow: "hidden" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+        <div className="tp-table-wrap">
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
           <thead>
             <tr>
               <th style={{ ...th, paddingLeft: 24 }}>Competitor</th>
@@ -50,11 +51,12 @@ export function PlanTableView({ plans, stats }: { plans: PlanSummaryVM[]; stats:
             {active.map((plan) => (
               <PlanRow key={plan.id} plan={plan} />
             ))}
-            {drafts.map((plan) => (
-              <DraftRow key={plan.id} plan={plan} />
-            ))}
-          </tbody>
-        </table>
+              {drafts.map((plan) => (
+                <DraftRow key={plan.id} plan={plan} />
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </>
   );
@@ -72,9 +74,9 @@ function StatStrip({ stats }: { stats: InstructorStats }) {
   ];
 
   return (
-    <div className="tp-row" style={{ gap: 14, marginBottom: 22, alignItems: "stretch" }}>
+    <div className="tp-stat-strip">
       {cards.map((card) => (
-        <div key={card.label} className="tp-card" style={{ padding: "14px 18px", flex: 1 }}>
+        <div key={card.label} className="tp-card" style={{ padding: "14px 18px" }}>
           <div className="tp-eyebrow">{card.label}</div>
           <div
             style={{
@@ -114,7 +116,9 @@ function PlanRow({ plan }: { plan: PlanSummaryVM }) {
           >
             {getInitials(plan.studentName)}
           </div>
-          <div className="tp-col" style={{ gap: 2, lineHeight: 1.25 }}>
+          {/* The table already scrolls, so names read on one line rather than
+              wrapping into two inside a column that has room beside it. */}
+          <div className="tp-col" style={{ gap: 2, lineHeight: 1.25, whiteSpace: "nowrap" }}>
             <div style={{ fontWeight: 700, fontSize: 14 }}>{plan.studentName}</div>
             <div className="tp-tiny tp-mut">{plan.title}</div>
           </div>
@@ -198,7 +202,7 @@ function DraftRow({ plan }: { plan: PlanSummaryVM }) {
           >
             <PlusIcon size={12} />
           </div>
-          <div className="tp-col" style={{ gap: 2 }}>
+          <div className="tp-col" style={{ gap: 2, whiteSpace: "nowrap" }}>
             <div style={{ fontWeight: 700, fontSize: 14 }}>{plan.studentName}</div>
             <div className="tp-tiny tp-mut">{plan.title}</div>
           </div>

@@ -40,7 +40,7 @@ export function TopBar({ instructorName, mode = "list", title, subtitle, progres
 
       <div className="tp-row tp-gap-4">
         {mode === "detail" ? (
-          <div className="tp-row tp-gap-2" style={{ width: 220 }}>
+          <div className="tp-row tp-gap-2 tp-progress-inline">
             <div className="tp-bar" style={{ flex: 1 }}>
               <i style={{ width: `${progress}%` }} />
             </div>

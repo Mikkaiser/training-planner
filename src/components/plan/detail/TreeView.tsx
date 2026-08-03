@@ -51,7 +51,7 @@ export function TreeView({ plan }: { plan: PlanVM }) {
 
   return (
     <div>
-      <div className="tp-row" style={{ justifyContent: "space-between", marginBottom: 18, gap: 12 }}>
+      <div className="tp-row" style={{ justifyContent: "space-between", marginBottom: 18, gap: 12, flexWrap: "wrap" }}>
         <div className="tp-col">
           <div className="tp-eyebrow">Branching Roadmap</div>
           <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.02em" }}>

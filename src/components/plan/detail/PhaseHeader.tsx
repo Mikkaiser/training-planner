@@ -91,7 +91,7 @@ export function PhaseHeader({ phase, planId, expanded, onToggle }: PhaseHeaderPr
     return (
       <div
         className="tp-row tp-gap-3 tp-reveal-host"
-        style={{ padding: "14px 4px 18px", alignItems: "center" }}
+        style={{ padding: "14px 4px 18px", alignItems: "center", flexWrap: "wrap" }}
       >
         {body}
       </div>

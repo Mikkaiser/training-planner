@@ -40,7 +40,7 @@ export function UserMenu({ instructorName }: { instructorName: string }) {
         onClick={() => setOpen((value) => !value)}
         style={{ background: "none", border: "none", cursor: "pointer", font: "inherit", padding: 0 }}
       >
-        <span>{instructorName}</span>
+        <span className="tp-avatar-name">{instructorName}</span>
         <span className="av">{getInitials(instructorName)}</span>
       </button>
 

@@ -58,11 +58,8 @@ export default async function PlanListPage({ searchParams }: PlanListPageProps) 
     <main className="tp-page">
       <TopBar instructorName={instructorName} mode="list" />
 
-      <section className="tp-shell" style={{ padding: isTable ? "32px 40px 60px" : "36px 40px 60px" }}>
-        <div
-          className="tp-row"
-          style={{ justifyContent: "space-between", alignItems: "flex-end", gap: 16, marginBottom: isTable ? 24 : 28 }}
-        >
+      <section className="tp-shell tp-page-section">
+        <div className="tp-page-head">
           <div className="tp-col" style={{ gap: isTable ? 4 : 6 }}>
             {!isTable ? <div className="tp-eyebrow">WorldSkills · SD</div> : null}
             <h1 style={{ fontSize: isTable ? 28 : 34, fontWeight: 700, letterSpacing: "-0.025em", margin: 0 }}>
@@ -74,7 +71,7 @@ export default async function PlanListPage({ searchParams }: PlanListPageProps) 
             </div>
           </div>
 
-          <div className="tp-row tp-gap-2" style={{ flexWrap: "wrap", justifyContent: "flex-end" }}>
+          <div className="tp-head-actions">
             {isTable ? <ListFilters phases={phaseOptions} /> : null}
             <ViewSwitcher
               label="Plan list view"

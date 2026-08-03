@@ -70,7 +70,7 @@ export function PlanCreateModal({ open, onClose, templates }: PlanCreateModalPro
 
   return (
     <Modal open={open} onClose={onClose} ariaLabel="New training plan" width={520}>
-      <div style={{ padding: 28 }}>
+      <div className="tp-modal-pad">
         <div className="tp-row" style={{ justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
           <div className="tp-col" style={{ gap: 4 }}>
             <div className="tp-eyebrow">New plan</div>
