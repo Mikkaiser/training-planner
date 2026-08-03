@@ -81,6 +81,35 @@ every query and every server action filters or joins on `instructor_id`. When
 adding a data-access path, carry that check through, or you will expose other
 instructors' plans. `scripts/smoke.ts` asserts the isolation holds.
 
+### Tests
+
+Unit tests cover the pure logic — plan derivation, diagram geometry, the upload
+allowlist, view parsing. No database, no network:
+
+```bash
+pnpm test
+```
+
+Anything needing a database, a browser or the bucket runs separately. Start
+`pnpm dev` and the dev database first:
+
+```bash
+pnpm verify             # all four below
+pnpm verify:s3          # presigned upload/download round-trip against MinIO
+pnpm verify:flows       # drives the real app in a browser and asserts outcomes
+pnpm verify:responsive  # no horizontal overflow across routes x widths
+pnpm verify:orphans     # objects in the bucket with no exercise row (--prune to remove)
+pnpm verify:capture     # screenshots every view into .verify/ (--mobile, --all)
+```
+
+`verify:flows` and `verify:capture` authenticate by signing an Auth.js session
+cookie with `AUTH_SECRET`. That is test-side only — the application ships no
+development login bypass.
+
+**Do not run `pnpm build` while `pnpm dev` is running.** They share `.next`, and
+the browser suites will then fail in ways that look like real bugs. Restart dev
+against a clean `.next` first.
+
 ### Smoke test
 
 Runs against a live database and cleans up after itself:

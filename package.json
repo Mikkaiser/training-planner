@@ -20,7 +20,10 @@
     "verify:s3": "NODE_OPTIONS=--conditions=react-server tsx scripts/verify/s3-roundtrip.ts",
     "verify:flows": "tsx scripts/verify/flows.ts",
     "verify:orphans": "NODE_OPTIONS=--conditions=react-server tsx scripts/verify/orphans.ts",
-    "verify:responsive": "tsx scripts/verify/responsive.ts"
+    "verify:responsive": "tsx scripts/verify/responsive.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "verify": "pnpm verify:s3 && pnpm verify:flows && pnpm verify:responsive && pnpm verify:orphans"
   },
   "dependencies": {
     "@auth/pg-adapter": "^1.11.3",
@@ -65,6 +68,7 @@
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
     "tsx": "^4.21.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.10"
   }
 }

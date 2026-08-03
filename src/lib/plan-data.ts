@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { query, queryOne, TS } from "@/lib/db";
+import { compareByOrder } from "@/lib/plan-view-model";
 import { APP_ROUTES } from "@/lib/routes";
 import type { Block, Exercise, Gate, Phase, Plan, PlanWithPhases } from "@/lib/types";
 
@@ -177,17 +178,6 @@ export async function getPlanByIdForCurrentInstructor(id: string): Promise<PlanW
   return mapPlanTree([plan], phases, blocks, gates, exercises)[0];
 }
 
-/**
- * Ordering carries a tiebreak on top of order_index. createPhase/createBlock
- * derive order_index from the current length, so deleting an item and adding
- * another reuses a number; without the tiebreak two renders of identical data
- * could disagree on block order, which would shuffle gate numbers and the
- * subway map's station positions.
- */
-function byOrder<T extends { order_index: number; created_at: string; id: string }>(a: T, b: T): number {
-  return a.order_index - b.order_index || a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id);
-}
-
 function mapPlanTree(
   plans: Plan[],
   phases: Phase[],
@@ -198,12 +188,12 @@ function mapPlanTree(
   return plans.map((plan) => {
     const planPhases = phases
       .filter((phase) => phase.plan_id === plan.id)
-      .sort(byOrder)
+      .sort(compareByOrder)
       .map((phase) => ({
         ...phase,
         blocks: blocks
           .filter((block) => block.phase_id === phase.id)
-          .sort(byOrder)
+          .sort(compareByOrder)
           .map((block) => ({
             ...block,
             exercises: exercises.filter((exercise) => exercise.block_id === block.id),

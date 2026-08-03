@@ -91,6 +91,23 @@ export type PlanVM = {
 
 const EN_DASH = "–";
 
+/**
+ * Ordering for phases and blocks, with a tiebreak beyond order_index.
+ *
+ * createPhase/createBlock derive order_index from the current length, so
+ * deleting an item and adding another reuses a number. Without the tiebreak,
+ * two renders of identical data could disagree on order — which would shuffle
+ * gate numbers and move stations on the route map between reloads.
+ *
+ * Lives here rather than in plan-data so it can be tested without a database.
+ */
+export function compareByOrder<T extends { order_index: number; created_at: string; id: string }>(
+  a: T,
+  b: T,
+): number {
+  return a.order_index - b.order_index || a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id);
+}
+
 export function gateScopeLabel(index: number): string {
   return index <= 1 ? "Cumulative · Block 1" : `Cumulative · Blocks 1 ${EN_DASH} ${index}`;
 }
