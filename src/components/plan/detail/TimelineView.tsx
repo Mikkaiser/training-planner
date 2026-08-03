@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { createBlock } from "@/actions/blocks";
-import { createPhase } from "@/actions/phases";
+import { createBlock, reorderBlocks } from "@/actions/blocks";
+import { createPhase, reorderPhases } from "@/actions/phases";
+import { DragHandle, SortableItem, SortableList } from "@/components/plan/detail/Sortable";
 import { AddGateButton } from "@/components/plan/detail/AddGateButton";
 import { AddInline } from "@/components/plan/detail/AddInline";
 import { BlockCard } from "@/components/plan/detail/BlockCard";
@@ -29,17 +30,31 @@ export function TimelineView({ plan }: { plan: PlanVM }) {
 
   return (
     <div style={{ maxWidth: 720, margin: "0 auto" }}>
-      {plan.phases.map((phase) => (
-        <div key={phase.id} style={{ marginTop: 14 }}>
-          <PhaseHeader
-            phase={phase}
-            planId={plan.id}
-            expanded={Boolean(expanded[phase.id])}
-            onToggle={() => setExpanded((state) => ({ ...state, [phase.id]: !state[phase.id] }))}
-          />
-          {expanded[phase.id] ? <PhaseRail phase={phase} planId={plan.id} /> : null}
-        </div>
-      ))}
+      <SortableList
+        label="phases"
+        contextId={`phases-${plan.id}`}
+        ids={plan.phases.map((phase) => phase.id)}
+        onReorder={(orderedIds) =>
+          startTransition(async () => {
+            await reorderPhases({ planId: plan.id, orderedIds });
+          })
+        }
+      >
+        {plan.phases.map((phase) => (
+          <SortableItem key={phase.id} id={phase.id}>
+            <div style={{ marginTop: 14 }}>
+              <PhaseHeader
+                phase={phase}
+                planId={plan.id}
+                expanded={Boolean(expanded[phase.id])}
+                onToggle={() => setExpanded((state) => ({ ...state, [phase.id]: !state[phase.id] }))}
+                handle={<DragHandle label={`phase ${phase.title}`} />}
+              />
+              {expanded[phase.id] ? <PhaseRail phase={phase} planId={plan.id} /> : null}
+            </div>
+          </SortableItem>
+        ))}
+      </SortableList>
 
       <div className="tp-mt-4">
         <AddInline
@@ -91,32 +106,48 @@ function PhaseRail({ phase, planId }: { phase: PhaseVM; planId: string }) {
         />
       ) : null}
 
-      {phase.blocks.map((block) => (
-        <div key={block.id}>
-          <TimelineNode state={block.status}>
-            {block.status === "done" ? (
-              <CompactBlockRow block={block} planId={planId} />
-            ) : (
-              <BlockCard
-                block={block}
-                planId={planId}
-                phaseLabel={phaseLabel}
-                active={block.status === "current"}
-              />
-            )}
-          </TimelineNode>
+      <SortableList
+        label={`blocks in ${phase.title}`}
+        contextId={`blocks-${phase.id}`}
+        ids={phase.blocks.map((block) => block.id)}
+        onReorder={(orderedIds) =>
+          startTransition(async () => {
+            await reorderBlocks({ planId, phaseId: phase.id, orderedIds });
+          })
+        }
+      >
+        {phase.blocks.map((block) => (
+          <SortableItem key={block.id} id={block.id}>
+            <TimelineNode state={block.status}>
+              {block.status === "done" ? (
+                <CompactBlockRow
+                  block={block}
+                  planId={planId}
+                  handle={<DragHandle label={`block ${block.title}`} />}
+                />
+              ) : (
+                <BlockCard
+                  block={block}
+                  planId={planId}
+                  phaseLabel={phaseLabel}
+                  active={block.status === "current"}
+                  handle={<DragHandle label={`block ${block.title}`} />}
+                />
+              )}
+            </TimelineNode>
 
           {/* Gate dots stay hollow in the design regardless of the block
               before them — the filled dots mark blocks, not checkpoints. */}
-          <TimelineNode state="upcoming" small>
-            {block.gate ? (
-              <GateMarker gate={block.gate} planId={planId} />
-            ) : (
-              <AddGateButton planId={planId} blockId={block.id} />
-            )}
-          </TimelineNode>
-        </div>
-      ))}
+            <TimelineNode state="upcoming" small>
+              {block.gate ? (
+                <GateMarker gate={block.gate} planId={planId} />
+              ) : (
+                <AddGateButton planId={planId} blockId={block.id} />
+              )}
+            </TimelineNode>
+          </SortableItem>
+        ))}
+      </SortableList>
 
       <TimelineNode state="upcoming">
         <AddInline

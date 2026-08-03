@@ -106,9 +106,11 @@ pnpm verify:capture     # screenshots every view into .verify/ (--mobile, --all)
 cookie with `AUTH_SECRET`. That is test-side only — the application ships no
 development login bypass.
 
-**Do not run `pnpm build` while `pnpm dev` is running.** They share `.next`, and
-the browser suites will then fail in ways that look like real bugs. Restart dev
-against a clean `.next` first.
+To check the production build compiles while dev is running, use `pnpm
+build:check` — it writes to `.next-check` instead of the `.next` that `pnpm dev`
+serves from. Running plain `pnpm build` alongside dev leaves dev returning 404s
+for every chunk, and the browser suites then fail in ways that look like real
+bugs.
 
 ### Smoke test
 

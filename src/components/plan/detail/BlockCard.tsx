@@ -20,10 +20,12 @@ interface BlockCardProps {
   phaseLabel: string;
   /** The design gives only the current block the accent left border. */
   active?: boolean;
+  /** Drag grip, supplied by the sortable wrapper. */
+  handle?: React.ReactNode;
 }
 
 /** Design artboard: the expanded block card inside the current phase. */
-export function BlockCard({ block, planId, phaseLabel, active = false }: BlockCardProps) {
+export function BlockCard({ block, planId, phaseLabel, active = false, handle }: BlockCardProps) {
   const [pending, startTransition] = useTransition();
   const [uploadOpen, setUploadOpen] = useState(false);
 
@@ -66,13 +68,16 @@ export function BlockCard({ block, planId, phaseLabel, active = false }: BlockCa
           />
         </div>
 
-        <SelectPill
-          value={block.verbLevel}
-          options={VERB_LEVELS}
-          ariaLabel={`Verb level for ${block.title}`}
-          disabled={pending}
-          onChange={(verbLevel) => save({ verbLevel })}
-        />
+        <div className="tp-row tp-gap-2" style={{ flexShrink: 0 }}>
+          <SelectPill
+            value={block.verbLevel}
+            options={VERB_LEVELS}
+            ariaLabel={`Verb level for ${block.title}`}
+            disabled={pending}
+            onChange={(verbLevel) => save({ verbLevel })}
+          />
+          {handle}
+        </div>
       </div>
 
       {block.exercises.length > 0 ? (

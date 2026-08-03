@@ -11,11 +11,19 @@ import type { BlockVM } from "@/lib/plan-view-model";
  * being worked on gets a full card, so the eye lands on the current work
  * instead of scanning identical cards.
  */
-export function CompactBlockRow({ block, planId }: { block: BlockVM; planId: string }) {
+export function CompactBlockRow({
+  block,
+  planId,
+  handle,
+}: {
+  block: BlockVM;
+  planId: string;
+  handle?: React.ReactNode;
+}) {
   const [pending, startTransition] = useTransition();
 
   return (
-    <div className="tp-card" style={{ padding: "12px 16px", borderLeft: "3px solid var(--pos)" }}>
+    <div className="tp-card tp-reveal-host" style={{ padding: "12px 16px", borderLeft: "3px solid var(--pos)" }}>
       <div className="tp-row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12 }}>
         <div className="tp-col" style={{ gap: 4, minWidth: 0 }}>
           <InlineEdit
@@ -38,12 +46,15 @@ export function CompactBlockRow({ block, planId }: { block: BlockVM; planId: str
           />
           <Tag type={block.competenceType} className="tp-self-start" />
         </div>
-        <span
-          className="tp-pill tp-pill-mono"
-          style={{ background: "var(--pos-soft)", color: "var(--pos)", borderColor: "transparent" }}
-        >
-          {block.verbLevel}
-        </span>
+        <div className="tp-row tp-gap-2">
+          <span
+            className="tp-pill tp-pill-mono"
+            style={{ background: "var(--pos-soft)", color: "var(--pos)", borderColor: "transparent" }}
+          >
+            {block.verbLevel}
+          </span>
+          {handle}
+        </div>
       </div>
     </div>
   );

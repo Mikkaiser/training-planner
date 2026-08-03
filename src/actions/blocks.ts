@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { pool, queryOne } from "@/lib/db";
 import { collectStorageKeys, deleteObjects } from "@/lib/exercise-storage";
+import { isSameMembership } from "@/lib/reorder";
 import { planDetailRoute } from "@/lib/routes";
 import type { CompetenceType, GateStatus, VerbLevel } from "@/lib/types";
 
@@ -164,6 +165,75 @@ export async function deleteBlock(planId: string, blockId: string) {
 
   await deleteObjects(storageKeys);
   revalidatePath(planDetailRoute(planId));
+}
+
+/**
+ * Rewrites every block's order_index within one phase.
+ *
+ * Scoped to a phase on purpose: moving a block between phases is a different
+ * operation with different consequences (it changes which phase must be
+ * complete before the next begins), so a drag cannot do it by accident.
+ *
+ * Reordering shifts gate numbering, because a gate is identified by its block's
+ * position in the plan. That is intended — "Gate 7" means the checkpoint after
+ * the seventh block, not a fixed label.
+ */
+export async function reorderBlocks(input: { planId: string; phaseId: string; orderedIds: string[] }) {
+  const userId = await requireUserId();
+  if (input.orderedIds.length === 0) return;
+
+  const client = await pool.connect();
+
+  try {
+    await client.query("begin");
+
+    // The whole list must be supplied; a subset would leave the omitted blocks
+    // holding positions that no longer relate to their siblings. Comparing id
+    // sets also rejects a duplicate and an id borrowed from another phase.
+    const current = await client.query<{ id: string }>(
+      `select b.id
+         from blocks b
+         join phases ph on ph.id = b.phase_id
+         join training_plans tp on tp.id = ph.plan_id
+        where b.phase_id = $1 and tp.id = $2 and tp.instructor_id = $3`,
+      [input.phaseId, input.planId, userId],
+    );
+
+    if (!isSameMembership(current.rows.map((row) => row.id), input.orderedIds)) {
+      await client.query("rollback");
+      throw new Error("That ordering does not match the phase's blocks. Reload and try again.");
+    }
+
+    const updated = await client.query(
+      `update blocks b
+          set order_index = v.idx
+         from unnest($2::uuid[]) with ordinality as v(id, idx),
+              phases ph,
+              training_plans tp
+        where b.id = v.id
+          and b.phase_id = $1
+          and ph.id = b.phase_id
+          and tp.id = ph.plan_id
+          and tp.id = $3
+          and tp.instructor_id = $4`,
+      [input.phaseId, input.orderedIds, input.planId, userId],
+    );
+
+    if (updated.rowCount !== input.orderedIds.length) {
+      await client.query("rollback");
+      throw new Error("Block not found, or you do not have access to it.");
+    }
+
+    await client.query("commit");
+  } catch (error) {
+    await client.query("rollback").catch(() => undefined);
+    console.error("[reorderBlocks] failed", error);
+    throw error instanceof Error ? error : new Error("Failed to reorder blocks. Please try again.");
+  } finally {
+    client.release();
+  }
+
+  revalidatePath(planDetailRoute(input.planId));
 }
 
 /**

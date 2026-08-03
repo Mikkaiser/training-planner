@@ -49,3 +49,6 @@ next-env.d.ts
 
 # browser verification output
 /.verify/
+
+# verification build output (keeps pnpm dev's .next intact)
+/.next-check/

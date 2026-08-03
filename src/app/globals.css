@@ -721,6 +721,35 @@ a {
   transition: opacity 0.15s;
 }
 
+/* Drag handle. Same reveal treatment as the destructive buttons, because the
+   design draws no handles and they should not add permanent furniture. */
+.tp-grip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink-3);
+  /* Stops a touch drag from scrolling the page instead of moving the item. */
+  touch-action: none;
+}
+
+.tp-grip:hover {
+  background: rgba(28, 31, 51, 0.05);
+  color: var(--ink-2);
+}
+
+.tp-grip:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+  opacity: 1;
+}
+
 .tp-reveal-host:hover .tp-reveal,
 .tp-reveal-host:focus-within .tp-reveal,
 .tp-reveal:focus-visible {

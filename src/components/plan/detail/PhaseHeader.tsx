@@ -13,13 +13,15 @@ interface PhaseHeaderProps {
   planId: string;
   expanded: boolean;
   onToggle: () => void;
+  /** Drag grip, supplied by the sortable wrapper. */
+  handle?: React.ReactNode;
 }
 
 /**
  * Design: completed and locked phases collapse to a single summary row; the
  * current phase gets a larger, un-carded header above its timeline rail.
  */
-export function PhaseHeader({ phase, planId, expanded, onToggle }: PhaseHeaderProps) {
+export function PhaseHeader({ phase, planId, expanded, onToggle, handle }: PhaseHeaderProps) {
   const [pending, startTransition] = useTransition();
   const isCurrent = phase.status === "current";
 
@@ -35,6 +37,7 @@ export function PhaseHeader({ phase, planId, expanded, onToggle }: PhaseHeaderPr
 
   const body = (
     <>
+      {handle}
       <div className="tp-mono tp-tiny tp-mut" style={{ width: 30, flexShrink: 0, paddingLeft: isCurrent ? 8 : 0 }}>
         P{phase.index}
       </div>

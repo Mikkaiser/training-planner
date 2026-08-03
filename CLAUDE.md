@@ -50,16 +50,16 @@ Anything that needs a database, a browser or the bucket goes in
 - **A test that cannot fail is decoration.** When adding a significant rule,
   break it on purpose once and confirm the suite goes red.
 
-## Do not run `pnpm build` while `pnpm dev` is running
+## Use `pnpm build:check`, not `pnpm build`, while dev is running
 
-They share `.next`. Building under a running dev server leaves it serving pages
-with no stylesheet, and the browser suites then fail in ways that look like real
-layout and selector bugs. If `verify:flows` or `verify:responsive` start failing
-oddly, restart dev against a clean `.next` before believing them:
+`pnpm build` writes to `.next`, the same directory `pnpm dev` serves from.
+Running it under a live dev server leaves dev returning 404s for every chunk,
+and the browser suites then fail in ways that look convincingly like real layout
+and selector bugs.
 
-```bash
-rm -rf .next && pnpm dev
-```
+`pnpm build:check` builds into `.next-check` instead, so it is safe at any time.
+Reach for it whenever you just want to know the build compiles. If dev ever does
+get clobbered, `rm -rf .next && pnpm dev` restores it.
 
 ## Pure logic stays out of database modules
 

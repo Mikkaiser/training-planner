@@ -119,6 +119,47 @@ async function main(): Promise<void> {
       await page.getByText("Cumulative · Block 1").first().isVisible(),
     );
 
+    // ── Drag-to-reorder, driven from the keyboard ────────────────────────
+    // Keyboard rather than a synthetic mouse drag: dnd-kit's pointer sensor is
+    // notoriously flaky to script, and this also proves the feature is not
+    // mouse-only.
+    await page.getByRole("button", { name: "Add Block" }).first().click();
+    await page.getByLabel("Add Block").fill("Second Block");
+    await page.getByRole("button", { name: "Add", exact: true }).click();
+    await page.waitForSelector("text=Second Block", { timeout: 15_000 });
+
+    // InlineEdit renders the title as a button labelled "Block title: <value>…",
+    // so match on that prefix rather than a tag or an exact label.
+    const blockOrder = async () =>
+      page.$$eval('button[aria-label^="Block title:"]', (nodes) =>
+        nodes.map((node) => node.textContent?.trim() ?? ""),
+      );
+
+    const before = await blockOrder();
+    check("two blocks are present before reordering", before.length === 2, before.join(" | "));
+
+    await page.getByRole("button", { name: /Reorder block Verification Block/ }).focus();
+    // dnd-kit needs a render between pickup, move and drop; pressing the three
+    // keys back to back silently does nothing.
+    await page.keyboard.press("Space");
+    await page.waitForTimeout(400);
+    await page.keyboard.press("ArrowDown");
+    await page.waitForTimeout(400);
+    await page.keyboard.press("Space");
+    await page.waitForTimeout(1500);
+
+    await gotoAuthed(page, planPath);
+    const after = await blockOrder();
+    check(
+      "reordering blocks by keyboard persists",
+      after.length === 2 && after[0] !== before[0],
+      `${before.join(" | ")}  ->  ${after.join(" | ")}`,
+    );
+    check(
+      "gate numbering follows the new block order",
+      await page.getByText("Cumulative · Blocks 1 – 2").first().isVisible(),
+    );
+
     // ── Upload a real file to MinIO ──────────────────────────────────────
     const dir = mkdtempSync(join(tmpdir(), "tp-verify-"));
     const filePath = join(dir, "verification-brief.pdf");
@@ -152,7 +193,16 @@ async function main(): Promise<void> {
     await page.waitForSelector("text=Reopen", { timeout: 15_000 });
     const progressAfter = await page.locator("header .tp-mono").first().innerText();
     check("passing a gate moves the progress figure", progressBefore !== progressAfter, `${progressBefore} -> ${progressAfter}`);
-    check("progress reaches 100% when every gate passes", progressAfter.trim() === "100%", progressAfter);
+
+    // Pass whatever is still outstanding; the plan has two blocks by now.
+    for (let i = 0; i < 6; i += 1) {
+      const next = page.getByRole("button", { name: "Mark Passed" }).first();
+      if (!(await next.isVisible().catch(() => false))) break;
+      await next.click();
+      await page.waitForTimeout(700);
+    }
+    const progressComplete = (await page.locator("header .tp-mono").first().innerText()).trim();
+    check("progress reaches 100% when every gate passes", progressComplete === "100%", progressComplete);
 
     // ── All three detail views agree ─────────────────────────────────────
     const readings: string[] = [];
