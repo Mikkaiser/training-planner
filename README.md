@@ -38,6 +38,14 @@ openssl rand -base64 33
 Google OAuth needs `http://localhost:3000/api/auth/callback/google` in the
 authorized redirect URIs of your OAuth client, alongside the production one.
 
+#### Object storage
+
+Dev uses a separate MinIO bucket, `training-planner-media-dev`, with its own
+credentials scoped to that bucket alone. The bucket name and endpoint are pinned
+in `docker-compose.dev.yml`, so only `S3_ACCESS_KEY` and `S3_SECRET_KEY` belong
+in `.env.local`. Dev credentials are denied on the production bucket and vice
+versa, so a mistake in dev cannot reach live objects.
+
 ### Local development (without Docker)
 
 Needs a Postgres 17 instance you supply yourself:

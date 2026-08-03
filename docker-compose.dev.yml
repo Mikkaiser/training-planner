@@ -53,6 +53,14 @@ services:
       AUTH_TRUST_HOST: "true"
       NEXT_PUBLIC_APP_URL: http://localhost:3000
       NODE_ENV: development
+      # Dev must never write into the production bucket, so the bucket and
+      # endpoint are pinned here rather than left to .env.local. Credentials
+      # still come from .env.local, since they are secrets.
+      S3_ENDPOINT: https://s3.techknowledge.blog
+      S3_PUBLIC_ENDPOINT: https://s3.techknowledge.blog
+      S3_BUCKET: training-planner-media-dev
+      S3_REGION: us-east-1
+      S3_FORCE_PATH_STYLE: "true"
       # Bind mounts do not deliver inotify events on macOS or Windows.
       WATCHPACK_POLLING: "true"
     volumes:
