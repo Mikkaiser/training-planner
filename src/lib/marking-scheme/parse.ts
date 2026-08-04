@@ -11,10 +11,17 @@
  * work without changes: more rows between the same landmarks.
  */
 
-/** Column letters, as they appear in the sheet. */
-const COL = { A: 0, B: 1, C: 2, D: 3, E: 4, F: 5, I: 8, J: 9, K: 10 } as const;
+/**
+ * Column letters, as they appear in the sheet.
+ *
+ * Exported so build.ts writes into the very columns this reads from. Two
+ * private copies of these indices is exactly how a writer and a reader come to
+ * disagree about what column I means.
+ */
+export const COL = { A: 0, B: 1, C: 2, D: 3, E: 4, F: 5, I: 8, J: 9, K: 10 } as const;
 
-const HEADER_MARKER = "sub criteria id";
+/** Lower-cased: the header cell is compared case-insensitively. */
+export const HEADER_MARKER = "sub criteria id";
 const TOTAL_MARKER = "total";
 
 export type ParsedJudgementDescriptor = { score: number; descriptor: string };

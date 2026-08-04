@@ -1,0 +1,100 @@
+{
+  "skill": "Web Technologies",
+  "testProject": "TP01 — Bookshop Front End",
+  "expectedTotal": 20,
+  "criteria": [
+    {
+      "letter": "A",
+      "name": "Markup and Standards",
+      "subCriteria": [
+        {
+          "code": "A1",
+          "name": "Valid, semantic markup",
+          "aspects": [
+            {
+              "type": "measurement",
+              "description": "Every page passes the W3C HTML validator with no errors",
+              "extraDescription": "Deduct 0.5 for each page reporting one or more errors, to a minimum of 0",
+              "maxMark": 3
+            },
+            {
+              "type": "measurement",
+              "description": "Landmark elements (header, nav, main, footer) are used on every page",
+              "maxMark": 1
+            }
+          ]
+        },
+        {
+          "code": "A2",
+          "name": "Accessibility",
+          "aspects": [
+            {
+              "type": "measurement",
+              "description": "All informative images carry a meaningful alt attribute",
+              "extraDescription": "Deduct 0.25 per image missing or with an empty alt where content is conveyed",
+              "maxMark": 1.5
+            },
+            {
+              "type": "judgement",
+              "description": "Keyboard navigation across the whole site",
+              "extraDescription": "Judge with the mouse unplugged: tab order, visible focus, no traps",
+              "maxMark": 2.5,
+              "descriptors": [
+                "The site cannot be operated by keyboard alone; focus is lost or trapped",
+                "Most controls are reachable but focus is invisible or the order is erratic",
+                "All controls are reachable in a sensible order with visible focus; minor lapses",
+                "Every control is reachable in document order with clear focus and no traps"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "letter": "B",
+      "name": "Layout and Visual Design",
+      "subCriteria": [
+        {
+          "code": "B1",
+          "name": "Responsive behaviour",
+          "aspects": [
+            {
+              "type": "measurement",
+              "description": "No horizontal scrolling at 390px, 768px and 1440px",
+              "extraDescription": "Deduct 1 per width that overflows",
+              "maxMark": 3
+            },
+            {
+              "type": "judgement",
+              "description": "Quality of the layout across breakpoints",
+              "maxMark": 4,
+              "descriptors": [
+                "The layout breaks: content overlaps, is clipped, or is unreadable",
+                "The layout holds together but is cramped or awkward at some widths",
+                "The layout adapts well at every width, with consistent spacing",
+                "The layout is deliberate at every width; the design clearly anticipated each one"
+              ]
+            }
+          ]
+        },
+        {
+          "code": "B2",
+          "name": "Brand consistency",
+          "aspects": [
+            {
+              "type": "judgement",
+              "description": "Typography, colour and spacing against the supplied brand sheet",
+              "maxMark": 5,
+              "descriptors": [
+                "The brand sheet appears to have been ignored",
+                "Some brand elements are present, applied inconsistently",
+                "The brand is applied consistently with occasional deviation",
+                "The brand is applied faithfully throughout, including states and edge cases"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
