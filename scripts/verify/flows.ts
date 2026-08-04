@@ -11,14 +11,92 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import ExcelJS from "exceljs";
 import type { Page } from "playwright";
-import { makeSchemeGrid } from "../../tests/marking-scheme-fixture";
+import { buildSchemeGrid, type SchemeSpec } from "../../src/lib/marking-scheme/build";
 import { BASE_URL, gotoAuthed, withContext } from "./harness";
 
-/** Writes the shared fixture grid out as a real .xlsx for the upload path. */
+/**
+ * The same scheme the unit-test fixture describes, built through build.ts.
+ *
+ * Going through the builder rather than the hand-written fixture grid means
+ * this run also proves an authored workbook survives the real upload — which is
+ * the one thing the unit tests cannot show, since they never open a file. The
+ * parser tests keep using the hand-written grid, so the two are never checked
+ * only against each other.
+ */
+const FIXTURE_SPEC: SchemeSpec = {
+  skill: "Test Skill",
+  testProject: "Synthetic Project",
+  expectedTotal: 10,
+  criteria: [
+    {
+      letter: "A",
+      name: "First part",
+      subCriteria: [
+        {
+          code: "A1",
+          name: "Setup",
+          aspects: [
+            { type: "measurement", description: "Environment restored", maxMark: 1 },
+            {
+              type: "measurement",
+              description: "Files in place",
+              extraDescription: "Deduct 0.5 per missing file",
+              maxMark: 1,
+            },
+          ],
+        },
+        {
+          code: "A2",
+          name: "Queries",
+          aspects: [
+            { type: "measurement", description: "Query one correct", maxMark: 1.5 },
+            { type: "measurement", description: "Query two correct", maxMark: 0.5 },
+          ],
+        },
+      ],
+    },
+    {
+      letter: "B",
+      name: "Second part",
+      subCriteria: [
+        {
+          code: "B1",
+          name: "Behaviour",
+          aspects: [
+            { type: "measurement", description: "Application starts", maxMark: 2 },
+            { type: "measurement", description: "Errors handled", maxMark: 1 },
+          ],
+        },
+        {
+          code: "B2",
+          name: "Presentation",
+          aspects: [
+            {
+              type: "judgement",
+              description: "Overall visual quality",
+              maxMark: 3,
+              descriptors: [
+                "Cluttered and unreadable",
+                "Readable but plain",
+                "Clear and well aligned",
+                "Polished and consistent",
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  ],
+};
+
+/** Writes the fixture scheme out as a real .xlsx for the upload path. */
 async function writeSchemeWorkbook(path: string): Promise<void> {
+  const built = buildSchemeGrid(FIXTURE_SPEC);
+  if (!built.ok) throw new Error(`the fixture spec no longer builds:\n${built.errors.join("\n")}`);
+
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet("CIS Marking Scheme Import");
-  for (const line of makeSchemeGrid()) sheet.addRow(line);
+  for (const line of built.grid) sheet.addRow(line);
   await workbook.xlsx.writeFile(path);
 }
 

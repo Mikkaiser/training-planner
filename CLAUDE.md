@@ -29,6 +29,11 @@ it covers the parts of this app where a mistake is silent rather than loud:
   marking sheet that looks right and marks the wrong thing.
 - `src/lib/assessment-view-model.ts` — the marks and totals. A slip here
   misreports a competitor's score with nothing looking wrong on screen.
+- `src/lib/marking-scheme/build.ts` — writing a workbook the parser can read
+  back. Test it by round-tripping through `parseMarkingScheme` rather than by
+  asserting cell contents: the contract is that nothing is lost, not that row 9
+  looks a particular way. The parser tests keep using the hand-written fixture
+  grid so the two are never checked only against each other.
 
 **Never commit a real marking scheme.** They are unreleased competition
 material and this repository is on GitHub. `tests/marking-scheme-fixture.ts`

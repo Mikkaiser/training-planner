@@ -52,3 +52,8 @@ next-env.d.ts
 
 # verification build output (keeps pnpm dev's .next intact)
 /.next-check/
+
+# marking scheme workbooks. Real ones are unreleased competition material and
+# this repo is public; built ones are reproducible from their .json spec. A
+# `git add -A` after `pnpm scheme:build` must not be able to leak one.
+*.xlsx
