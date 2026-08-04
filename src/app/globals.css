@@ -721,6 +721,132 @@ a {
   transition: opacity 0.15s;
 }
 
+/* ── Top-level navigation ──────────────────────────────────────────
+   The design has a single screen family and so draws no nav. These are kept
+   quiet — mono, small, muted — so the bar still reads as the design's, with
+   only the current section in full ink. */
+.tp-nav {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.tp-nav-link {
+  font-family: var(--font-mono), "JetBrains Mono", monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  padding: 4px 0;
+  border-bottom: 1.5px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.tp-nav-link:hover {
+  color: var(--ink-2);
+}
+
+.tp-nav-link[aria-current="page"] {
+  color: var(--ink);
+  border-bottom-color: var(--accent);
+}
+
+/* Marking screen: one aspect. */
+.tp-aspect {
+  display: flex;
+  gap: 14px;
+  padding: 14px 16px;
+  border-top: 1px solid var(--border);
+  align-items: flex-start;
+}
+
+.tp-aspect:first-child {
+  border-top: none;
+}
+
+.tp-aspect-marked {
+  background: rgba(219, 253, 107, 0.06);
+}
+
+/* The score ladder on a judgement aspect. */
+.tp-judge {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.tp-judge-option {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: var(--ink);
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.tp-judge-option:hover {
+  border-color: var(--border-strong);
+}
+
+.tp-judge-option[aria-pressed="true"] {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.tp-judge-score {
+  font-family: var(--font-mono), monospace;
+  font-size: 11px;
+  font-weight: 700;
+  width: 16px;
+  flex-shrink: 0;
+  color: var(--ink-2);
+}
+
+.tp-judge-option[aria-pressed="true"] .tp-judge-score {
+  color: var(--ink);
+}
+
+/* Numeric mark entry. */
+.tp-mark-input {
+  width: 68px;
+  text-align: right;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-family: var(--font-mono), monospace;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--surface);
+  outline: none;
+}
+
+.tp-mark-input:focus {
+  border: 1.5px solid var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+@media (max-width: 720px) {
+  .tp-aspect {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .tp-nav {
+    gap: 12px;
+  }
+}
+
 /* Drag handle. Same reveal treatment as the destructive buttons, because the
    design draws no handles and they should not add permanent furniture. */
 .tp-grip {
