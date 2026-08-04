@@ -15,16 +15,42 @@ The build re-opens what it wrote using the same reader the upload uses
 the spec, and **deletes the file if anything changed**. So a build that succeeds
 is a file that will import — that is the whole point of going through it.
 
+## First: ask what the test project is
+
+**A marking scheme marks a specific brief. Never invent one.** Stop and ask the
+user, then wait for the answer. A scheme written against an imagined test
+project awards marks for work nobody was asked to do — and nothing about the
+finished spreadsheet shows that this is what happened. It looks exactly as
+authoritative as a real one.
+
+Ask for at least:
+
+| | |
+| --- | --- |
+| **The brief** | What the competitor must build, and what they are handed to start from |
+| **The skill** | Sets the vocabulary, and what can honestly be called measurable |
+| **Total marks** | 100 for a WorldSkills scheme — set `expectedTotal` to it |
+| **Scope** | A full competition scheme, one module or day, or a short practice one |
+
+Marks follow the brief's own weighting: if the competitor is given four hours on
+the API and one on the styling, a scheme that spends 40 marks on styling is
+wrong however well written each aspect is. Ask about time and emphasis if the
+brief does not say.
+
+If the answer is thin, draft from what you have and **say which aspects you
+inferred**, so they can be corrected. Do not quietly fill the gaps.
+
 ## Workflow
 
-1. Write a spec. Start from [examples/example-scheme.json](examples/example-scheme.json).
-2. Build it, from the repo root:
+1. Get the brief (above).
+2. Write a spec. Start from [examples/example-scheme.json](examples/example-scheme.json).
+3. Build it, from the repo root:
 
 ```bash
 pnpm scheme:build path/to/scheme.json
 ```
 
-3. Upload the `.xlsx` at **/assessments**.
+4. Upload the `.xlsx` at **/assessments**.
 
 Keep the `.json` beside the `.xlsx`: it is the editable source, the workbook is a
 build output. To change a scheme, edit the JSON and rebuild with `--force`.
