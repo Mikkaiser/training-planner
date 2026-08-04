@@ -39,6 +39,14 @@ it covers the parts of this app where a mistake is silent rather than loud:
 material and this repository is on GitHub. `tests/marking-scheme-fixture.ts`
 builds a synthetic workbook in the same shape; use that. To check a real file,
 `pnpm verify:scheme <path>` parses it in place without copying it anywhere.
+`*.xlsx` is gitignored so a `git add -A` after a build cannot leak one.
+
+**The authoring skill that drives `pnpm scheme:build` is user-level**, at
+`~/.claude/skills/marking-scheme/`, not in this repo — schemes get written
+wherever the competition files live, which is never inside a checkout. Its
+wrapper scripts shell back in here, so `build.ts` and `parse.ts` remain the only
+definition of the format. Changing either means checking that skill still
+describes what the code does.
 
 **`verify:orphans` must know every table that owns an S3 object.** It compares
 the bucket against the storage keys it queries, so a table missing from that
