@@ -24,7 +24,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "verify": "pnpm verify:s3 && pnpm verify:flows && pnpm verify:responsive && pnpm verify:orphans",
-    "build:check": "NEXT_DIST_DIR=.next-check next build"
+    "build:check": "NEXT_DIST_DIR=.next-check next build",
+    "verify:scheme": "NODE_OPTIONS=--conditions=react-server tsx scripts/verify/scheme.ts"
   },
   "dependencies": {
     "@auth/pg-adapter": "^1.11.3",
@@ -40,6 +41,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "exceljs": "^4.4.0",
     "framer-motion": "^12.38.0",
     "lucide-react": "^1.8.0",
     "next": "14.2.35",

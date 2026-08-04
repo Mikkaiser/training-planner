@@ -24,6 +24,20 @@ it covers the parts of this app where a mistake is silent rather than loud:
 - `src/lib/view-modes.ts` — view parsing. The input comes from a URL and a
   non-HttpOnly cookie, so both are attacker-controlled.
 - `src/lib/utils.ts` — formatting helpers.
+- `src/lib/marking-scheme/parse.ts` — reading a CIS marking scheme workbook.
+  Everything the assessor sees comes from it, so a silent misread produces a
+  marking sheet that looks right and marks the wrong thing.
+- `src/lib/assessment-view-model.ts` — the marks and totals. A slip here
+  misreports a competitor's score with nothing looking wrong on screen.
+
+**Never commit a real marking scheme.** They are unreleased competition
+material and this repository is on GitHub. `tests/marking-scheme-fixture.ts`
+builds a synthetic workbook in the same shape; use that. To check a real file,
+`pnpm verify:scheme <path>` parses it in place without copying it anywhere.
+
+**`verify:orphans` must know every table that owns an S3 object.** It compares
+the bucket against the storage keys it queries, so a table missing from that
+query makes its live files look orphaned — and `--prune` would delete them.
 
 Use the builders in `tests/factories.ts` rather than hand-rolling a plan, so a
 test describes a plan the way `plan-data.ts` actually returns one.

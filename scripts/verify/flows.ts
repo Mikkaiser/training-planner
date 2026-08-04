@@ -9,8 +9,27 @@
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import ExcelJS from "exceljs";
 import type { Page } from "playwright";
+import { makeSchemeGrid } from "../../tests/marking-scheme-fixture";
 import { BASE_URL, gotoAuthed, withContext } from "./harness";
+
+/** Writes the shared fixture grid out as a real .xlsx for the upload path. */
+async function writeSchemeWorkbook(path: string): Promise<void> {
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet("CIS Marking Scheme Import");
+  for (const line of makeSchemeGrid()) sheet.addRow(line);
+  await workbook.xlsx.writeFile(path);
+}
+
+/** A valid workbook that is not a marking scheme, to prove import refuses it. */
+async function writeJunkWorkbook(path: string): Promise<void> {
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet("Sheet1");
+  sheet.addRow(["Shopping list"]);
+  sheet.addRow(["Milk", "2"]);
+  await workbook.xlsx.writeFile(path);
+}
 
 let passed = 0;
 let failed = 0;
@@ -357,6 +376,65 @@ async function main(): Promise<void> {
       );
       await stranger.close();
     }
+
+    // ── Assessment guide ─────────────────────────────────────────────────
+    // The workbook is generated here from the shared fixture rather than
+    // committed: real marking schemes are unreleased competition material.
+    const schemePath = join(dir, "synthetic-marking-scheme.xlsx");
+    await writeSchemeWorkbook(schemePath);
+
+    await gotoAuthed(page, "/assessments");
+    check("the assessments section is reachable from the nav", await page.getByRole("link", { name: "Assessments" }).isVisible());
+
+    await page.setInputFiles('input[type="file"]', schemePath);
+    await page.waitForURL(/\/assessments\/[0-9a-f-]{36}/, { timeout: 60_000 });
+    const schemeBody = await page.locator("body").innerText();
+
+    check("the imported scheme shows its criteria", schemeBody.includes("First part") && schemeBody.includes("Second part"));
+    check("the imported scheme shows a deduction rule", schemeBody.includes("Deduct 0.5 per missing file"));
+    check("the imported scheme shows a judgement aspect", schemeBody.includes("Overall visual quality"));
+
+    await page.getByRole("button", { name: "Start marking" }).first().click();
+    await page.getByRole("button", { name: "Start marking" }).last().click();
+    await page.waitForURL(/\/assessments\/runs\/[0-9a-f-]{36}/, { timeout: 30_000 });
+    const runPath = new URL(page.url()).pathname;
+
+    // Full marks on a 1-mark measurement aspect, then judgement 2 of 3 on a
+    // 3-mark aspect: 1 + 2 = 3 out of the fixture's 10.
+    await page.getByRole("button", { name: "Full" }).first().click();
+    await page.waitForTimeout(600);
+    await page.getByRole("button", { name: /^Score 2:/ }).first().click();
+    await page.waitForTimeout(900);
+
+    await gotoAuthed(page, runPath);
+    const header = (await page.locator(".tp-card").first().innerText()).replace(/\s+/g, " ");
+    check("the running total matches the hand calculation", header.includes("3 / 10"), header.slice(0, 90));
+    check("the marked count reflects both entries", header.includes("2 / 7"), header.slice(0, 90));
+
+    // Comments persist independently of the mark.
+    await page.getByRole("button", { name: "Add a comment" }).first().click();
+    await page.getByRole("textbox", { name: /^Comment on/ }).first().fill("Checked against the brief.");
+    await page.waitForTimeout(1200);
+    await gotoAuthed(page, runPath);
+    // A textarea's value is not part of innerText, so this has to read the
+    // control itself — checking the page text would pass on an empty box.
+    const savedComment = await page
+      .getByRole("textbox", { name: /^Comment on/ })
+      .first()
+      .inputValue()
+      .catch(() => "");
+    check("an aspect comment persists", savedComment === "Checked against the brief.", savedComment);
+
+    // A workbook that is not a marking scheme must be refused, not half-imported.
+    const junkPath = join(dir, "not-a-scheme.xlsx");
+    await writeJunkWorkbook(junkPath);
+    await gotoAuthed(page, "/assessments");
+    await page.setInputFiles('input[type="file"]', junkPath);
+    await page.waitForTimeout(2500);
+    check(
+      "a workbook that is not a marking scheme is refused",
+      (await page.locator("body").innerText()).includes("Sub Criteria ID"),
+    );
 
     // ── Clean up: remove both plans through the UI ───────────────────────
     for (const path of [clonePath, planPath]) {

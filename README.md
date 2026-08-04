@@ -19,15 +19,20 @@ App on http://localhost:3000, database on `127.0.0.1:5437`.
 itself, overriding `.env.local`, so a stray production value in that file cannot
 point your dev server at the live database.
 
-The migrations in `db/migrations/` are mounted into the Postgres entrypoint and
-applied automatically the first time the volume is created. They do not re-run
-afterwards. To pick up a changed migration, recreate the volume:
+Apply the schema with the migration runner:
 
 ```bash
-docker compose -f docker-compose.dev.yml down -v
+pnpm migrate
 ```
 
-That wipes the dev database.
+It records each file in `schema_migrations`, runs it in a transaction, and is
+safe to re-run — it skips whatever is already applied. `db/migrations/` is
+deliberately **not** mounted into the Postgres entrypoint: that hook only fires
+on the first boot of an empty volume, so having both would mean two mechanisms
+applying the same files with no shared record of what ran.
+
+To start over: `docker compose -f docker-compose.dev.yml down -v`, then
+`pnpm migrate` again. That wipes the dev database.
 
 Generate a secret with:
 
@@ -52,8 +57,7 @@ Needs a Postgres 17 instance you supply yourself:
 
 ```bash
 pnpm install
-psql "$DATABASE_URL" -f db/migrations/0001_init.sql
-psql "$DATABASE_URL" -f db/migrations/0002_authjs.sql
+pnpm migrate
 pnpm dev
 ```
 
@@ -65,8 +69,11 @@ pnpm dev
 | `db/seeds/` | One-off, environment-specific data. Not applied automatically. |
 | `supabase/migrations/` | Historical, from before the Supabase migration. Kept for reference only, do not run. |
 
-There is no migration runner. Files are applied manually in production and by
-the Postgres entrypoint in dev.
+`pnpm migrate` is the only way migrations are applied, in every environment.
+The production deploy runs it in a one-off container before the web container is
+recreated — new code against an old schema fails on every request, whereas old
+code against a newly migrated schema keeps working for the seconds until it is
+replaced.
 
 ### Authentication
 
@@ -98,8 +105,9 @@ pnpm verify             # all four below
 pnpm verify:s3          # presigned upload/download round-trip against MinIO
 pnpm verify:flows       # drives the real app in a browser and asserts outcomes
 pnpm verify:responsive  # no horizontal overflow across routes x widths
-pnpm verify:orphans     # objects in the bucket with no exercise row (--prune to remove)
+pnpm verify:orphans     # bucket objects no row points at (--prune to remove)
 pnpm verify:capture     # screenshots every view into .verify/ (--mobile, --all)
+pnpm verify:scheme <f>  # parses a marking scheme workbook in place and prints what it found
 ```
 
 `verify:flows` and `verify:capture` authenticate by signing an Auth.js session

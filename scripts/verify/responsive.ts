@@ -47,6 +47,7 @@ async function main(): Promise<void> {
       { label: "detail · tree", path: `${hrefs[0]}?view=tree` },
       { label: "detail · route", path: `${hrefs[0]}?view=route` },
       { label: "empty roadmap", path: hrefs[hrefs.length - 1] },
+      { label: "assessments library", path: "/assessments" },
       { label: "login", path: "/login" },
     ];
 

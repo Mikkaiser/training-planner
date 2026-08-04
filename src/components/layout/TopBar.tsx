@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MainNav } from "@/components/layout/MainNav";
 import { UserMenu } from "@/components/layout/UserMenu";
 import { BackArrowIcon } from "@/components/ui/icons";
 import { APP_ROUTES } from "@/lib/routes";
@@ -27,9 +28,12 @@ export function TopBar({
   return (
     <header className="tp-topbar">
       {mode === "list" ? (
-        <div className="tp-logo">
-          <div className="tp-logo-mark tp-mono">T</div>
-          <span>Training Planner</span>
+        <div className="tp-row tp-gap-4" style={{ minWidth: 0 }}>
+          <Link href={APP_ROUTES.home} className="tp-logo">
+            <div className="tp-logo-mark tp-mono">T</div>
+            <span>Training Planner</span>
+          </Link>
+          <MainNav />
         </div>
       ) : (
         <div className="tp-row tp-gap-3">

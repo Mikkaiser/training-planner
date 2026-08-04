@@ -20,7 +20,13 @@ async function main(): Promise<void> {
   const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 1 });
 
   try {
-    const { rows } = await pool.query<{ storage_key: string }>("select storage_key from exercises");
+    // Every table that owns an object must be listed here. A missing one makes
+    // its live files look orphaned, and --prune would then delete them.
+    const { rows } = await pool.query<{ storage_key: string }>(
+      `select storage_key from exercises where storage_key is not null
+       union all
+       select storage_key from assessment_schemes where storage_key is not null`,
+    );
     const known = new Set(rows.map((row) => row.storage_key));
 
     const keys: string[] = [];
