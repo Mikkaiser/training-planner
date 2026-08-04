@@ -436,6 +436,34 @@ async function main(): Promise<void> {
       (await page.locator("body").innerText()).includes("Sub Criteria ID"),
     );
 
+    // ── The competitor's roadmap surfaces their marks ────────────────────
+    await gotoAuthed(page, planPath);
+    check(
+      "the roadmap has an assessments panel",
+      (await page.locator("body").innerText()).includes("No test projects marked yet"),
+    );
+
+    await page.getByRole("button", { name: "Mark a test project" }).click();
+    await page.getByRole("button", { name: "Start marking" }).click();
+    await page.waitForURL(/\/assessments\/runs\/[0-9a-f-]{36}/, { timeout: 30_000 });
+
+    // 1 of 1 on the first measurement aspect, out of the fixture's 10.
+    await page.getByRole("button", { name: "Full" }).first().click();
+    await page.waitForTimeout(900);
+
+    await gotoAuthed(page, planPath);
+    const panel = (await page.locator("body").innerText()).replace(/\s+/g, " ");
+    check("the roadmap shows the run's score", panel.includes("1 / 10"), panel.slice(panel.indexOf("Assessments"), panel.indexOf("Assessments") + 120));
+    check(
+      "a partially marked run is not reported as a percentage",
+      panel.includes("In progress"),
+      "a partial total is not a score and must not read as one",
+    );
+    check(
+      "the roadmap names the test project marked",
+      panel.includes("Synthetic Project"),
+    );
+
     // ── Clean up: remove both plans through the UI ───────────────────────
     for (const path of [clonePath, planPath]) {
       await gotoAuthed(page, path);

@@ -3,6 +3,7 @@ import { TopBar } from "@/components/layout/TopBar";
 import { PlanDetail } from "@/components/plan/PlanDetail";
 import { PlanIdentity } from "@/components/plan/detail/PlanIdentity";
 import { ViewSwitcher } from "@/components/plan/ViewSwitcher";
+import { getAssessmentsForPlan, getSchemeOptions } from "@/lib/assessment-data";
 import { getInstructorName, getPlanByIdForCurrentInstructor } from "@/lib/plan-data";
 import { buildPlanVM } from "@/lib/plan-view-model";
 import {
@@ -22,9 +23,11 @@ interface PlanPageProps {
 export default async function PlanPage({ params, searchParams }: PlanPageProps) {
   const view = parseDetailView(searchParams[VIEW_PARAM], cookies().get(DETAIL_VIEW_COOKIE)?.value);
 
-  const [plan, instructorName] = await Promise.all([
+  const [plan, instructorName, assessments, schemes] = await Promise.all([
     getPlanByIdForCurrentInstructor(params.id),
     getInstructorName(),
+    getAssessmentsForPlan(params.id),
+    getSchemeOptions(),
   ]);
 
   const vm = buildPlanVM(plan);
@@ -48,7 +51,7 @@ export default async function PlanPage({ params, searchParams }: PlanPageProps) 
         )}
       </TopBar>
 
-      <PlanDetail plan={vm} view={view} />
+      <PlanDetail plan={vm} view={view} assessments={assessments} schemes={schemes} />
     </main>
   );
 }

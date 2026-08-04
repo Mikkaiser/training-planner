@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { query, queryOne, TS } from "@/lib/db";
 import { getCurrentUserOrRedirect } from "@/lib/plan-data";
+import { summariseRun, type RunSummary, type ScorableAspect } from "@/lib/assessment-view-model";
 import type {
   AssessmentAspect,
   AssessmentCriterion,
@@ -138,6 +139,97 @@ export async function getRunsForScheme(schemeId: string): Promise<AssessmentRunS
       order by r.created_at desc`,
     [schemeId, user.id],
   );
+}
+
+export type PlanAssessment = {
+  runId: string;
+  schemeId: string;
+  testProject: string;
+  label: string | null;
+  createdAt: string;
+} & RunSummary;
+
+/**
+ * A competitor's marking runs, with their headline figures.
+ *
+ * The totals are computed with summariseRun rather than in SQL: the judgement
+ * rule (score / 3 x max) lives in one place, and a second copy in a query is
+ * how the roadmap and the marking screen would come to disagree.
+ */
+export async function getAssessmentsForPlan(planId: string): Promise<PlanAssessment[]> {
+  const user = await getCurrentUserOrRedirect();
+
+  const runs = await query<{
+    id: string;
+    scheme_id: string;
+    test_project: string;
+    label: string | null;
+    created_at: string;
+  }>(
+    `select r.id, r.scheme_id, s.test_project, r.label, ${TS("r.created_at", "created_at")}
+       from assessment_runs r
+       join assessment_schemes s on s.id = r.scheme_id
+      where r.plan_id = $1 and r.instructor_id = $2
+      order by r.created_at desc`,
+    [planId, user.id],
+  );
+
+  if (runs.length === 0) return [];
+
+  const schemeIds = [...new Set(runs.map((run) => run.scheme_id))];
+  const runIds = runs.map((run) => run.id);
+
+  const [aspects, marks] = await Promise.all([
+    query<ScorableAspect & { scheme_id: string }>(
+      `select a.id, a.type, a.max_mark::float8 as max_mark, c.scheme_id
+         from assessment_aspects a
+         join assessment_sub_criteria sc on sc.id = a.sub_criterion_id
+         join assessment_criteria c on c.id = sc.criterion_id
+        where c.scheme_id = any($1::uuid[])`,
+      [schemeIds],
+    ),
+    query<AssessmentMark>(
+      `select id, run_id, aspect_id, awarded::float8 as awarded, judgement_score, comment
+         from assessment_marks where run_id = any($1::uuid[])`,
+      [runIds],
+    ),
+  ]);
+
+  const aspectsByScheme = new Map<string, ScorableAspect[]>();
+  for (const aspect of aspects) {
+    const list = aspectsByScheme.get(aspect.scheme_id) ?? [];
+    list.push({ id: aspect.id, type: aspect.type, max_mark: aspect.max_mark });
+    aspectsByScheme.set(aspect.scheme_id, list);
+  }
+
+  const marksByRun = new Map<string, AssessmentMark[]>();
+  for (const mark of marks) {
+    const list = marksByRun.get(mark.run_id) ?? [];
+    list.push(mark);
+    marksByRun.set(mark.run_id, list);
+  }
+
+  return runs.map((run) => ({
+    runId: run.id,
+    schemeId: run.scheme_id,
+    testProject: run.test_project,
+    label: run.label,
+    createdAt: run.created_at,
+    ...summariseRun(aspectsByScheme.get(run.scheme_id) ?? [], marksByRun.get(run.id) ?? []),
+  }));
+}
+
+/** Schemes offered when starting a run from a competitor's roadmap. */
+export async function getSchemeOptions(): Promise<{ id: string; testProject: string; totalMax: number }[]> {
+  const user = await getCurrentUserOrRedirect();
+
+  const rows = await query<{ id: string; test_project: string; total_max: number }>(
+    `select id, test_project, total_max::float8 as total_max
+       from assessment_schemes where instructor_id = $1 order by created_at desc`,
+    [user.id],
+  );
+
+  return rows.map((row) => ({ id: row.id, testProject: row.test_project, totalMax: row.total_max }));
 }
 
 export async function getRunById(
