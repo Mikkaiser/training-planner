@@ -51,6 +51,12 @@ export function TopBar({
               {subtitle ? <div className="tp-tiny tp-mut">{subtitle}</div> : null}
             </div>
           )}
+          {/* The detail bar carried no nav at first, which left the roadmap a
+              dead end: the only way to Assessments was to go back out to the
+              plan list and notice the link there. */}
+          <div className="tp-nav-detail">
+            <MainNav />
+          </div>
         </div>
       )}
 

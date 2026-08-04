@@ -3,7 +3,7 @@
  * competitor's score without anything looking wrong on screen.
  */
 import { describe, expect, it } from "vitest";
-import { awardedFor, buildAssessmentRunVM, isMarked } from "@/lib/assessment-view-model";
+import { awardedFor, buildAssessmentRunVM, isMarked, summariseRun } from "@/lib/assessment-view-model";
 import type { AssessmentAspect, AssessmentMark, AssessmentScheme } from "@/lib/types";
 
 const aspect = (over: Partial<AssessmentAspect> = {}): AssessmentAspect => ({
@@ -151,6 +151,58 @@ describe("isMarked", () => {
 
   it("does not count a comment on its own as a mark", () => {
     expect(isMarked(aspect(), mark({ comment: "looked at this" }))).toBe(false);
+  });
+});
+
+describe("summariseRun", () => {
+  // Used by the panel on a competitor's roadmap, where loading the whole scheme
+  // tree would be wasteful. It must agree with the marking screen exactly.
+  const aspects = [
+    { id: "a1", type: "measurement" as const, max_mark: 1 },
+    { id: "a2", type: "measurement" as const, max_mark: 3 },
+    { id: "b1", type: "measurement" as const, max_mark: 3 },
+    { id: "b2", type: "judgement" as const, max_mark: 3 },
+  ];
+
+  it("agrees with the full view-model on the same data", () => {
+    const marks = [
+      mark({ aspect_id: "a1", awarded: 1 }),
+      mark({ aspect_id: "a2", awarded: 1.5 }),
+      mark({ aspect_id: "b1", awarded: 3 }),
+      mark({ aspect_id: "b2", judgement_score: 2 }),
+    ];
+    const full = buildAssessmentRunVM(makeScheme(), marks);
+    const summary = summariseRun(aspects, marks);
+
+    expect(summary.awarded).toBe(full.awarded);
+    expect(summary.maxMark).toBe(full.maxMark);
+    expect(summary.percentage).toBe(full.percentage);
+    expect(summary.markedCount).toBe(full.markedCount);
+  });
+
+  it("is zero with nothing marked but still reports the maximum", () => {
+    const summary = summariseRun(aspects, []);
+    expect(summary.awarded).toBe(0);
+    expect(summary.maxMark).toBe(10);
+    expect(summary.percentage).toBe(0);
+    expect(summary.isComplete).toBe(false);
+  });
+
+  it("is complete only when every aspect has an answer", () => {
+    const partial = summariseRun(aspects, [mark({ aspect_id: "a1", awarded: 1 })]);
+    expect(partial.isComplete).toBe(false);
+
+    const all = summariseRun(aspects, [
+      mark({ aspect_id: "a1", awarded: 0 }),
+      mark({ aspect_id: "a2", awarded: 0 }),
+      mark({ aspect_id: "b1", awarded: 0 }),
+      mark({ aspect_id: "b2", judgement_score: 0 }),
+    ]);
+    expect(all.isComplete).toBe(true);
+  });
+
+  it("does not divide by zero on a scheme with no aspects", () => {
+    expect(summariseRun([], []).percentage).toBe(0);
   });
 });
 

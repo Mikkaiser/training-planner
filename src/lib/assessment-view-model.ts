@@ -66,7 +66,10 @@ export type AssessmentRunVM = {
  * A judgement mark is always derived, never stored, so re-scoring an aspect
  * cannot leave a stale number behind.
  */
-export function awardedFor(aspect: AssessmentAspect, mark: AssessmentMark | null): number {
+/** Only the two fields scoring depends on, so a summary need not load the tree. */
+export type ScorableAspect = Pick<AssessmentAspect, "id" | "type" | "max_mark">;
+
+export function awardedFor(aspect: Pick<AssessmentAspect, "type" | "max_mark">, mark: AssessmentMark | null): number {
   if (!mark) return 0;
 
   if (aspect.type === "judgement") {
@@ -81,9 +84,53 @@ export function awardedFor(aspect: AssessmentAspect, mark: AssessmentMark | null
 }
 
 /** True once the aspect has an answer — a deliberate zero counts as marked. */
-export function isMarked(aspect: AssessmentAspect, mark: AssessmentMark | null): boolean {
+export function isMarked(aspect: Pick<AssessmentAspect, "type">, mark: AssessmentMark | null): boolean {
   if (!mark) return false;
   return aspect.type === "judgement" ? mark.judgement_score !== null : mark.awarded !== null;
+}
+
+export type RunSummary = {
+  awarded: number;
+  maxMark: number;
+  percentage: number;
+  markedCount: number;
+  aspectCount: number;
+  isComplete: boolean;
+};
+
+/**
+ * A run's headline figures from a flat aspect list.
+ *
+ * Used where the whole scheme tree is not needed — the panel on a competitor's
+ * roadmap, for instance. It goes through the same awardedFor/isMarked as the
+ * marking screen rather than repeating the rule in SQL, which is how the two
+ * would drift apart.
+ */
+export function summariseRun(aspects: ScorableAspect[], marks: AssessmentMark[]): RunSummary {
+  const markByAspect = new Map(marks.map((mark) => [mark.aspect_id, mark]));
+
+  let awarded = 0;
+  let maxMark = 0;
+  let markedCount = 0;
+
+  for (const aspect of aspects) {
+    const mark = markByAspect.get(aspect.id) ?? null;
+    awarded += awardedFor(aspect, mark);
+    maxMark += aspect.max_mark;
+    if (isMarked(aspect, mark)) markedCount += 1;
+  }
+
+  awarded = round2(awarded);
+  maxMark = round2(maxMark);
+
+  return {
+    awarded,
+    maxMark,
+    percentage: maxMark === 0 ? 0 : Math.round((awarded / maxMark) * 100),
+    markedCount,
+    aspectCount: aspects.length,
+    isComplete: aspects.length > 0 && markedCount === aspects.length,
+  };
 }
 
 export function buildAssessmentRunVM(scheme: AssessmentScheme, marks: AssessmentMark[]): AssessmentRunVM {
