@@ -162,9 +162,8 @@ function PhaseRail({
       {blocks.length > 0 ? (
         <div
           aria-hidden="true"
+          className="tp-rail-line"
           style={{
-            position: "absolute",
-            left: "var(--rail-line)",
             top: 8,
             bottom: 60,
             width: 2,
@@ -254,9 +253,9 @@ function TimelineNode({
     <div style={{ position: "relative", marginBottom: small ? 14 : 18 }}>
       <div
         aria-hidden="true"
+        className="tp-rail-mark"
+        data-rail-dot=""
         style={{
-          position: "absolute",
-          left: "var(--rail-dot)",
           top: small ? 14 : 22,
           width: small ? 12 : 14,
           height: small ? 12 : 14,

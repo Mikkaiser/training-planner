@@ -108,6 +108,27 @@ export function compareByOrder<T extends { order_index: number; created_at: stri
   return a.order_index - b.order_index || a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id);
 }
 
+/**
+ * What deleting a plan would destroy, as a sentence fragment.
+ *
+ * Shown on both the roadmap's remove button and the plan list's, so it lives
+ * here rather than in either: two copies of the pluralisation is how one of
+ * them ends up saying "1 phases". A plan with nothing in it says so outright,
+ * because "deletes 0 phases, 0 blocks" reads like a bug.
+ */
+export function describePlanContents(totals: Pick<PlanVM["totals"], "phases" | "blocks" | "exercises">): string {
+  const count = (n: number, noun: string) => `${n} ${noun}${n === 1 ? "" : "s"}`;
+
+  if (totals.phases === 0 && totals.blocks === 0 && totals.exercises === 0) {
+    return "It has nothing in it yet";
+  }
+
+  const parts = [count(totals.phases, "phase"), count(totals.blocks, "block")];
+  if (totals.exercises > 0) parts.push(count(totals.exercises, "file"));
+
+  return `That removes ${parts.join(", ")}`;
+}
+
 export function gateScopeLabel(index: number): string {
   return index <= 1 ? "Cumulative · Block 1" : `Cumulative · Blocks 1 ${EN_DASH} ${index}`;
 }

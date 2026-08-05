@@ -542,8 +542,61 @@ async function main(): Promise<void> {
       panel.includes("Synthetic Project"),
     );
 
-    // ── Clean up: remove both plans through the UI ───────────────────────
-    for (const path of [clonePath, planPath]) {
+    // ── Editing and deleting from the list ───────────────────────────────
+    // The card was one big <a>; the controls only work because it is now a
+    // stretched link with the buttons layered above it. So the thing most
+    // likely to have broken is the plainest one: does clicking a card still
+    // open the plan.
+    for (const view of ["cards", "table"] as const) {
+      await gotoAuthed(page, `/?view=${view}`);
+      const opened = await page
+        .getByRole("link", { name: STUDENT, exact: false })
+        .first()
+        .click()
+        .then(() => page.waitForURL(/\/plan\//, { timeout: 20_000 }))
+        .then(() => true)
+        .catch(() => false);
+      check(`${view} view: a plan still opens from the list`, opened, page.url());
+    }
+
+    // Both plans carry the pid by now, and the original has also been renamed,
+    // so these target the clone — the one name that is still exactly known.
+    const CLONE_NAME = `${STUDENT} Clone`;
+    const RENAMED = `Verify Renamed ${process.pid}`;
+
+    await gotoAuthed(page, "/?view=cards");
+    await page.getByRole("button", { name: `Edit ${CLONE_NAME}'s plan` }).click();
+    await page.getByLabel("Competitor").fill(RENAMED);
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+    await page.waitForTimeout(1200);
+    await gotoAuthed(page, "/?view=cards");
+    check(
+      "a plan can be renamed from the list",
+      (await page.locator("body").innerText()).includes(RENAMED),
+    );
+
+    // The confirmation has to say what is about to be lost, with the right
+    // singular or plural — the sentence is the last thing between an
+    // instructor and an irreversible delete.
+    await page.getByRole("button", { name: `Delete ${RENAMED}'s plan` }).click();
+    const confirmText = (await page.locator("body").innerText()).replace(/\s+/g, " ");
+    const counted = confirmText.slice(confirmText.indexOf("That removes"));
+    check(
+      "the delete confirmation counts what it will remove",
+      /That removes \d+ phases?, \d+ blocks?/.test(confirmText),
+      counted.slice(0, 80),
+    );
+    await page.getByRole("button", { name: "Delete plan", exact: true }).click();
+    await page.waitForTimeout(1500);
+
+    await gotoAuthed(page, "/");
+    check(
+      "deleting from the list clears the plan",
+      !(await page.getByText(RENAMED, { exact: false }).first().isVisible().catch(() => false)),
+    );
+
+    // ── Clean up: the original still goes through the roadmap ────────────
+    for (const path of [planPath]) {
       await gotoAuthed(page, path);
       await page.getByRole("button", { name: /Remove plan/ }).click();
       await page.getByRole("button", { name: "Remove plan", exact: true }).click();

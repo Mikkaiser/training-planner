@@ -639,14 +639,55 @@ a {
   width: 220px;
 }
 
-/* The gutter, the rail line and the node dots have to move together, so all
-   three read from the same two variables. */
+/* One axis, and everything centres on it.
+   --rail-axis is the distance from the rail's left edge to the centre of the
+   vertical line. The line and every dot are placed at that x and pulled back by
+   half their own width, so a dot lands on the line whatever size it is. The
+   previous version offset each by a separate hand-tuned constant, which left
+   the 14px block dots 2px off the line and the 12px gate dots 3px off — and in
+   opposite directions once the mobile values kicked in. */
 .tp-timeline-rail {
   position: relative;
   --rail-gutter: 38px;
-  --rail-line: 14px;
-  --rail-dot: -32px;
+  --rail-axis: 15px;
   padding-left: var(--rail-gutter);
+}
+
+/* Dots live inside a node, whose left edge is the rail's content box — hence
+   the gutter subtraction. Changing --rail-gutter or --rail-axis moves the line
+   and the dots together, with no third number to keep in step. */
+.tp-rail-mark {
+  position: absolute;
+  left: calc(var(--rail-axis) - var(--rail-gutter));
+  transform: translateX(-50%);
+}
+
+.tp-rail-line {
+  position: absolute;
+  left: var(--rail-axis);
+  transform: translateX(-50%);
+}
+
+/* A card that is one big link, with controls on top of it.
+   The link wraps only the plan's name, so it has a real accessible name, and
+   its ::after stretches over the whole card to keep the click target the design
+   asks for. Nesting buttons inside the anchor instead would be invalid markup
+   and would navigate rather than fire. */
+.tp-card-linked {
+  position: relative;
+}
+
+.tp-card-linked .tp-card-link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+}
+
+.tp-card-actions {
+  position: relative;
+  z-index: 2;
 }
 
 .tp-modal-pad {
@@ -695,8 +736,7 @@ a {
   /* Reclaim the rail's gutter; the line and dots move in with it. */
   .tp-timeline-rail {
     --rail-gutter: 24px;
-    --rail-line: 7px;
-    --rail-dot: -21px;
+    --rail-axis: 8px;
   }
 }
 
