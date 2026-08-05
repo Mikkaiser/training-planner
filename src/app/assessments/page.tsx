@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { TopBar } from "@/components/layout/TopBar";
+import { SchemeActions } from "@/components/assessment/SchemeActions";
 import { SchemeUpload } from "@/components/assessment/SchemeUpload";
 import { getSchemesForCurrentInstructor } from "@/lib/assessment-data";
 import { getInstructorName } from "@/lib/plan-data";
@@ -35,12 +36,26 @@ export default async function AssessmentsPage() {
         {schemes.length === 0 ? null : (
           <div className="tp-card-grid">
             {schemes.map((scheme) => (
-              <Link key={scheme.id} href={assessmentSchemeRoute(scheme.id)} className="tp-card tp-card-hover" style={{ padding: 22 }}>
-                <div className="tp-col" style={{ gap: 4 }}>
-                  <div className="tp-eyebrow">{scheme.skill}</div>
-                  <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.3 }}>
-                    {scheme.test_project}
+              <div key={scheme.id} className="tp-card tp-card-linked tp-card-hover" style={{ padding: 22 }}>
+                <div className="tp-row" style={{ justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+                  <div className="tp-col" style={{ gap: 4, minWidth: 0 }}>
+                    <div className="tp-eyebrow">{scheme.skill}</div>
+                    <Link
+                      href={assessmentSchemeRoute(scheme.id)}
+                      className="tp-card-link"
+                      style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.3 }}
+                    >
+                      {scheme.test_project}
+                    </Link>
                   </div>
+                  <SchemeActions
+                    scheme={{
+                      id: scheme.id,
+                      skill: scheme.skill,
+                      testProject: scheme.test_project,
+                      runCount: scheme.run_count,
+                    }}
+                  />
                 </div>
 
                 <div className="tp-row tp-gap-2 tp-mt-4" style={{ flexWrap: "wrap" }}>
@@ -71,7 +86,7 @@ export default async function AssessmentsPage() {
                 <div className="tp-mt-3 tp-tiny tp-mut" style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
                   {scheme.source_file_name}
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
         )}

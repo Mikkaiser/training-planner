@@ -542,6 +542,38 @@ async function main(): Promise<void> {
       panel.includes("Synthetic Project"),
     );
 
+    // ── Assessment CRUD from the lists ───────────────────────────────────
+    // Renaming a scheme and reassigning a run were both impossible until now:
+    // a typo in the workbook's title was permanent, and a run marked against
+    // the wrong competitor could only be deleted and marked again.
+    await gotoAuthed(page, "/assessments");
+    await page.getByRole("button", { name: "Edit Synthetic Project" }).first().click();
+    const schemeDialog = page.getByRole("dialog");
+    await schemeDialog.getByLabel("Test project").fill("Renamed Project");
+    await schemeDialog.getByRole("button", { name: "Save", exact: true }).click();
+    await page.waitForTimeout(1200);
+    await gotoAuthed(page, "/assessments");
+    check(
+      "a scheme can be renamed from the library",
+      (await page.locator("body").innerText()).includes("Renamed Project"),
+    );
+
+    // The run list lives on the scheme page — open it through the renamed card,
+    // which also proves the card's stretched link still navigates.
+    await page.getByRole("link", { name: "Renamed Project" }).first().click();
+    await page.waitForURL(/\/assessments\/[0-9a-f-]{36}/, { timeout: 20_000 });
+
+    await page.getByRole("button", { name: /^Edit the run for / }).first().click();
+    const runDialog = page.getByRole("dialog");
+    await runDialog.getByLabel("Label").fill("Relabelled run");
+    await runDialog.getByRole("button", { name: "Save", exact: true }).click();
+    await page.waitForTimeout(1200);
+    await page.reload({ waitUntil: "networkidle" });
+    check(
+      "a marking run can be relabelled from the scheme",
+      (await page.locator("body").innerText()).includes("Relabelled run"),
+    );
+
     // ── Editing and deleting from the list ───────────────────────────────
     // The card was one big <a>; the controls only work because it is now a
     // stretched link with the buttons layered above it. So the thing most
