@@ -100,25 +100,28 @@ async function main(): Promise<void> {
         // desktop rail can silently throw the mobile one out — which is how the
         // dots came to be 2px off on one side and 3px off on the other.
         if (route.label === "detail · timeline") {
+          // No named inner functions in here: tsx compiles this callback with
+          // esbuild's keep-names, which wraps them in a __name helper that does
+          // not exist in the page.
           const rail = await page.evaluate(() => {
             const line = document.querySelector<HTMLElement>(".tp-rail-line");
             const dots = Array.from(document.querySelectorAll<HTMLElement>("[data-rail-dot]"));
             if (!line || dots.length === 0) return null;
 
-            const centre = (node: HTMLElement) => {
-              const rect = node.getBoundingClientRect();
-              return rect.left + rect.width / 2;
-            };
+            const lineRect = line.getBoundingClientRect();
+            const axis = lineRect.left + lineRect.width / 2;
 
-            const axis = centre(line);
-            const worst = dots.reduce(
-              (acc, dot) => {
-                const offset = Math.abs(centre(dot) - axis);
-                return offset > acc.offset ? { offset, size: Math.round(dot.getBoundingClientRect().width) } : acc;
-              },
-              { offset: 0, size: 0 },
-            );
-            return { count: dots.length, ...worst };
+            let offset = 0;
+            let size = 0;
+            for (const dot of dots) {
+              const rect = dot.getBoundingClientRect();
+              const gap = Math.abs(rect.left + rect.width / 2 - axis);
+              if (gap > offset) {
+                offset = gap;
+                size = Math.round(rect.width);
+              }
+            }
+            return { count: dots.length, offset, size };
           });
 
           check(

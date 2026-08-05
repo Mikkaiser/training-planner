@@ -566,8 +566,12 @@ async function main(): Promise<void> {
 
     await gotoAuthed(page, "/?view=cards");
     await page.getByRole("button", { name: `Edit ${CLONE_NAME}'s plan` }).click();
-    await page.getByLabel("Competitor").fill(RENAMED);
-    await page.getByRole("button", { name: "Save", exact: true }).click();
+    // Scoped to the dialog: the competitors here are named "Verify Competitor
+    // <pid>", so a bare getByLabel("Competitor") also matches every card's
+    // "Edit <name>'s plan" aria-label.
+    const editDialog = page.getByRole("dialog");
+    await editDialog.getByLabel("Competitor").fill(RENAMED);
+    await editDialog.getByRole("button", { name: "Save", exact: true }).click();
     await page.waitForTimeout(1200);
     await gotoAuthed(page, "/?view=cards");
     check(
