@@ -141,6 +141,65 @@ export async function importScheme(formData: FormData): Promise<ImportResult> {
   return { schemeId, warnings: scheme.warnings };
 }
 
+const updateSchemeSchema = z.object({
+  schemeId: z.string().uuid(),
+  skill: z.string().min(1).max(200),
+  testProject: z.string().min(1).max(200),
+});
+
+/**
+ * Renames a scheme. Only the two title fields — the criteria, aspects and marks
+ * come from the workbook and stay tied to it, so correcting the structure means
+ * re-importing rather than editing here.
+ */
+export async function updateScheme(input: z.input<typeof updateSchemeSchema>): Promise<void> {
+  const userId = await requireUserId();
+  const parsed = updateSchemeSchema.parse(input);
+
+  const row = await queryOne<{ id: string }>(
+    `update assessment_schemes set skill = $3, test_project = $4
+      where id = $1 and instructor_id = $2 returning id`,
+    [parsed.schemeId, userId, parsed.skill.trim(), parsed.testProject.trim()],
+  );
+
+  if (!row) throw new Error("Marking scheme not found, or you do not have access to it.");
+
+  revalidatePath(APP_ROUTES.assessments);
+  revalidatePath(assessmentSchemeRoute(parsed.schemeId));
+}
+
+const updateRunSchema = z.object({
+  runId: z.string().uuid(),
+  planId: z.string().uuid().nullable().optional(),
+  label: z.string().max(200).optional(),
+});
+
+/**
+ * Relabels a run, or moves it to a different competitor.
+ *
+ * Reassigning matters more than it looks: marking the wrong competitor is an
+ * easy mistake to make from a list of names, and without this the only remedy
+ * is deleting the run and marking every aspect again.
+ */
+export async function updateRun(input: z.input<typeof updateRunSchema>): Promise<{ schemeId: string }> {
+  const userId = await requireUserId();
+  const parsed = updateRunSchema.parse(input);
+
+  const row = await queryOne<{ scheme_id: string }>(
+    `update assessment_runs set plan_id = $3, label = $4, updated_at = now()
+      where id = $1 and instructor_id = $2
+        and ($3::uuid is null or exists (select 1 from training_plans where id = $3 and instructor_id = $2))
+      returning scheme_id`,
+    [parsed.runId, userId, parsed.planId ?? null, (parsed.label ?? "").trim() || null],
+  );
+
+  if (!row) throw new Error("Marking run not found, or you do not have access to it.");
+
+  revalidatePath(assessmentRunRoute(parsed.runId));
+  revalidatePath(assessmentSchemeRoute(row.scheme_id));
+  return { schemeId: row.scheme_id };
+}
+
 const createRunSchema = z.object({
   schemeId: z.string().uuid(),
   planId: z.string().uuid().nullable().optional(),

@@ -3,6 +3,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { saveMark } from "@/actions/assessments";
 import { buildAssessmentRunVM, type AspectVM } from "@/lib/assessment-view-model";
+import {
+  beginSave,
+  emptyTracker,
+  hasUnsavedWork,
+  settleSave,
+  summariseSaves,
+  type SaveTracker,
+} from "@/lib/save-tracker";
 import type { AssessmentMark, AssessmentScheme } from "@/lib/types";
 
 interface MarkingSheetProps {
@@ -46,20 +54,60 @@ export function MarkingSheet({ scheme, runId, initialMarks }: MarkingSheetProps)
 
   const vm = useMemo(() => buildAssessmentRunVM(scheme, marks), [scheme, marks]);
 
+  const [tracker, setTracker] = useState<SaveTracker>(emptyTracker);
+  /** Debounced edits that have not been sent yet — unsaved in their own right. */
+  const [queued, setQueued] = useState(0);
+  /** The value last sent per aspect, so a failure can be retried as it stood. */
+  const lastSent = useRef(new Map<string, Draft>());
+
   const push = useCallback(
     (aspectId: string, draft: Draft) => {
+      lastSent.current.set(aspectId, draft);
+
+      let seq = 0;
+      setTracker((current) => {
+        const started = beginSave(current, aspectId);
+        seq = started.seq;
+        return started.tracker;
+      });
+
       void saveMark({
         runId,
         aspectId,
         awarded: draft.awarded,
         judgementScore: draft.judgementScore,
         comment: draft.comment,
-      }).catch((error: unknown) => {
-        console.error("[MarkingSheet] could not save a mark", error);
-      });
+      })
+        .then(() => setTracker((current) => settleSave(current, aspectId, seq, true)))
+        .catch((error: unknown) => {
+          // Kept visible rather than swallowed: this screen decides a
+          // competitor's score, and a mark that silently failed to store looks
+          // exactly like one that saved.
+          console.error("[MarkingSheet] could not save a mark", error);
+          setTracker((current) => settleSave(current, aspectId, seq, false));
+        });
     },
     [runId],
   );
+
+  const summary = useMemo(() => summariseSaves(tracker), [tracker]);
+
+  const retry = useCallback(() => {
+    for (const aspectId of summary.failedIds) {
+      const draft = lastSent.current.get(aspectId);
+      if (draft) push(aspectId, draft);
+    }
+  }, [push, summary.failedIds]);
+
+  // The assessor is typing into a debounce and clicking through a queue of
+  // requests; closing the tab mid-flight loses marks with no trace.
+  useEffect(() => {
+    if (!hasUnsavedWork(tracker, queued)) return;
+
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [tracker, queued]);
 
   const update = useCallback(
     (aspectId: string, patch: Partial<Draft>, debounceMs = 0) => {
@@ -69,10 +117,24 @@ export function MarkingSheet({ scheme, runId, initialMarks }: MarkingSheetProps)
         const updated = { ...current, [aspectId]: next };
 
         const timer = timers.current.get(aspectId);
-        if (timer) clearTimeout(timer);
+        if (timer) {
+          clearTimeout(timer);
+          setQueued((count) => count - 1);
+        }
 
-        if (debounceMs === 0) push(aspectId, next);
-        else timers.current.set(aspectId, setTimeout(() => push(aspectId, next), debounceMs));
+        if (debounceMs === 0) {
+          push(aspectId, next);
+        } else {
+          setQueued((count) => count + 1);
+          timers.current.set(
+            aspectId,
+            setTimeout(() => {
+              timers.current.delete(aspectId);
+              setQueued((count) => count - 1);
+              push(aspectId, next);
+            }, debounceMs),
+          );
+        }
 
         return updated;
       });
@@ -82,7 +144,7 @@ export function MarkingSheet({ scheme, runId, initialMarks }: MarkingSheetProps)
 
   return (
     <div>
-      <RunHeader vm={vm} />
+      <RunHeader vm={vm} saving={summary.saving > 0 || queued > 0} failed={summary.failed} onRetry={retry} />
 
       <div className="tp-col tp-gap-4" style={{ marginTop: 20 }}>
         {vm.criteria.map((criterion) => (
@@ -129,6 +191,7 @@ export function MarkingSheet({ scheme, runId, initialMarks }: MarkingSheetProps)
                     key={aspect.id}
                     aspect={aspect}
                     draft={drafts[aspect.id]}
+                    unsaved={tracker[aspect.id]?.state === "failed"}
                     onChange={(patch, debounceMs) => update(aspect.id, patch, debounceMs)}
                   />
                 ))}
@@ -141,7 +204,17 @@ export function MarkingSheet({ scheme, runId, initialMarks }: MarkingSheetProps)
   );
 }
 
-function RunHeader({ vm }: { vm: ReturnType<typeof buildAssessmentRunVM> }) {
+function RunHeader({
+  vm,
+  saving,
+  failed,
+  onRetry,
+}: {
+  vm: ReturnType<typeof buildAssessmentRunVM>;
+  saving: boolean;
+  failed: number;
+  onRetry: () => void;
+}) {
   return (
     <div
       className="tp-card"
@@ -176,6 +249,34 @@ function RunHeader({ vm }: { vm: ReturnType<typeof buildAssessmentRunVM> }) {
         </div>
         <span className="tp-tiny tp-mono tp-mut">{vm.percentage}%</span>
       </div>
+
+      {/* Marks autosave, so without this the only difference between a mark
+          that stored and one that was rejected is that nothing happened. */}
+      {failed > 0 ? (
+        <div
+          className="tp-row tp-gap-3 tp-mt-3"
+          role="alert"
+          style={{
+            justifyContent: "space-between",
+            padding: "10px 12px",
+            borderRadius: 10,
+            background: "var(--neg-soft)",
+            border: "1px solid var(--neg)",
+          }}
+        >
+          <span className="tp-tiny" style={{ fontWeight: 600, color: "var(--neg)" }}>
+            {failed} {failed === 1 ? "mark is" : "marks are"} not saved. They are still on screen, and
+            highlighted below.
+          </span>
+          <button type="button" className="tp-btn tp-btn-neg tp-btn-sm" onClick={onRetry}>
+            Retry
+          </button>
+        </div>
+      ) : null}
+
+      <div className="tp-tiny tp-mut tp-mt-2" aria-live="polite" style={{ minHeight: 16 }}>
+        {saving ? "Saving…" : null}
+      </div>
     </div>
   );
 }
@@ -197,16 +298,21 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: "po
 function AspectRow({
   aspect,
   draft,
+  unsaved,
   onChange,
 }: {
   aspect: AspectVM;
   draft: Draft | undefined;
+  unsaved: boolean;
   onChange: (patch: Partial<Draft>, debounceMs?: number) => void;
 }) {
   const [showComment, setShowComment] = useState(Boolean(draft?.comment));
 
   return (
-    <div className={`tp-aspect ${aspect.isMarked ? "tp-aspect-marked" : ""}`}>
+    <div
+      className={`tp-aspect ${aspect.isMarked ? "tp-aspect-marked" : ""}`}
+      style={unsaved ? { background: "var(--neg-soft)" } : undefined}
+    >
       <span
         className="tp-tag"
         style={{

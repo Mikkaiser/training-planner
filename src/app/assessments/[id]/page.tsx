@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { TopBar } from "@/components/layout/TopBar";
 import { DeleteSchemeButton } from "@/components/assessment/DeleteSchemeButton";
+import { RunActions } from "@/components/assessment/RunActions";
 import { StartRunButton } from "@/components/assessment/StartRunButton";
 import { getRunsForScheme, getSchemeById } from "@/lib/assessment-data";
 import { getInstructorName, getPlansForCurrentInstructor } from "@/lib/plan-data";
@@ -58,10 +59,9 @@ export default async function SchemePage({ params }: { params: { id: string } })
               <div className="tp-eyebrow">Marking runs</div>
             </div>
             {runs.map((run) => (
-              <Link
+              <div
                 key={run.id}
-                href={assessmentRunRoute(run.id)}
-                className="tp-row tp-row-linked"
+                className="tp-row tp-row-linked tp-card-linked"
                 style={{
                   justifyContent: "space-between",
                   gap: 12,
@@ -70,16 +70,35 @@ export default async function SchemePage({ params }: { params: { id: string } })
                 }}
               >
                 <div className="tp-col" style={{ gap: 2, minWidth: 0 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600 }}>
+                  <Link
+                    href={assessmentRunRoute(run.id)}
+                    className="tp-card-link"
+                    style={{ fontSize: 14, fontWeight: 600 }}
+                  >
                     {run.student_name ?? "Practice run"}
                     {run.label ? <span className="tp-mut"> · {run.label}</span> : null}
-                  </div>
+                  </Link>
                   <div className="tp-tiny tp-mut">{run.plan_title ?? "Not linked to a plan"}</div>
                 </div>
-                <span className="tp-tiny tp-mono tp-mut" style={{ flexShrink: 0 }}>
-                  {run.marked_count}/{aspects.length} marked
-                </span>
-              </Link>
+                <div className="tp-row tp-gap-3" style={{ flexShrink: 0, alignItems: "center" }}>
+                  <span className="tp-tiny tp-mono tp-mut">
+                    {run.marked_count}/{aspects.length} marked
+                  </span>
+                  <RunActions
+                    run={{
+                      id: run.id,
+                      label: run.label,
+                      planId: run.plan_id,
+                      who: run.student_name ?? "this practice run",
+                      markedCount: run.marked_count,
+                    }}
+                    competitors={plans.map((plan) => ({
+                      id: plan.id,
+                      name: `${plan.student_name} · ${plan.title}`,
+                    }))}
+                  />
+                </div>
+              </div>
             ))}
           </div>
         ) : null}
