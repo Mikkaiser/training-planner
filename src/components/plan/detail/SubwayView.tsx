@@ -13,6 +13,7 @@ import {
   planCollisionDetection,
   useSortableSensors,
 } from "@/components/plan/detail/Sortable";
+import { ReorderStatus } from "@/components/plan/detail/ReorderStatus";
 import { usePlanReorder } from "@/components/plan/detail/usePlanReorder";
 import { layoutSubway, type Station } from "@/lib/layout/subway-layout";
 import type { PhaseStatus, PlanVM } from "@/lib/plan-view-model";
@@ -26,7 +27,7 @@ const PHASE_STROKE: Record<PhaseStatus, string> = {
 /** Design artboard: detail-v3 "Subway map (wildcard)". */
 export function SubwayView({ plan }: { plan: PlanVM }) {
   const sensors = useSortableSensors();
-  const { activeId, blocksByPhase, orderedPhases, isPhase, handlers } = usePlanReorder(plan);
+  const { activeId, blocksByPhase, orderedPhases, isPhase, handlers, pending: reorderPending, error: reorderError, dismissError } = usePlanReorder(plan);
 
   const blockById = useMemo(() => new Map(plan.blocks.map((block) => [block.id, block])), [plan.blocks]);
 
@@ -67,6 +68,8 @@ export function SubwayView({ plan }: { plan: PlanVM }) {
 
   return (
     <div>
+      <ReorderStatus pending={reorderPending} error={reorderError} onDismiss={dismissError} />
+
       <div className="tp-row" style={{ justifyContent: "space-between", marginBottom: 16, gap: 16, flexWrap: "wrap" }}>
         <div className="tp-col">
           <div className="tp-eyebrow">Route view</div>

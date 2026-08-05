@@ -271,6 +271,45 @@ async function main(): Promise<void> {
       await page.getByText("Cumulative · Blocks 1 – 2").first().isVisible(),
     );
 
+    // ── A reorder that the server refuses ────────────────────────────────
+    // The move is optimistic, so a rejected action used to leave the new order
+    // on screen looking saved: the re-seeding effect only fires when the server
+    // data changes, and a failure leaves it identical. Forcing the failure is
+    // the only way to see that.
+    await page.route("**/plan/**", async (route) => {
+      const request = route.request();
+      if (request.method() === "POST" && request.headers()["next-action"]) {
+        await route.abort("failed");
+      } else {
+        await route.continue();
+      }
+    });
+
+    const beforeFailure = await blockOrder();
+    await page.getByRole("button", { name: /^Reorder block / }).first().focus();
+    await page.keyboard.press("Space");
+    await page.waitForTimeout(400);
+    await page.keyboard.press("ArrowDown");
+    await page.waitForTimeout(400);
+    await page.keyboard.press("Space");
+    await page.waitForTimeout(2500);
+
+    const afterFailure = await blockOrder();
+    check(
+      "a rejected reorder puts the order back",
+      afterFailure.join("|") === beforeFailure.join("|"),
+      `${beforeFailure.join(" | ")}  ->  ${afterFailure.join(" | ")}`,
+    );
+    check(
+      "a rejected reorder says so",
+      (await page.locator('[role="alert"]').first().innerText().catch(() => "")).includes(
+        "put back",
+      ),
+    );
+
+    await page.unroute("**/plan/**");
+    await gotoAuthed(page, planPath);
+
     // ── Move a block into another phase ──────────────────────────────────
     await page.getByRole("button", { name: "Add Phase" }).click();
     await page.getByRole("button", { name: "Advanced", exact: true }).click();
