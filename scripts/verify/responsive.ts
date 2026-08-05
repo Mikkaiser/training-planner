@@ -94,6 +94,41 @@ async function main(): Promise<void> {
           result.culprit === null,
           result.culprit ? `document ${result.docWidth}px in a ${result.viewport}px viewport · widest: ${result.culprit}` : "",
         );
+
+        // The timeline's dots have to sit on its line. They are placed from CSS
+        // variables that change at a breakpoint, so a value corrected for the
+        // desktop rail can silently throw the mobile one out — which is how the
+        // dots came to be 2px off on one side and 3px off on the other.
+        if (route.label === "detail · timeline") {
+          const rail = await page.evaluate(() => {
+            const line = document.querySelector<HTMLElement>(".tp-rail-line");
+            const dots = Array.from(document.querySelectorAll<HTMLElement>("[data-rail-dot]"));
+            if (!line || dots.length === 0) return null;
+
+            const centre = (node: HTMLElement) => {
+              const rect = node.getBoundingClientRect();
+              return rect.left + rect.width / 2;
+            };
+
+            const axis = centre(line);
+            const worst = dots.reduce(
+              (acc, dot) => {
+                const offset = Math.abs(centre(dot) - axis);
+                return offset > acc.offset ? { offset, size: Math.round(dot.getBoundingClientRect().width) } : acc;
+              },
+              { offset: 0, size: 0 },
+            );
+            return { count: dots.length, ...worst };
+          });
+
+          check(
+            `${route.label} dots sit on the rail`,
+            rail !== null && rail.offset <= 0.5,
+            rail === null
+              ? "no rail line or dots found — the selectors have moved"
+              : `worst dot is ${rail.offset.toFixed(1)}px off the line (${rail.size}px dot, ${rail.count} checked)`,
+          );
+        }
       }
     }
 

@@ -162,6 +162,25 @@ export function DownloadIcon({ size = 12, className }: IconProps) {
   );
 }
 
+export function PencilIcon({ size = 12, className }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 12 12"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M8.25 1.75l2 2-6 6-2.5.5.5-2.5 6-6zM7 3l2 2" />
+    </svg>
+  );
+}
+
 export function TrashIcon({ size = 12, className }: IconProps) {
   return (
     <svg

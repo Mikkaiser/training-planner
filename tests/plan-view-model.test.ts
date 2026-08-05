@@ -5,7 +5,13 @@
  * numbering, the blocks fraction, and which phase counts as current.
  */
 import { describe, expect, it } from "vitest";
-import { buildPlanSummary, buildPlanVM, compareByOrder, gateScopeLabel } from "@/lib/plan-view-model";
+import {
+  buildPlanSummary,
+  buildPlanVM,
+  compareByOrder,
+  describePlanContents,
+  gateScopeLabel,
+} from "@/lib/plan-view-model";
 import { makeDesignPlan, makePlan } from "./factories";
 
 describe("gateScopeLabel", () => {
@@ -224,5 +230,29 @@ describe("buildPlanSummary", () => {
     // The card and the roadmap header must never disagree about the same plan.
     const plan = makeDesignPlan();
     expect(buildPlanSummary(plan).progress).toBe(buildPlanVM(plan).progress);
+  });
+});
+
+describe("describePlanContents", () => {
+  // Shown on both delete confirmations. A wrong count here talks someone into
+  // deleting a plan they meant to keep, or out of one they meant to remove.
+  const totals = (phases: number, blocks: number, exercises: number) => ({ phases, blocks, exercises });
+
+  it("uses the singular for exactly one of anything", () => {
+    expect(describePlanContents(totals(1, 1, 1))).toBe("That removes 1 phase, 1 block, 1 file");
+  });
+
+  it("uses the plural everywhere else, including zero", () => {
+    expect(describePlanContents(totals(3, 12, 0))).toBe("That removes 3 phases, 12 blocks");
+    expect(describePlanContents(totals(2, 0, 0))).toBe("That removes 2 phases, 0 blocks");
+  });
+
+  it("leaves files out entirely when there are none, rather than saying 0 files", () => {
+    expect(describePlanContents(totals(2, 5, 0))).not.toMatch(/file/);
+    expect(describePlanContents(totals(2, 5, 4))).toMatch(/4 files/);
+  });
+
+  it("says an empty plan is empty instead of counting nothing three times", () => {
+    expect(describePlanContents(totals(0, 0, 0))).toBe("It has nothing in it yet");
   });
 });

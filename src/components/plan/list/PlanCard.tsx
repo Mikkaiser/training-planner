@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PlanActions } from "@/components/plan/list/PlanActions";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { GateIcon, PlusIcon } from "@/components/ui/icons";
 import { planDetailRoute } from "@/lib/routes";
@@ -16,17 +17,26 @@ export function PlanCard({ plan }: { plan: PlanSummaryVM }) {
   if (plan.isDraft) return <EmptyPlanCard plan={plan} />;
 
   return (
-    <Link href={planDetailRoute(plan.id)} className="tp-card" style={{ padding: 22, display: "block" }}>
-      <div className="tp-row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
-        <div className="tp-col" style={{ gap: 4 }}>
-          <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.02em" }}>{plan.studentName}</div>
+    <div className="tp-card tp-card-linked" style={{ padding: 22 }}>
+      <div className="tp-row" style={{ justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+        <div className="tp-col" style={{ gap: 4, minWidth: 0 }}>
+          <Link
+            href={planDetailRoute(plan.id)}
+            className="tp-card-link"
+            style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.02em" }}
+          >
+            {plan.studentName}
+          </Link>
           <div className="tp-eyebrow">{plan.title}</div>
         </div>
-        <div
-          className="tp-mono tp-tiny tp-mut"
-          style={{ background: "rgba(28,31,51,0.04)", padding: "4px 8px", borderRadius: 6 }}
-        >
-          {pad2(plan.phaseIndex)}/{pad2(plan.phaseTotal)}
+        <div className="tp-row tp-gap-2" style={{ alignItems: "center", flexShrink: 0 }}>
+          <div
+            className="tp-mono tp-tiny tp-mut"
+            style={{ background: "rgba(28,31,51,0.04)", padding: "4px 8px", borderRadius: 6 }}
+          >
+            {pad2(plan.phaseIndex)}/{pad2(plan.phaseTotal)}
+          </div>
+          <PlanActions plan={plan} />
         </div>
       </div>
 
@@ -81,21 +91,29 @@ export function PlanCard({ plan }: { plan: PlanSummaryVM }) {
         </div>
         {plan.gateStatus ? <StatusBadge status={plan.gateStatus} /> : null}
       </div>
-    </Link>
+    </div>
   );
 }
 
 /** Design artboard: the dashed "brand new plan" card with no phases yet. */
 function EmptyPlanCard({ plan }: { plan: PlanSummaryVM }) {
   return (
-    <Link
-      href={planDetailRoute(plan.id)}
-      className="tp-card"
+    <div
+      className="tp-card tp-card-linked"
       style={{ padding: 22, display: "flex", flexDirection: "column" }}
     >
-      <div className="tp-col" style={{ gap: 4 }}>
-        <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.02em" }}>{plan.studentName}</div>
-        <div className="tp-eyebrow">{plan.title}</div>
+      <div className="tp-row" style={{ justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+        <div className="tp-col" style={{ gap: 4, minWidth: 0 }}>
+          <Link
+            href={planDetailRoute(plan.id)}
+            className="tp-card-link"
+            style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.02em" }}
+          >
+            {plan.studentName}
+          </Link>
+          <div className="tp-eyebrow">{plan.title}</div>
+        </div>
+        <PlanActions plan={plan} />
       </div>
       <div
         style={{
@@ -129,6 +147,6 @@ function EmptyPlanCard({ plan }: { plan: PlanSummaryVM }) {
           Open to add the first phase.
         </div>
       </div>
-    </Link>
+    </div>
   );
 }

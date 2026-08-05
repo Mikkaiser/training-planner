@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { CSSProperties } from "react";
+import { PlanActions } from "@/components/plan/list/PlanActions";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ChevronIcon, PlusIcon } from "@/components/ui/icons";
 import { planDetailRoute } from "@/lib/routes";
@@ -175,9 +176,12 @@ function PlanRow({ plan }: { plan: PlanSummaryVM }) {
         </div>
       </td>
       <td style={{ ...td, textAlign: "right", paddingRight: 24 }}>
-        <Link href={planDetailRoute(plan.id)} className="tp-mut" aria-label={`Open ${plan.studentName}'s plan`}>
-          <ChevronIcon size={12} />
-        </Link>
+        <div className="tp-row tp-gap-2" style={{ justifyContent: "flex-end", alignItems: "center" }}>
+          <PlanActions plan={plan} />
+          <Link href={planDetailRoute(plan.id)} className="tp-mut" aria-label={`Open ${plan.studentName}'s plan`}>
+            <ChevronIcon size={12} />
+          </Link>
+        </div>
       </td>
     </tr>
   );
