@@ -29,11 +29,32 @@ export function usePlanReorder(plan: PlanVM, options?: { onEnterPhase?: (phaseId
   const serverBlocks = useMemo(() => buildBlocksByPhase(plan.phases), [plan.phases]);
 
   // Local copies so a drag moves things immediately rather than waiting for the
-  // round trip. Re-seeded whenever the server sends something different, which
-  // is also what reverts an optimistic move if the action fails.
+  // round trip. Re-seeded whenever the server sends something different.
   const [phaseOrder, setPhaseOrder] = useState(serverPhaseOrder);
   const [blocksByPhase, setBlocksByPhase] = useState(serverBlocks);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  /**
+   * Commits an optimistic move, and puts it back if the server refuses.
+   *
+   * The re-seeding effects below cannot do this: they only fire when the server
+   * data changes, and a failed action leaves it exactly as it was. So a
+   * rejected reorder used to sit on screen in its new order, looking saved,
+   * until something else happened to refresh the page.
+   */
+  const commit = (run: () => Promise<unknown>, revert: () => void) => {
+    setError(null);
+    startTransition(async () => {
+      try {
+        await run();
+      } catch (cause) {
+        revert();
+        console.error("[usePlanReorder] could not save the new order", cause);
+        setError(cause instanceof Error ? cause.message : "Could not save the new order.");
+      }
+    });
+  };
 
   useEffect(() => {
     setPhaseOrder((current) => (isSameOrder(current, serverPhaseOrder) ? current : serverPhaseOrder));
@@ -110,9 +131,12 @@ export function usePlanReorder(plan: PlanVM, options?: { onEnterPhase?: (phaseId
       if (isSameOrder(next, phaseOrder)) return;
 
       setPhaseOrder(next);
-      startTransition(async () => {
-        await reorderPhases({ planId: plan.id, orderedIds: next });
-      });
+      // Revert to the server's order, not the pre-drag local one: they are the
+      // same in the ordinary case, and when they are not the server is right.
+      commit(
+        () => reorderPhases({ planId: plan.id, orderedIds: next }),
+        () => setPhaseOrder(serverPhaseOrder),
+      );
       return;
     }
 
@@ -138,12 +162,14 @@ export function usePlanReorder(plan: PlanVM, options?: { onEnterPhase?: (phaseId
     );
     if (changed.length === 0) return;
 
-    startTransition(async () => {
-      await reorderBlocks({
-        planId: plan.id,
-        phases: changed.map((phaseId) => ({ phaseId, orderedIds: settled[phaseId] ?? [] })),
-      });
-    });
+    commit(
+      () =>
+        reorderBlocks({
+          planId: plan.id,
+          phases: changed.map((phaseId) => ({ phaseId, orderedIds: settled[phaseId] ?? [] })),
+        }),
+      () => setBlocksByPhase(serverBlocks),
+    );
   };
 
   const orderedPhases = phaseOrder
@@ -152,6 +178,8 @@ export function usePlanReorder(plan: PlanVM, options?: { onEnterPhase?: (phaseId
 
   return {
     pending,
+    error,
+    dismissError: () => setError(null),
     activeId,
     phaseOrder,
     blocksByPhase,

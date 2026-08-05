@@ -16,6 +16,7 @@ import {
   planCollisionDetection,
   useSortableSensors,
 } from "@/components/plan/detail/Sortable";
+import { ReorderStatus } from "@/components/plan/detail/ReorderStatus";
 import { RAIL, usePlanReorder } from "@/components/plan/detail/usePlanReorder";
 import { GateMarker } from "@/components/plan/detail/GateMarker";
 import { PhaseHeader } from "@/components/plan/detail/PhaseHeader";
@@ -33,7 +34,7 @@ export function TimelineView({ plan }: { plan: PlanVM }) {
     Object.fromEntries(plan.phases.map((phase) => [phase.id, phase.status === "current"])),
   );
 
-  const { activeId, phaseOrder, blocksByPhase, orderedPhases, isPhase, handlers } = usePlanReorder(plan, {
+  const { activeId, phaseOrder, blocksByPhase, orderedPhases, isPhase, handlers, pending: reorderPending, error: reorderError, dismissError } = usePlanReorder(plan, {
     // Dropping into a collapsed phase would be invisible, so open it.
     onEnterPhase: (phaseId) => setExpanded((state) => (state[phaseId] ? state : { ...state, [phaseId]: true })),
   });
@@ -46,6 +47,8 @@ export function TimelineView({ plan }: { plan: PlanVM }) {
 
   return (
     <div style={{ maxWidth: 720, margin: "0 auto" }}>
+      <ReorderStatus pending={reorderPending} error={reorderError} onDismiss={dismissError} />
+
       <DndContext
         id={`roadmap-${plan.id}`}
         sensors={sensors}

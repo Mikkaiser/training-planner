@@ -15,6 +15,7 @@ import {
   planCollisionDetection,
   useSortableSensors,
 } from "@/components/plan/detail/Sortable";
+import { ReorderStatus } from "@/components/plan/detail/ReorderStatus";
 import { RAIL, usePlanReorder } from "@/components/plan/detail/usePlanReorder";
 import { Tag } from "@/components/ui/Tag";
 import { CheckIcon, CrossIcon, GateIcon, PlusIcon } from "@/components/ui/icons";
@@ -29,7 +30,7 @@ export function TreeView({ plan }: { plan: PlanVM }) {
   );
 
   const sensors = useSortableSensors();
-  const { activeId, phaseOrder, blocksByPhase, orderedPhases, isPhase, handlers } = usePlanReorder(plan, {
+  const { activeId, phaseOrder, blocksByPhase, orderedPhases, isPhase, handlers, pending: reorderPending, error: reorderError, dismissError } = usePlanReorder(plan, {
     // A phase has to be open before anything can be dropped into it.
     onEnterPhase: (phaseId) => setExpandedIds((current) => (current.has(phaseId) ? current : new Set(current).add(phaseId))),
   });
@@ -84,6 +85,8 @@ export function TreeView({ plan }: { plan: PlanVM }) {
 
   return (
     <div>
+      <ReorderStatus pending={reorderPending} error={reorderError} onDismiss={dismissError} />
+
       <div className="tp-row" style={{ justifyContent: "space-between", marginBottom: 18, gap: 12, flexWrap: "wrap" }}>
         <div className="tp-col">
           <div className="tp-eyebrow">Branching Roadmap</div>

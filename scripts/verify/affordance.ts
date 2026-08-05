@@ -218,6 +218,44 @@ async function main(): Promise<void> {
       );
     }
 
+    // ── Reduced motion ─────────────────────────────────────────────────
+    // Emulated rather than assumed: the rule has to beat inline transitions
+    // that dnd-kit writes at runtime, which is the reason it carries
+    // !important, and only a real page can show whether it does.
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await gotoAuthed(page, `${plan}?view=timeline`);
+
+    const motion = await page.evaluate(() => {
+      const probe = document.createElement("button");
+      probe.className = "tp-btn tp-btn-primary";
+      // Exactly how dnd-kit sets it on a sortable item.
+      probe.style.transition = "transform 250ms ease";
+      document.body.appendChild(probe);
+      const durations = getComputedStyle(probe).transitionDuration;
+      probe.remove();
+
+      const animated = Array.from(document.querySelectorAll<HTMLElement>("body *")).filter((node) =>
+        getComputedStyle(node)
+          .transitionDuration.split(",")
+          .some((value) => parseFloat(value) > 0.05),
+      ).length;
+
+      return { inlineDurations: durations, animated };
+    });
+
+    check(
+      "reduced motion overrides even an inline transition",
+      motion.inlineDurations.split(",").every((value) => parseFloat(value) <= 0.001),
+      `inline transition-duration resolved to ${motion.inlineDurations}`,
+    );
+    check(
+      "reduced motion leaves nothing on the page animating",
+      motion.animated === 0,
+      `${motion.animated} element(s) still transition for longer than 50ms`,
+    );
+
+    await page.emulateMedia({ reducedMotion: null });
+
     report("affordance");
   });
 }

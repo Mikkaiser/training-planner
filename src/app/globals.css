@@ -1088,3 +1088,27 @@ a {
   border-color: var(--accent);
   box-shadow: 0 0 0 4px var(--accent-soft);
 }
+
+/* ══ Reduced motion ═══════════════════════════════════════════════════
+   Everything above animates: buttons lift and press, chevrons rotate, the
+   quiet controls fade in, and dnd-kit writes its own `transition` inline as
+   items slide out of the way. For someone whose vestibular system reacts to
+   movement that is not decoration, it is a symptom trigger.
+
+   Written as a blanket override with !important because the drag transitions
+   are inline styles set by dnd-kit at runtime, which nothing else can reach.
+   Durations go to a hair above zero rather than to none so that transitionend
+   still fires and no state machine waiting on it stalls.
+
+   Transforms are deliberately untouched: a dragged item still has to follow
+   the pointer. What goes is the easing, not the ability to move something. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
