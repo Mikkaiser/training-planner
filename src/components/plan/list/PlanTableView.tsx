@@ -98,7 +98,7 @@ function StatStrip({ stats }: { stats: InstructorStats }) {
 
 function PlanRow({ plan }: { plan: PlanSummaryVM }) {
   return (
-    <tr>
+    <tr className="tp-row-linked">
       <td style={tdLeft}>
         <Link href={planDetailRoute(plan.id)} className="tp-row tp-gap-3">
           <div
@@ -187,6 +187,10 @@ function PlanRow({ plan }: { plan: PlanSummaryVM }) {
   );
 }
 
+/**
+ * No tp-row-linked here: the inline tint would beat the hover rule anyway, and
+ * a draft row already signals itself with that tint and an explicit "Open →".
+ */
 function DraftRow({ plan }: { plan: PlanSummaryVM }) {
   return (
     <tr style={{ background: "rgba(219, 253, 107, 0.06)" }}>

@@ -49,14 +49,18 @@ export function InlineEdit({ value, onSubmit, style, ariaLabel, placeholder, dis
     return (
       <button
         type="button"
+        className="tp-editable"
         onClick={() => setEditing(true)}
         disabled={disabled}
         aria-label={`${ariaLabel}: ${value}. Click to rename.`}
         style={{
           ...style,
           background: "transparent",
-          border: "none",
-          borderRadius: 6,
+          // Every border is left to .tp-editable, which draws the dotted
+          // underline and solidifies it on hover. An inline `border: none` here
+          // would beat the class outright — inline styles win — which is
+          // exactly how this stayed indistinguishable from static text.
+          borderRadius: 0,
           padding: 0,
           margin: 0,
           font: "inherit",

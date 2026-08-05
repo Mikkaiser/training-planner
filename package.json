@@ -21,9 +21,10 @@
     "verify:flows": "tsx scripts/verify/flows.ts",
     "verify:orphans": "NODE_OPTIONS=--conditions=react-server tsx scripts/verify/orphans.ts",
     "verify:responsive": "tsx scripts/verify/responsive.ts",
+    "verify:affordance": "tsx scripts/verify/affordance.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "verify": "pnpm verify:s3 && pnpm verify:flows && pnpm verify:responsive && pnpm verify:orphans",
+    "verify": "pnpm verify:s3 && pnpm verify:flows && pnpm verify:responsive && pnpm verify:affordance && pnpm verify:orphans",
     "build:check": "NEXT_DIST_DIR=.next-check next build",
     "verify:scheme": "NODE_OPTIONS=--conditions=react-server tsx scripts/verify/scheme.ts",
     "scheme:build": "NODE_OPTIONS=--conditions=react-server tsx scripts/build-scheme.ts"

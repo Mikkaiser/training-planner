@@ -11,7 +11,37 @@ Before implementing any UI, read the full reference files in `/refs/`:
 - `StyleGuide.html` — visual usage of every token and component
 - PNG screenshots — page-level layout targets
 
-Use these as the source of truth. The summary below is for quick decisions only.
+Use these as the source of truth **for what the app looks like at rest**. The
+summary below is for quick decisions only.
+
+## What the reference does *not* cover: interaction states
+
+`refs/` is a set of static artboards. `styles.css` contains no `:focus`, no
+`:active`, no `:disabled` and no `outline` of any kind, and the artboards draw
+no edit, delete or drag controls at all. **Silence there is not instruction.**
+
+Reading it as instruction is how this app ended up with drag handles and every
+delete button at `opacity: 0` until hover — invisible on touch, where hover
+never fires, and reported as a bug: *"i can't remove files from each block"*.
+
+So, non-negotiable regardless of the artboards:
+
+- **A control is never hidden until hover.** Hold it back with `.tp-quiet`
+  (55%, full on hover/focus) if it should not compete with content. Never
+  `opacity: 0`, `visibility: hidden` or `display: none` on something clickable.
+- **Every interactive element has all four states**: hover, `:focus-visible`,
+  `:active`, and disabled. The global rules at the foot of `globals.css` give
+  you focus and disabled for free — do not re-suppress them.
+- **A control must not look like a static element.** If it opens a menu it
+  carries a chevron; if it navigates it gets a hover. `.tp-tag` and `.tp-pill`
+  are used for both labels and buttons, so the chevron is what tells them apart.
+- **Editable-in-place text carries `.tp-editable`**, so a dotted underline says
+  it can be edited. An `aria-label` alone tells screen readers and nobody else.
+- New interaction rules go at the **end** of `globals.css`. Several weigh the
+  same as the component rules they modify, so earlier in the file they parse,
+  appear in devtools, and do nothing.
+
+`scripts/verify/affordance.ts` asserts all of this in a browser, at 390px too.
 
 ---
 

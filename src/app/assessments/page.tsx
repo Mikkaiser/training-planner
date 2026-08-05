@@ -35,7 +35,7 @@ export default async function AssessmentsPage() {
         {schemes.length === 0 ? null : (
           <div className="tp-card-grid">
             {schemes.map((scheme) => (
-              <Link key={scheme.id} href={assessmentSchemeRoute(scheme.id)} className="tp-card" style={{ padding: 22 }}>
+              <Link key={scheme.id} href={assessmentSchemeRoute(scheme.id)} className="tp-card tp-card-hover" style={{ padding: 22 }}>
                 <div className="tp-col" style={{ gap: 4 }}>
                   <div className="tp-eyebrow">{scheme.skill}</div>
                   <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.3 }}>

@@ -44,7 +44,7 @@ export function PlanAssessments({
             <Link
               key={assessment.runId}
               href={assessmentRunRoute(assessment.runId)}
-              className="tp-card"
+              className="tp-card tp-card-hover"
               style={{ padding: "14px 16px", display: "block" }}
             >
               <div className="tp-row" style={{ justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>

@@ -61,7 +61,7 @@ export default async function SchemePage({ params }: { params: { id: string } })
               <Link
                 key={run.id}
                 href={assessmentRunRoute(run.id)}
-                className="tp-row"
+                className="tp-row tp-row-linked"
                 style={{
                   justifyContent: "space-between",
                   gap: 12,
