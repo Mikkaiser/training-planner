@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { signOut } from "@/actions/auth";
+import { ChevronIcon } from "@/components/ui/icons";
 import { getInitials } from "@/lib/utils";
 
 /**
@@ -42,6 +43,12 @@ export function UserMenu({ instructorName }: { instructorName: string }) {
       >
         <span className="tp-avatar-name">{instructorName}</span>
         <span className="av">{getInitials(instructorName)}</span>
+        {/* Without this the trigger reads as a nameplate: the design's top bar
+            shows only a name and an avatar, so there was nothing to say the
+            menu — and with it, signing out — existed at all. */}
+        <span style={{ opacity: 0.5, display: "inline-flex" }}>
+          <ChevronIcon size={8} className={open ? "tp-chev open" : "tp-chev"} />
+        </span>
       </button>
 
       {open ? (

@@ -256,7 +256,7 @@ function TreePhase({
                     id={column.block.id}
                     data={{ type: "block", phaseId: phase.id }}
                   >
-                    <div className="tp-col tp-reveal-host" style={{ width: TREE.BLOCK_W, gap: 10 }}>
+                    <div className="tp-col tp-quiet-host" style={{ width: TREE.BLOCK_W, gap: 10 }}>
                       <BlockNode block={column.block} handle={<DragHandle label={`block ${column.block.title}`} />} />
                       {column.block.gate ? (
                         <GateNode gate={column.block.gate} />
@@ -321,7 +321,7 @@ function PhasePillar({
 
   return (
     <div
-      className="tp-reveal-host"
+      className="tp-quiet-host"
       style={{
         width,
         borderRadius: 14,
@@ -381,7 +381,7 @@ function BlockNode({ block, handle }: { block: BlockVM; handle?: React.ReactNode
       }}
     >
       <div className="tp-row" style={{ justifyContent: "space-between", gap: 6 }}>
-        <Tag type={block.competenceType} short className="tp-tag-xs" />
+        <Tag type={block.competenceType} short className="" />
         {handle}
       </div>
       <div style={{ fontSize: 12.5, fontWeight: 700, marginTop: 6, lineHeight: 1.25 }}>{block.title}</div>

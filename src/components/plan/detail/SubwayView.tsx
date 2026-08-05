@@ -196,7 +196,7 @@ export function SubwayView({ plan }: { plan: PlanVM }) {
                     transform: "translate(-50%, -50%)",
                   }}
                 >
-                  <div className="tp-station-grip tp-reveal-host">
+                  <div className="tp-station-grip tp-quiet-host">
                     <DragHandle label={`block ${block.title}`} />
                   </div>
                 </SortableItem>

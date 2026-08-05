@@ -98,7 +98,7 @@ export function SortableItem({
 
 /**
  * The grip. Hidden until hover or focus, since the design has no handles —
- * .tp-reveal is the same treatment the destructive buttons use.
+ * .tp-quiet is the same treatment the destructive buttons use.
  */
 export function DragHandle({ label }: { label: string }) {
   const context = useContext(HandleContext);
@@ -108,7 +108,7 @@ export function DragHandle({ label }: { label: string }) {
     <button
       type="button"
       ref={context.setActivatorNodeRef}
-      className="tp-grip tp-reveal"
+      className="tp-grip tp-quiet"
       aria-label={`Reorder ${label}`}
       style={{ cursor: context.isDragging ? "grabbing" : "grab" }}
       {...context.attributes}

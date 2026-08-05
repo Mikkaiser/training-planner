@@ -19,9 +19,9 @@ export function DeleteSchemeButton({
   const [pending, startTransition] = useTransition();
 
   return (
-    <div className="tp-reveal-host" style={{ marginTop: 40, display: "flex", justifyContent: "center" }}>
+    <div className="tp-quiet-host" style={{ marginTop: 40, display: "flex", justifyContent: "center" }}>
       <ConfirmButton
-        className="tp-btn tp-btn-ghost tp-btn-sm tp-reveal"
+        className="tp-btn tp-btn-ghost tp-btn-sm tp-quiet"
         label="Remove this scheme"
         ariaLabel={`Remove scheme ${testProject}`}
         title={`Remove "${testProject}"?`}

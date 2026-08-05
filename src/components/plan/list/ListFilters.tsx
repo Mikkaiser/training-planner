@@ -56,7 +56,7 @@ export function ListFilters({ phases }: ListFiltersProps) {
   return (
     <div className="tp-row tp-gap-2" style={{ flexWrap: "wrap" }}>
       <label
-        className="tp-row tp-gap-2"
+        className="tp-row tp-gap-2 tp-field"
         style={{
           background: "var(--surface)",
           border: "1px solid var(--border)",

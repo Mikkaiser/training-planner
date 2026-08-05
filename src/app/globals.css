@@ -752,16 +752,32 @@ a {
     display: none;
   }
 
+  /* With the name gone the gap falls between the initials and the menu
+     chevron, where 10px is width the 390px bar cannot spare. */
+  .tp-avatar {
+    gap: 3px;
+  }
+
+  /* Same reason, one level up: the bar's own groups carry gap-3 and gap-4,
+     which is generous once every child has shrunk to its icon. */
+  .tp-topbar > .tp-row {
+    gap: 8px;
+  }
+
   .tp-seg-item {
     padding: 6px 10px;
   }
 }
 
-/* Destructive affordances stay out of the resting state — the design's cards
-   show no Edit/Delete chrome — but must remain reachable by keyboard, so they
-   appear on hover *and* on focus-within. */
-.tp-reveal {
-  opacity: 0;
+/* Secondary controls — drag handles and destructive buttons — are held back
+   rather than hidden. They were opacity: 0 until hover, on the reasoning that
+   the design's cards show no Edit/Delete chrome; but the design has no such
+   controls at all, so there was nothing to be faithful to, and the cost was
+   that nothing looked draggable and every delete button was undiscoverable.
+   Full strength on hover and focus lives with the other states at the foot of
+   this file. */
+.tp-quiet {
+  opacity: 0.55;
   transition: opacity 0.15s;
 }
 
@@ -903,8 +919,8 @@ a {
   }
 }
 
-/* Drag handle. Same reveal treatment as the destructive buttons, because the
-   design draws no handles and they should not add permanent furniture. */
+/* Drag handle. Held back with the destructive buttons rather than hidden — it
+   is the only thing in the roadmap that says reordering is possible. */
 .tp-grip {
   display: inline-flex;
   align-items: center;
@@ -916,14 +932,15 @@ a {
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: var(--ink-3);
+  /* ink-2, not ink-3: at 55% opacity the lighter grey washes out on white. */
+  color: var(--ink-2);
   /* Stops a touch drag from scrolling the page instead of moving the item. */
   touch-action: none;
 }
 
 .tp-grip:hover {
   background: rgba(28, 31, 51, 0.05);
-  color: var(--ink-2);
+  color: var(--ink);
 }
 
 /* Drag target laid over an SVG station. Centred on the station's coordinates,
@@ -940,24 +957,134 @@ a {
   background: var(--accent-soft-2);
 }
 
-.tp-grip:focus-visible {
-  outline: 2px solid var(--ink);
-  outline-offset: 2px;
+/* ══ Interaction states ═══════════════════════════════════════════════
+   Everything below is about signifiers: whether a control looks like what it
+   does. It sits at the end of the file on purpose — several of these rules
+   weigh the same as the component rules they modify (`.tp-btn:active` and
+   `.tp-btn-primary:hover` are both (0,2,0)), so source order is what makes
+   them apply at all. Moved above the components they would parse cleanly,
+   appear in devtools, and do nothing.
+
+   The design reference cannot settle any of this: refs/styles.css contains no
+   :focus, :active, :disabled or outline of any kind. It is a set of static
+   artboards, so there is nothing here to contradict. */
+
+/* Quiet, not hidden. These were opacity: 0 until hover, which made drag
+   handles and every delete button undiscoverable — and on touch, where hover
+   never fires, permanently invisible while still tappable. */
+.tp-quiet-host:hover .tp-quiet,
+.tp-quiet-host:focus-within .tp-quiet,
+.tp-quiet:hover,
+.tp-quiet:focus-visible {
   opacity: 1;
 }
 
-.tp-reveal-host:hover .tp-reveal,
-.tp-reveal-host:focus-within .tp-reveal,
-.tp-reveal:focus-visible {
-  opacity: 1;
-}
-
-/* Keyboard focus has to stay visible on every interactive element; the design
-   only ever shows mouse states. */
-.tp-btn:focus-visible,
-.tp-ghost:focus-visible,
-.tp-seg-item:focus-visible,
-.tp-input:focus-visible {
+/* Keyboard focus, for anything focusable rather than a list of five classes
+   that has to be remembered. The previous allowlist had already gone stale:
+   the judgement ladder, the nav, the logo, the chevrons and the marking input
+   all had no focus indicator. :where() keeps this at zero specificity so a
+   component can still override it. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
   outline: 2px solid var(--ink);
   outline-offset: 2px;
+}
+
+/* The card's link is a stretched ::after covering the whole card, so the ring
+   has to be drawn there — otherwise focus outlines the competitor's name while
+   the click target is the entire card. */
+.tp-card-link:focus-visible {
+  outline: none;
+}
+
+.tp-card-link:focus-visible::after {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+  border-radius: 16px;
+}
+
+/* Pressed. Nothing in the app had an :active state, so a click registered only
+   by the thing it caused. The primary button lifted 1px on hover with nothing
+   putting it back down. */
+.tp-btn:active,
+.tp-ghost:active,
+.tp-seg-item:active {
+  transform: translateY(1px);
+}
+
+.tp-btn-primary:active {
+  box-shadow: 0 1px 2px rgba(28, 31, 51, 0.06);
+}
+
+/* The most-used button variant had no hover at all — it is the class on every
+   Remove, Delete and Edit control in the app. */
+.tp-btn-ghost:hover {
+  background: var(--surface-2);
+  border-color: var(--ink-3);
+}
+
+/* Disabled. There was no rule for this anywhere, while 30+ controls set
+   disabled={pending}: a disabled button was pixel-identical to a live one and
+   simply ignored the click. */
+:where(button, a, input, select, textarea):disabled,
+:where(button, a, input, select, textarea)[disabled],
+[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Otherwise a disabled primary still lifts under the pointer. */
+.tp-btn:disabled:hover,
+.tp-btn[disabled]:hover,
+.tp-ghost:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* Editable in place. The resting state was bare text with no border, no icon
+   and no hover — screen readers were told "click to rename" and sighted users
+   were told nothing. A dotted underline is the long-standing convention and
+   costs almost no visual weight. */
+.tp-editable {
+  border: none;
+  border-bottom: 1px dotted var(--border-strong);
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.tp-editable:hover:not(:disabled) {
+  border-bottom-style: solid;
+  border-bottom-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.tp-editable:disabled {
+  border-bottom-color: transparent;
+}
+
+/* A card that is a link should say so. There was no hover on any card, so a
+   whole-card link and a read-only stat card were indistinguishable until the
+   cursor changed. --shadow-md is what the style guide annotates as
+   "Active block, hover cards". */
+.tp-card-linked:hover,
+.tp-card-hover:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-md);
+}
+
+.tp-card-linked,
+.tp-card-hover {
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+/* Table rows are navigable but had no rollover, so there was nothing to tell
+   you which row your pointer was on across six columns. */
+.tp-row-linked:hover {
+  background: var(--surface-2);
+}
+
+/* The search field keeps outline: none on the input itself (it is borderless by
+   design), so the ring goes on the wrapper — focusing it produced no visible
+   change at all before this. */
+.tp-field:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
 }

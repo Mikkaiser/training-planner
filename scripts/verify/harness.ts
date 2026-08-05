@@ -111,3 +111,32 @@ export async function withContext<T>(
     await browser.close();
   }
 }
+
+/**
+ * A tally of assertions, shared so each script does not keep its own copy.
+ *
+ * flows.ts and responsive.ts each grew their own `check` with slightly
+ * different detail formatting; this is that function, once.
+ */
+export function createChecker() {
+  let passed = 0;
+  let failed = 0;
+
+  const check = (name: string, ok: boolean, detail = ""): void => {
+    if (ok) {
+      passed += 1;
+      console.log(`  ok    ${name}`);
+    } else {
+      failed += 1;
+      console.log(`  FAIL  ${name}${detail ? `\n        ${detail}` : ""}`);
+    }
+  };
+
+  /** Prints the tally and sets a non-zero exit code if anything failed. */
+  const report = (label: string): void => {
+    console.log(`\n[${label}] ${passed} passed, ${failed} failed`);
+    if (failed > 0) process.exitCode = 1;
+  };
+
+  return { check, report, counts: () => ({ passed, failed }) };
+}

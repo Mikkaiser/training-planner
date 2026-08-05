@@ -31,7 +31,7 @@ export function GateMarker({ gate, planId }: GateMarkerProps) {
 
   const remove = (
     <ConfirmButton
-      className="tp-btn tp-btn-ghost tp-btn-sm tp-reveal"
+      className="tp-btn tp-btn-ghost tp-btn-sm tp-quiet"
       label="Remove"
       ariaLabel={`Remove ${gate.label}`}
       title={`Remove ${gate.label}?`}
@@ -51,7 +51,7 @@ export function GateMarker({ gate, planId }: GateMarkerProps) {
   );
 
   return (
-    <div className="tp-gate tp-reveal-host" style={{ flexWrap: "wrap" }}>
+    <div className="tp-gate tp-quiet-host" style={{ flexWrap: "wrap" }}>
       <div className={`tp-gate-icon ${iconClass}`}>
         {gate.status === "passed" ? (
           <CheckIcon size={14} />

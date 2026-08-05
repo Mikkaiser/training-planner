@@ -61,7 +61,7 @@ export function PhaseHeader({ phase, planId, expanded, onToggle, handle }: Phase
       {phase.status === "complete" ? <span className="tp-status tp-status-passed">Complete</span> : null}
 
       <ConfirmButton
-        className="tp-btn tp-btn-ghost tp-btn-sm tp-reveal"
+        className="tp-btn tp-btn-ghost tp-btn-sm tp-quiet"
         label="Remove"
         ariaLabel={`Remove phase ${phase.title}`}
         title={`Remove "${phase.title}"?`}
@@ -93,7 +93,7 @@ export function PhaseHeader({ phase, planId, expanded, onToggle, handle }: Phase
   if (isCurrent) {
     return (
       <div
-        className="tp-row tp-gap-3 tp-reveal-host"
+        className="tp-row tp-gap-3 tp-quiet-host"
         style={{ padding: "14px 4px 18px", alignItems: "center", flexWrap: "wrap" }}
       >
         {body}
@@ -103,7 +103,7 @@ export function PhaseHeader({ phase, planId, expanded, onToggle, handle }: Phase
 
   return (
     <div
-      className="tp-card tp-reveal-host"
+      className="tp-card tp-quiet-host"
       style={{
         padding: "18px 22px",
         display: "flex",

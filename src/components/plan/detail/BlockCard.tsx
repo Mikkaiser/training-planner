@@ -45,7 +45,7 @@ export function BlockCard({ block, planId, phaseLabel, active = false, handle }:
   };
 
   return (
-    <div className={`tp-card ${active ? "tp-card-active" : ""} tp-reveal-host`} style={{ padding: 18 }}>
+    <div className={`tp-card ${active ? "tp-card-active" : ""} tp-quiet-host`} style={{ padding: 18 }}>
       <div className="tp-row" style={{ justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
         <div className="tp-col" style={{ gap: 6, minWidth: 0, flex: 1 }}>
           <div className="tp-row tp-gap-2" style={{ flexWrap: "wrap" }}>
@@ -175,7 +175,7 @@ export function BlockCard({ block, planId, phaseLabel, active = false, handle }:
           <PlusIcon size={11} /> Add Exercise
         </button>
         <ConfirmButton
-          className="tp-btn tp-btn-ghost tp-btn-sm tp-reveal"
+          className="tp-btn tp-btn-ghost tp-btn-sm tp-quiet"
           style={{ flexShrink: 0 }}
           disabled={pending}
           label="Remove"

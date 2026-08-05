@@ -64,13 +64,14 @@ export function SelectPill<T extends string>({
         style={{ cursor: disabled ? "default" : "pointer", gap: 4 }}
       >
         {value}
-        {/* Only the verb pill carries a chevron in the design; the competence
-            tag is drawn plain, so the tag variant stays plain here too. */}
-        {variant === "pill" ? (
-          <span style={{ opacity: 0.5, display: "inline-flex" }}>
-            <ChevronIcon size={8} className={open ? "tp-chev open" : "tp-chev"} />
-          </span>
-        ) : null}
+        {/* Both variants carry the chevron. The design only draws one on the
+            verb pill, but it never drew a competence menu either — and without
+            it this button is pixel-identical to the static Tag component
+            rendered a few lines away, so the only way to learn it opens a menu
+            was to click a label and see what happened. */}
+        <span style={{ opacity: 0.5, display: "inline-flex" }}>
+          <ChevronIcon size={8} className={open ? "tp-chev open" : "tp-chev"} />
+        </span>
       </button>
 
       {open ? (

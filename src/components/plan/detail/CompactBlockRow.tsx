@@ -23,7 +23,7 @@ export function CompactBlockRow({
   const [pending, startTransition] = useTransition();
 
   return (
-    <div className="tp-card tp-reveal-host" style={{ padding: "12px 16px", borderLeft: "3px solid var(--pos)" }}>
+    <div className="tp-card tp-quiet-host" style={{ padding: "12px 16px", borderLeft: "3px solid var(--pos)" }}>
       <div className="tp-row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12 }}>
         <div className="tp-col" style={{ gap: 4, minWidth: 0 }}>
           <InlineEdit
