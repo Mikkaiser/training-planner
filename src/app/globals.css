@@ -16,6 +16,14 @@
   --accent-ink: #1c1f33;
   --accent-soft: rgba(219, 253, 107, 0.18);
   --accent-soft-2: rgba(219, 253, 107, 0.35);
+
+  /* The logo's own palette. Deliberately not --ink and --accent: the mark was
+     drawn with these values and is used as supplied, so they are kept apart
+     rather than quietly rounded to the app's. Retinting the mark to the UI is
+     a matter of pointing these three at --ink and --accent. */
+  --brand-ink: #1a1c16;
+  --brand-accent: #c6e625;
+  --brand-accent-on-dark: #d8f23a;
   --pos: #00a878;
   --pos-soft: rgba(0, 168, 120, 0.12);
   --neg: #fb3640;
@@ -114,25 +122,30 @@ a {
   z-index: 40;
 }
 
-.tp-logo {
-  display: flex;
+/* The commissioned mark replaces the placeholder "T" tile that refs/styles.css
+   defines as .tp-logo-mark. That rule is gone rather than left unused. */
+.tp-brand {
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  font-weight: 700;
-  font-size: 16px;
-  letter-spacing: -0.02em;
+  gap: 9px;
+  min-width: 0;
 }
 
-.tp-logo-mark {
-  width: 26px;
-  height: 26px;
-  border-radius: 7px;
-  background: var(--ink);
-  color: var(--accent);
-  display: grid;
-  place-items: center;
-  font-weight: 800;
-  font-size: 14px;
+.tp-brand-word {
+  font-family: var(--font-brand), var(--font-sans), sans-serif;
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+@media (max-width: 560px) {
+  /* The mark carries the brand on its own once the bar is tight; the wordmark
+     is the first thing that would push the view switcher off-screen. */
+  .tp-brand-word {
+    display: none;
+  }
 }
 
 .tp-avatar {
@@ -827,6 +840,21 @@ a {
 
 @media (max-width: 1080px) {
   .tp-nav-detail {
+    display: none;
+  }
+}
+
+/* The roadmap bar is the tightest in the app — the back arrow, the editable
+   competitor name, the view switcher and the avatar all compete for it. The
+   mark is a courtesy here, not the only way home, so it is the first thing to
+   go rather than something that pushes a control off-screen. */
+.tp-brand-detail {
+  display: inline-flex;
+  padding-left: 2px;
+}
+
+@media (max-width: 900px) {
+  .tp-brand-detail {
     display: none;
   }
 }

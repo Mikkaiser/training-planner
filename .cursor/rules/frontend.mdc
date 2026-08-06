@@ -43,6 +43,15 @@ So, non-negotiable regardless of the artboards:
 
 `scripts/verify/affordance.ts` asserts all of this in a browser, at 390px too.
 
+## The logo supersedes `refs/`
+
+`refs/styles.css` defines `.tp-logo-mark` as a mono "T" in a tile. That was a
+placeholder. The real mark is `src/components/layout/Logo.tsx` — a 2×2 grid of
+three squares and an accent circle — and it is used as supplied, in its own
+colours (`--brand-ink`, `--brand-accent`, `--brand-accent-on-dark`), which are
+deliberately *not* `--ink` and `--accent`. Do not "restore" the T, and do not
+round the brand tokens to the UI palette without being asked to.
+
 ---
 
 ## Stack

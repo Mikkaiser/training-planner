@@ -15,6 +15,7 @@
     "lint": "next lint",
     "migrate": "tsx scripts/migrate.ts",
     "seed:demo": "tsx scripts/seed-demo.ts",
+    "brand:assets": "tsx scripts/brand-assets.ts",
     "smoke": "tsx scripts/smoke.ts",
     "verify:capture": "tsx scripts/verify/capture.ts",
     "verify:s3": "NODE_OPTIONS=--conditions=react-server tsx scripts/verify/s3-roundtrip.ts",
