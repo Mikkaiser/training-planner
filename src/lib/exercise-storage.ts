@@ -99,43 +99,75 @@ export async function copyExercisesForClone(
     const targetBlockId = blockMap.get(row.block_id);
     if (!targetBlockId) continue;
 
-    // A link is just a row: nothing to copy in storage, and no failure mode.
-    if (row.kind === "link") {
-      await pool.query(
-        `insert into exercises (block_id, file_name, kind, url, size_bytes, status, uploaded_by, uploaded_at)
-         values ($1, $2, 'link', $3, 0, 'ready', $4, now())`,
-        [targetBlockId, row.file_name, row.url, row.uploaded_by],
-      );
-      continue;
-    }
-
-    // Belt and braces: the DB constraint guarantees a file row has a key, but
-    // the type is nullable so the compiler cannot know that.
-    if (!row.storage_key) continue;
-
-    const newId = randomUUID();
-    const newKey = `plans/${targetPlanId}/blocks/${targetBlockId}/${newId}/${slugifyFileName(row.file_name)}`;
-
     try {
-      await s3Internal().send(
-        new CopyObjectCommand({
-          Bucket: bucket(),
-          // CopySource is bucket-qualified and must be URI-encoded, or a key
-          // containing spaces or unicode fails with an opaque 404.
-          CopySource: encodeURI(`${bucket()}/${row.storage_key}`),
-          Key: newKey,
-          ContentType: row.content_type ?? undefined,
-          MetadataDirective: "REPLACE",
-        }),
-      );
-
-      await pool.query(
-        `insert into exercises (id, block_id, file_name, kind, storage_key, content_type, size_bytes, status, uploaded_by, uploaded_at)
-         values ($1, $2, $3, 'file', $4, $5, $6, 'ready', $7, now())`,
-        [newId, targetBlockId, row.file_name, newKey, row.content_type, row.size_bytes, row.uploaded_by],
-      );
+      await copyExerciseInto(row, targetBlockId, targetPlanId);
     } catch (error) {
+      // A clone runs in the background over a whole plan, so one unreadable
+      // object should not cost the instructor the other forty.
       console.error("[copyExercisesForClone] skipped a file", { key: row.storage_key, error });
     }
   }
+}
+
+/** The half of an exercise row a copy needs. */
+export type CopyableExercise = {
+  file_name: string;
+  kind: "file" | "link";
+  storage_key: string | null;
+  content_type: string | null;
+  url: string | null;
+  size_bytes: number;
+  uploaded_by: string | null;
+};
+
+/**
+ * Reproduces one exercise on another block.
+ *
+ * Shared by plan cloning and by reusing an exercise from the library, so the
+ * two cannot drift on the thing that matters: a file is *copied*, never shared.
+ * `exercises.storage_key` is unique precisely so each row owns its object and
+ * deleting one exercise can never pull the file out from under another.
+ *
+ * Throws on a storage failure. Callers decide whether that is fatal — cloning
+ * skips and carries on, an explicit reuse reports it.
+ */
+export async function copyExerciseInto(
+  row: CopyableExercise,
+  targetBlockId: string,
+  targetPlanId: string,
+): Promise<void> {
+  // A link is just a row: nothing to copy in storage, and no failure mode.
+  if (row.kind === "link") {
+    await pool.query(
+      `insert into exercises (block_id, file_name, kind, url, size_bytes, status, uploaded_by, uploaded_at)
+       values ($1, $2, 'link', $3, 0, 'ready', $4, now())`,
+      [targetBlockId, row.file_name, row.url, row.uploaded_by],
+    );
+    return;
+  }
+
+  // Belt and braces: the DB constraint guarantees a file row has a key, but
+  // the type is nullable so the compiler cannot know that.
+  if (!row.storage_key) throw new Error("That file has no stored object to copy.");
+
+  const newId = randomUUID();
+  const newKey = `plans/${targetPlanId}/blocks/${targetBlockId}/${newId}/${slugifyFileName(row.file_name)}`;
+
+  await s3Internal().send(
+    new CopyObjectCommand({
+      Bucket: bucket(),
+      // CopySource is bucket-qualified and must be URI-encoded, or a key
+      // containing spaces or unicode fails with an opaque 404.
+      CopySource: encodeURI(`${bucket()}/${row.storage_key}`),
+      Key: newKey,
+      ContentType: row.content_type ?? undefined,
+      MetadataDirective: "REPLACE",
+    }),
+  );
+
+  await pool.query(
+    `insert into exercises (id, block_id, file_name, kind, storage_key, content_type, size_bytes, status, uploaded_by, uploaded_at)
+     values ($1, $2, $3, 'file', $4, $5, $6, 'ready', $7, now())`,
+    [newId, targetBlockId, row.file_name, newKey, row.content_type, row.size_bytes, row.uploaded_by],
+  );
 }
