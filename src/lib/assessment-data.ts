@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { query, queryOne, TS } from "@/lib/db";
-import { getCurrentUserOrRedirect } from "@/lib/plan-data";
+import { getActiveTeam } from "@/lib/team-data";
 import { summariseRun, type RunSummary, type ScorableAspect } from "@/lib/assessment-view-model";
 import type {
   AssessmentAspect,
@@ -15,12 +15,17 @@ import type {
 } from "@/lib/types";
 
 /**
- * Reads for the assessment guide. Every query joins back to instructor_id, the
- * same ownership pattern the plan queries use — there is no RLS behind this.
+ * Reads for the assessment guide. Every query filters on team_id, the same
+ * scoping the plan queries use — there is no RLS behind this.
+ *
+ * Note the runs queries now also constrain the joined training_plan and scheme
+ * to the team. Scoping on the run alone was enough while one person owned all
+ * three; once a plan can be shared, a run pointing at another team's plan would
+ * have joined its competitor's name straight in.
  */
 
 export async function getSchemesForCurrentInstructor(): Promise<AssessmentSchemeSummary[]> {
-  const user = await getCurrentUserOrRedirect();
+  const { teamId } = await getActiveTeam();
 
   return query<AssessmentSchemeSummary>(
     `select s.id, s.skill, s.test_project, s.source_file_name,
@@ -34,22 +39,22 @@ export async function getSchemesForCurrentInstructor(): Promise<AssessmentScheme
               where c.scheme_id = s.id)::int as aspect_count,
             (select count(*) from assessment_runs r where r.scheme_id = s.id)::int as run_count
        from assessment_schemes s
-      where s.instructor_id = $1
+      where s.team_id = $1
       order by s.created_at desc`,
-    [user.id],
+    [teamId],
   );
 }
 
 /** The whole scheme tree in four queries rather than one per node. */
 export async function getSchemeById(id: string): Promise<AssessmentScheme> {
-  const user = await getCurrentUserOrRedirect();
+  const { teamId } = await getActiveTeam();
 
   const scheme = await queryOne<Omit<AssessmentScheme, "criteria">>(
-    `select id, instructor_id, skill, test_project, source_file_name, storage_key,
+    `select id, team_id, created_by, skill, test_project, source_file_name, storage_key,
             total_max::float8 as total_max, ${TS("created_at", "created_at")}
        from assessment_schemes
-      where id = $1 and instructor_id = $2`,
-    [id, user.id],
+      where id = $1 and team_id = $2`,
+    [id, teamId],
   );
 
   if (!scheme) notFound();
@@ -126,7 +131,7 @@ export async function getSchemeById(id: string): Promise<AssessmentScheme> {
 }
 
 export async function getRunsForScheme(schemeId: string): Promise<AssessmentRunSummary[]> {
-  const user = await getCurrentUserOrRedirect();
+  const { teamId } = await getActiveTeam();
 
   return query<AssessmentRunSummary>(
     `select r.id, r.scheme_id, r.plan_id, r.label,
@@ -134,10 +139,10 @@ export async function getRunsForScheme(schemeId: string): Promise<AssessmentRunS
             tp.student_name, tp.title as plan_title,
             (select count(*) from assessment_marks m where m.run_id = r.id)::int as marked_count
        from assessment_runs r
-       left join training_plans tp on tp.id = r.plan_id
-      where r.scheme_id = $1 and r.instructor_id = $2
+       left join training_plans tp on tp.id = r.plan_id and tp.team_id = $2
+      where r.scheme_id = $1 and r.team_id = $2
       order by r.created_at desc`,
-    [schemeId, user.id],
+    [schemeId, teamId],
   );
 }
 
@@ -157,7 +162,7 @@ export type PlanAssessment = {
  * how the roadmap and the marking screen would come to disagree.
  */
 export async function getAssessmentsForPlan(planId: string): Promise<PlanAssessment[]> {
-  const user = await getCurrentUserOrRedirect();
+  const { teamId } = await getActiveTeam();
 
   const runs = await query<{
     id: string;
@@ -168,10 +173,11 @@ export async function getAssessmentsForPlan(planId: string): Promise<PlanAssessm
   }>(
     `select r.id, r.scheme_id, s.test_project, r.label, ${TS("r.created_at", "created_at")}
        from assessment_runs r
-       join assessment_schemes s on s.id = r.scheme_id
-      where r.plan_id = $1 and r.instructor_id = $2
+       join assessment_schemes s on s.id = r.scheme_id and s.team_id = $2
+       join training_plans tp on tp.id = r.plan_id and tp.team_id = $2
+      where r.plan_id = $1 and r.team_id = $2
       order by r.created_at desc`,
-    [planId, user.id],
+    [planId, teamId],
   );
 
   if (runs.length === 0) return [];
@@ -221,12 +227,12 @@ export async function getAssessmentsForPlan(planId: string): Promise<PlanAssessm
 
 /** Schemes offered when starting a run from a competitor's roadmap. */
 export async function getSchemeOptions(): Promise<{ id: string; testProject: string; totalMax: number }[]> {
-  const user = await getCurrentUserOrRedirect();
+  const { teamId } = await getActiveTeam();
 
   const rows = await query<{ id: string; test_project: string; total_max: number }>(
     `select id, test_project, total_max::float8 as total_max
-       from assessment_schemes where instructor_id = $1 order by created_at desc`,
-    [user.id],
+       from assessment_schemes where team_id = $1 order by created_at desc`,
+    [teamId],
   );
 
   return rows.map((row) => ({ id: row.id, testProject: row.test_project, totalMax: row.total_max }));
@@ -235,7 +241,7 @@ export async function getSchemeOptions(): Promise<{ id: string; testProject: str
 export async function getRunById(
   id: string,
 ): Promise<{ run: AssessmentRunSummary; scheme: AssessmentScheme; marks: AssessmentMark[] }> {
-  const user = await getCurrentUserOrRedirect();
+  const { teamId } = await getActiveTeam();
 
   const run = await queryOne<AssessmentRunSummary>(
     `select r.id, r.scheme_id, r.plan_id, r.label,
@@ -243,9 +249,9 @@ export async function getRunById(
             tp.student_name, tp.title as plan_title,
             0 as marked_count
        from assessment_runs r
-       left join training_plans tp on tp.id = r.plan_id
-      where r.id = $1 and r.instructor_id = $2`,
-    [id, user.id],
+       left join training_plans tp on tp.id = r.plan_id and tp.team_id = $2
+      where r.id = $1 and r.team_id = $2`,
+    [id, teamId],
   );
 
   if (!run) notFound();

@@ -11,7 +11,9 @@ export type Plan = {
   id: string;
   title: string;
   student_name: string;
-  instructor_id: string;
+  team_id: string;
+  /** Who made it. Provenance now, not authorization. */
+  created_by: string | null;
   created_at: string;
 };
 
@@ -121,7 +123,9 @@ export type AssessmentCriterion = {
 
 export type AssessmentScheme = {
   id: string;
-  instructor_id: string;
+  team_id: string;
+  /** Who made it. Provenance now, not authorization. */
+  created_by: string | null;
   skill: string;
   test_project: string;
   source_file_name: string;

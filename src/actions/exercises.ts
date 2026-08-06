@@ -2,6 +2,7 @@
 
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
+import { requireTeamContext } from "@/lib/team-data";
 import { HeadObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { z } from "zod";
@@ -26,13 +27,6 @@ import { bucket, s3Internal, s3Public } from "@/lib/s3";
 /** Long enough for a 25 mb upload on a poor link, short enough to be a weak capability. */
 const UPLOAD_URL_TTL_SECONDS = 600;
 
-async function requireUserId(): Promise<string> {
-  const session = await auth();
-  const id = session?.user?.id;
-  if (!id) throw new Error("You need to sign in before managing exercises.");
-  return id;
-}
-
 const presignSchema = z.object({
   planId: z.string().uuid(),
   blockId: z.string().uuid(),
@@ -56,7 +50,7 @@ export type PresignResult = {
  * insert matches nothing, and no URL is ever signed.
  */
 export async function presignExerciseUpload(input: z.input<typeof presignSchema>): Promise<PresignResult> {
-  const userId = await requireUserId();
+  const { userId, teamId } = await requireTeamContext();
   const parsed = presignSchema.parse(input);
 
   const validation = validateUploadCandidate(parsed.fileName, parsed.sizeBytes, parsed.contentType);
@@ -75,7 +69,7 @@ export async function presignExerciseUpload(input: z.input<typeof presignSchema>
           join training_plans tp on tp.id = ph.plan_id
          where b.id = $2
            and tp.id = $8
-           and tp.instructor_id = $7
+           and tp.team_id = $10
       )
         and (select count(*) from exercises where block_id = $2) < $9
      returning id`,
@@ -89,6 +83,7 @@ export async function presignExerciseUpload(input: z.input<typeof presignSchema>
       userId,
       parsed.planId,
       MAX_FILES_PER_BLOCK,
+      teamId,
     ],
   );
 
@@ -134,7 +129,7 @@ const linkSchema = z.object({
  * confirm, so there is nothing to be pending about.
  */
 export async function createExerciseLink(input: z.input<typeof linkSchema>): Promise<void> {
-  const userId = await requireUserId();
+  const { userId, teamId } = await requireTeamContext();
   const parsed = linkSchema.parse(input);
 
   const normalised = normaliseExerciseUrl(parsed.url);
@@ -150,11 +145,11 @@ export async function createExerciseLink(input: z.input<typeof linkSchema>): Pro
           from blocks b
           join phases ph on ph.id = b.phase_id
           join training_plans tp on tp.id = ph.plan_id
-         where b.id = $1 and tp.id = $5 and tp.instructor_id = $4
+         where b.id = $1 and tp.id = $5 and tp.team_id = $7
       )
         and (select count(*) from exercises where block_id = $1) < $6
      returning id`,
-    [parsed.blockId, label, normalised.url, userId, parsed.planId, MAX_FILES_PER_BLOCK],
+    [parsed.blockId, label, normalised.url, userId, parsed.planId, MAX_FILES_PER_BLOCK, teamId],
   );
 
   if (!row) {
@@ -176,7 +171,7 @@ const confirmSchema = z.object({
  * as an attached file that 404s on download.
  */
 export async function confirmExerciseUpload(input: z.input<typeof confirmSchema>): Promise<void> {
-  const userId = await requireUserId();
+  const { userId, teamId } = await requireTeamContext();
   const parsed = confirmSchema.parse(input);
 
   const row = await queryOne<{ storage_key: string; size_bytes: number }>(
@@ -185,8 +180,8 @@ export async function confirmExerciseUpload(input: z.input<typeof confirmSchema>
        join blocks b on b.id = e.block_id
        join phases ph on ph.id = b.phase_id
        join training_plans tp on tp.id = ph.plan_id
-      where e.id = $1 and tp.instructor_id = $2`,
-    [parsed.exerciseId, userId],
+      where e.id = $1 and tp.team_id = $2`,
+    [parsed.exerciseId, teamId],
   );
 
   if (!row) throw new Error("Exercise not found, or you do not have access to it.");
@@ -242,7 +237,7 @@ export type AttachExistingResult = { attached: number; failed: string[] };
 export async function attachExistingExercises(
   input: z.input<typeof attachExistingSchema>,
 ): Promise<AttachExistingResult> {
-  const userId = await requireUserId();
+  const { userId, teamId } = await requireTeamContext();
   const parsed = attachExistingSchema.parse(input);
 
   const target = await queryOne<{ used: number }>(
@@ -250,8 +245,8 @@ export async function attachExistingExercises(
        from blocks b
        join phases ph on ph.id = b.phase_id
        join training_plans tp on tp.id = ph.plan_id
-      where b.id = $1 and tp.id = $2 and tp.instructor_id = $3`,
-    [parsed.blockId, parsed.planId, userId],
+      where b.id = $1 and tp.id = $2 and tp.team_id = $3`,
+    [parsed.blockId, parsed.planId, teamId],
   );
 
   if (!target) throw new Error("Block not found, or you do not have access to it.");
@@ -275,8 +270,8 @@ export async function attachExistingExercises(
        join training_plans tp on tp.id = ph.plan_id
       where e.id = any($1::uuid[])
         and e.status = 'ready'
-        and tp.instructor_id = $2`,
-    [parsed.sourceIds, userId],
+        and tp.team_id = $2`,
+    [parsed.sourceIds, teamId],
   );
 
   if (sources.length === 0) throw new Error("Those exercises were not found, or you do not have access to them.");
@@ -322,7 +317,7 @@ const updateExerciseSchema = z.object({
  * leaves the others as they were.
  */
 export async function updateExercise(input: z.input<typeof updateExerciseSchema>): Promise<void> {
-  const userId = await requireUserId();
+  const { userId, teamId } = await requireTeamContext();
   const parsed = updateExerciseSchema.parse(input);
 
   const existing = await queryOne<{ kind: "file" | "link" }>(
@@ -331,8 +326,8 @@ export async function updateExercise(input: z.input<typeof updateExerciseSchema>
        join blocks b on b.id = e.block_id
        join phases ph on ph.id = b.phase_id
        join training_plans tp on tp.id = ph.plan_id
-      where e.id = $1 and tp.id = $2 and tp.instructor_id = $3`,
-    [parsed.exerciseId, parsed.planId, userId],
+      where e.id = $1 and tp.id = $2 and tp.team_id = $3`,
+    [parsed.exerciseId, parsed.planId, teamId],
   );
 
   if (!existing) throw new Error("Exercise not found, or you do not have access to it.");
@@ -360,9 +355,9 @@ export async function updateExercise(input: z.input<typeof updateExerciseSchema>
         and ph.id = b.phase_id
         and tp.id = ph.plan_id
         and tp.id = $2
-        and tp.instructor_id = $3
+        and tp.team_id = $3
       returning e.id`,
-    [parsed.exerciseId, parsed.planId, userId, parsed.label.trim(), url],
+    [parsed.exerciseId, parsed.planId, teamId, parsed.label.trim(), url],
   );
 
   if (!row) throw new Error("Exercise not found, or you do not have access to it.");
@@ -381,7 +376,7 @@ const deleteSchema = z.object({
  * download is permanently broken.
  */
 export async function deleteExercise(input: z.input<typeof deleteSchema>): Promise<void> {
-  const userId = await requireUserId();
+  const { userId, teamId } = await requireTeamContext();
   const parsed = deleteSchema.parse(input);
 
   const row = await queryOne<{ storage_key: string | null }>(
@@ -391,9 +386,9 @@ export async function deleteExercise(input: z.input<typeof deleteSchema>): Promi
         and b.id = e.block_id
         and ph.id = b.phase_id
         and tp.id = ph.plan_id
-        and tp.instructor_id = $2
+        and tp.team_id = $2
      returning e.storage_key`,
-    [parsed.exerciseId, userId],
+    [parsed.exerciseId, teamId],
   );
 
   if (!row) throw new Error("Exercise not found, or you do not have access to it.");

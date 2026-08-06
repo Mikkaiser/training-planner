@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { signOut } from "@/actions/auth";
+import { switchTeam } from "@/actions/teams";
+import type { TeamOption } from "@/lib/team-data";
 import { ChevronIcon } from "@/components/ui/icons";
 import { getInitials } from "@/lib/utils";
 
@@ -10,7 +12,15 @@ import { getInitials } from "@/lib/utils";
  * log-out button. Signing out still has to be reachable, so it lives in a menu
  * behind the avatar rather than as a second button competing with "New Plan".
  */
-export function UserMenu({ instructorName }: { instructorName: string }) {
+export function UserMenu({
+  instructorName,
+  teams = [],
+  activeTeamId,
+}: {
+  instructorName: string;
+  teams?: TeamOption[];
+  activeTeamId?: string;
+}) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -65,6 +75,45 @@ export function UserMenu({ instructorName }: { instructorName: string }) {
             zIndex: 60,
           }}
         >
+          {teams.length > 1 ? (
+            <>
+              <div className="tp-eyebrow" style={{ padding: "6px 12px 4px" }}>
+                Team
+              </div>
+              {teams.map((team) => (
+                <form key={team.id} action={switchTeam.bind(null, { teamId: team.id })}>
+                  <button
+                    type="submit"
+                    role="menuitem"
+                    aria-current={team.id === activeTeamId}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 10,
+                      width: "100%",
+                      textAlign: "left",
+                      padding: "8px 12px",
+                      borderRadius: 8,
+                      border: "none",
+                      background: team.id === activeTeamId ? "var(--accent-soft)" : "transparent",
+                      cursor: "pointer",
+                      font: "inherit",
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: "var(--ink)",
+                    }}
+                  >
+                    <span>{team.name}</span>
+                    {team.memberCount > 1 ? (
+                      <span className="tp-tiny tp-mut tp-mono">{team.memberCount}</span>
+                    ) : null}
+                  </button>
+                </form>
+              ))}
+              <div style={{ height: 1, background: "var(--border)", margin: "6px 0" }} />
+            </>
+          ) : null}
+
           <form action={signOut}>
             <button
               type="submit"

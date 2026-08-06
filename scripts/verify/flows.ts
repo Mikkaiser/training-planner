@@ -12,7 +12,7 @@ import { join } from "node:path";
 import ExcelJS from "exceljs";
 import type { Page } from "playwright";
 import { buildSchemeGrid, type SchemeSpec } from "../../src/lib/marking-scheme/build";
-import { BASE_URL, gotoAuthed, withContext } from "./harness";
+import { addMember, authedContext, BASE_URL, dropUser, gotoAuthed, removeMemberRow, seedSecondUser, teamOfPlan, withContext } from "./harness";
 
 /**
  * The same scheme the unit-test fixture describes, built through build.ts.
@@ -690,7 +690,11 @@ async function main(): Promise<void> {
     const cloneProgress = (await page.locator("header .tp-mono").first().innerText()).trim();
     check("the clone starts with every gate pending", cloneProgress === "0%", cloneProgress);
 
-    // ── Ownership: another instructor cannot read this plan ──────────────
+    // ── Ownership, with a real second identity ───────────────────────────
+    // The old version of this opened a *logged-out* context and asserted a
+    // redirect to /login, under a comment claiming it proved another instructor
+    // could not read the plan. It never did. Teams is the change that makes the
+    // difference matter, so this mints a second signed-in user.
     const stranger = await context.browser()?.newContext();
     if (stranger) {
       const strangerPage = await stranger.newPage();
@@ -701,6 +705,49 @@ async function main(): Promise<void> {
         `${response?.status()} ${strangerPage.url()}`,
       );
       await stranger.close();
+    }
+
+    const browser = context.browser();
+    if (browser) {
+      const other = await seedSecondUser(`teammate+${process.pid}@example.test`);
+      const otherContext = await authedContext(browser, other);
+      const otherPage = await otherContext.newPage();
+
+      // Before any invitation: a different trainer, signed in, sees nothing.
+      await otherPage.goto(`${BASE_URL}${planPath}`, { waitUntil: "networkidle" });
+      check(
+        "a signed-in outsider cannot open someone else's plan",
+        !(await otherPage.locator("body").innerText()).includes(STUDENT),
+        otherPage.url(),
+      );
+
+      await otherPage.goto(`${BASE_URL}/`, { waitUntil: "networkidle" });
+      check(
+        "an outsider's own plan list does not show the other team's plans",
+        !(await otherPage.locator("body").innerText()).includes(PLAN_TITLE),
+      );
+
+      // Join them to the team that owns the plan, exactly as accepting would.
+      const teamId = await teamOfPlan(planPath.split("/").pop() ?? "");
+      await addMember(teamId, other.id);
+      await otherPage.goto(`${BASE_URL}${planPath}`, { waitUntil: "networkidle" });
+      check(
+        "a teammate can open the shared plan",
+        (await otherPage.locator("body").innerText()).includes(STUDENT),
+        otherPage.url(),
+      );
+
+      // ...and loses it again the moment they are removed.
+      await removeMemberRow(teamId, other.id);
+      await otherPage.goto(`${BASE_URL}${planPath}`, { waitUntil: "networkidle" });
+      check(
+        "a removed member loses access immediately",
+        !(await otherPage.locator("body").innerText()).includes(STUDENT),
+        otherPage.url(),
+      );
+
+      await otherContext.close();
+      await dropUser(other.id);
     }
 
     // ── Assessment guide ─────────────────────────────────────────────────

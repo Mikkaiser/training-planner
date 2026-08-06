@@ -140,3 +140,86 @@ export function createChecker() {
 
   return { check, report, counts: () => ({ passed, failed }) };
 }
+
+/**
+ * A second signed-in identity, with its own personal team.
+ *
+ * The suite had no way to make one, so the "another instructor cannot read
+ * this" check only ever opened a logged-out context. Teams makes the difference
+ * between "not signed in" and "signed in as someone else" the thing under test.
+ */
+export async function seedSecondUser(email: string): Promise<SeedUser> {
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 1 });
+  try {
+    const user = await pool.query<SeedUser>(
+      `insert into users (email, name) values ($1, $2)
+       on conflict (email) do update set name = excluded.name
+       returning id, email, name`,
+      [email, "Verify Teammate"],
+    );
+    const id = user.rows[0].id;
+
+    const team = await pool.query<{ id: string }>(
+      `insert into teams (name, is_personal, created_by) values ($1, true, $2) returning id`,
+      ["Verify Teammate's plans", id],
+    );
+    await pool.query(
+      `insert into team_members (team_id, user_id, role) values ($1, $2, 'owner') on conflict do nothing`,
+      [team.rows[0].id, id],
+    );
+    await pool.query("update users set active_team_id = $2 where id = $1", [id, team.rows[0].id]);
+
+    return user.rows[0];
+  } finally {
+    await pool.end();
+  }
+}
+
+/** Which team owns a plan, so a test can join someone to exactly that team. */
+export async function teamOfPlan(planId: string): Promise<string> {
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 1 });
+  try {
+    const { rows } = await pool.query<{ team_id: string }>(
+      "select team_id from training_plans where id = $1",
+      [planId],
+    );
+    if (!rows[0]) throw new Error(`No plan ${planId}`);
+    return rows[0].team_id;
+  } finally {
+    await pool.end();
+  }
+}
+
+export async function addMember(teamId: string, userId: string): Promise<void> {
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 1 });
+  try {
+    await pool.query(
+      "insert into team_members (team_id, user_id, role) values ($1, $2, 'member') on conflict do nothing",
+      [teamId, userId],
+    );
+    // acceptInvite also makes the team active; joining without switching leaves
+    // them looking at their own plans, which is not what the test means to check.
+    await pool.query("update users set active_team_id = $2 where id = $1", [userId, teamId]);
+  } finally {
+    await pool.end();
+  }
+}
+
+export async function removeMemberRow(teamId: string, userId: string): Promise<void> {
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 1 });
+  try {
+    await pool.query("delete from team_members where team_id = $1 and user_id = $2", [teamId, userId]);
+  } finally {
+    await pool.end();
+  }
+}
+
+/** Everything this suite creates it also removes. */
+export async function dropUser(userId: string): Promise<void> {
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 1 });
+  try {
+    await pool.query("delete from users where id = $1", [userId]);
+  } finally {
+    await pool.end();
+  }
+}

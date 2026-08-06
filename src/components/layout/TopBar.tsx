@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Logo } from "@/components/layout/Logo";
 import { MainNav } from "@/components/layout/MainNav";
 import { UserMenu } from "@/components/layout/UserMenu";
+import { getActiveTeam, getTeamsForCurrentUser } from "@/lib/team-data";
 import { BackArrowIcon } from "@/components/ui/icons";
 import { APP_ROUTES } from "@/lib/routes";
 
@@ -17,7 +18,7 @@ interface TopBarProps {
   children?: React.ReactNode;
 }
 
-export function TopBar({
+export async function TopBar({
   instructorName,
   mode = "list",
   title,
@@ -26,6 +27,10 @@ export function TopBar({
   titleSlot,
   children,
 }: TopBarProps) {
+  // Fetched here rather than threaded through every page: the switcher belongs
+  // to the bar, and TopBar is already rendered on all of them.
+  const [teams, active] = await Promise.all([getTeamsForCurrentUser(), getActiveTeam()]);
+
   return (
     <header className="tp-topbar">
       {mode === "list" ? (
@@ -78,7 +83,7 @@ export function TopBar({
 
         {children}
 
-        <UserMenu instructorName={instructorName} />
+        <UserMenu instructorName={instructorName} teams={teams} activeTeamId={active.teamId} />
       </div>
     </header>
   );

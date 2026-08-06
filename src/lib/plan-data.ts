@@ -2,11 +2,12 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { query, queryOne, TS } from "@/lib/db";
 import type { LibraryRow } from "@/lib/exercise-library";
+import { getActiveTeam } from "@/lib/team-data";
 import { compareByOrder } from "@/lib/plan-view-model";
 import { APP_ROUTES } from "@/lib/routes";
 import type { Block, Exercise, Gate, Phase, Plan, PlanWithPhases } from "@/lib/types";
 
-const PLAN_COLS = `id, instructor_id, title, student_name, ${TS("created_at", "created_at")}`;
+const PLAN_COLS = `id, team_id, created_by, title, student_name, ${TS("created_at", "created_at")}`;
 const PHASE_COLS = `id, plan_id, title, order_index, ${TS("created_at", "created_at")}`;
 const BLOCK_COLS = `id, phase_id, title, description, verb_level, competence_type, hours::float8 as hours, order_index, ${TS("created_at", "created_at")}`;
 const GATE_COLS = `id, plan_id, after_block_id, status, hours_threshold::float8 as hours_threshold, ${TS("created_at", "created_at")}`;
@@ -33,9 +34,8 @@ async function getExercisesForBlocks(blockIds: string[]): Promise<Exercise[]> {
  * Every exercise the instructor has attached anywhere, for the reuse picker.
  *
  * The only query that spans plans rather than walking one plan's tree — hence
- * the CTE, matching getInstructorStats. `exercises` has no instructor_id, so
- * ownership comes from block -> phase -> plan, the same chain every write path
- * uses.
+ * the CTE, matching getInstructorStats. `exercises` has no team_id, so scope
+ * comes from block -> phase -> plan, the same chain every write path uses.
  *
  * 'ready' only, for the reason getExercisesForBlocks gives: a reserved row has
  * no bytes behind it, and copying one would produce an exercise that looks
@@ -44,10 +44,10 @@ async function getExercisesForBlocks(blockIds: string[]): Promise<Exercise[]> {
  * is what spares this a request per keystroke.
  */
 export async function getReusableExercises(limit = 500): Promise<LibraryRow[]> {
-  const user = await getCurrentUserOrRedirect();
+  const { teamId } = await getActiveTeam();
 
   return query<LibraryRow>(
-    `with my_plans as (select id from training_plans where instructor_id = $1)
+    `with my_plans as (select id from training_plans where team_id = $1)
      select e.id, e.file_name, e.kind, e.url, e.content_type, e.size_bytes,
             ${TS("e.created_at", "created_at")}
        from exercises e
@@ -57,7 +57,7 @@ export async function getReusableExercises(limit = 500): Promise<LibraryRow[]> {
         and e.status = 'ready'
       order by e.created_at desc
       limit $2`,
-    [user.id, limit],
+    [teamId, limit],
   );
 }
 
@@ -84,11 +84,11 @@ export async function getInstructorName(): Promise<string> {
 }
 
 export async function getPlansForCurrentInstructor(): Promise<PlanWithPhases[]> {
-  const user = await getCurrentUserOrRedirect();
+  const { teamId } = await getActiveTeam();
 
   const plans = await query<Plan>(
-    `select ${PLAN_COLS} from training_plans where instructor_id = $1 order by created_at desc`,
-    [user.id],
+    `select ${PLAN_COLS} from training_plans where team_id = $1 order by created_at desc`,
+    [teamId],
   );
 
   if (plans.length === 0) return [];
@@ -133,7 +133,7 @@ export type InstructorStats = {
  * records outcomes; gates.status alone holds no history.
  */
 export async function getInstructorStats(): Promise<InstructorStats> {
-  const user = await getCurrentUserOrRedirect();
+  const { teamId } = await getActiveTeam();
 
   const row = await queryOne<{
     active_competitors: string;
@@ -143,7 +143,7 @@ export async function getInstructorStats(): Promise<InstructorStats> {
     in_remediation: string;
   }>(
     `with my_plans as (
-       select id from training_plans where instructor_id = $1
+       select id from training_plans where team_id = $1
      ),
      -- One row per gate, holding only its earliest recorded outcome, so a gate
      -- that was failed then later passed is not counted as a first-try pass.
@@ -166,7 +166,7 @@ export async function getInstructorStats(): Promise<InstructorStats> {
        (select count(*) from first_outcome)                                         as gates_decided,
        (select count(distinct g.plan_id) from gates g
          where g.plan_id in (select id from my_plans) and g.status = 'failed')      as in_remediation`,
-    [user.id],
+    [teamId],
   );
 
   return {
@@ -179,11 +179,11 @@ export async function getInstructorStats(): Promise<InstructorStats> {
 }
 
 export async function getPlanByIdForCurrentInstructor(id: string): Promise<PlanWithPhases> {
-  const user = await getCurrentUserOrRedirect();
+  const { teamId } = await getActiveTeam();
 
   const plan = await queryOne<Plan>(
-    `select ${PLAN_COLS} from training_plans where id = $1 and instructor_id = $2`,
-    [id, user.id],
+    `select ${PLAN_COLS} from training_plans where id = $1 and team_id = $2`,
+    [id, teamId],
   );
 
   if (!plan) {

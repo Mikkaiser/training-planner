@@ -7,6 +7,7 @@ import { APP_ROUTES } from "@/lib/routes";
 const LINKS = [
   { href: APP_ROUTES.home, label: "Plans" },
   { href: APP_ROUTES.assessments, label: "Assessments" },
+  { href: APP_ROUTES.team, label: "Team" },
 ] as const;
 
 /**

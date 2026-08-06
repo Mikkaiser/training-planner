@@ -2,6 +2,7 @@
 
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
+import { requireTeamContext } from "@/lib/team-data";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { z } from "zod";
 import { auth } from "@/auth";
@@ -12,13 +13,6 @@ import { MAX_WORKBOOK_BYTES, readWorkbookGrid } from "@/lib/marking-scheme/read-
 import { assessmentRunRoute, assessmentSchemeRoute, APP_ROUTES } from "@/lib/routes";
 import { bucket, s3Internal } from "@/lib/s3";
 import { slugifyFileName } from "@/lib/exercise-files";
-
-async function requireUserId(): Promise<string> {
-  const session = await auth();
-  const id = session?.user?.id;
-  if (!id) throw new Error("You need to sign in before managing assessments.");
-  return id;
-}
 
 export type ImportResult = { schemeId: string; warnings: string[] };
 
@@ -34,7 +28,7 @@ export type ImportResult = { schemeId: string; warnings: string[] };
  * leaves runs already marked against the previous version untouched.
  */
 export async function importScheme(formData: FormData): Promise<ImportResult> {
-  const userId = await requireUserId();
+  const { userId, teamId } = await requireTeamContext();
 
   const file = formData.get("file");
   if (!(file instanceof File)) throw new Error("No file was received.");
@@ -63,9 +57,9 @@ export async function importScheme(formData: FormData): Promise<ImportResult> {
     await client.query("begin");
 
     await client.query(
-      `insert into assessment_schemes (id, instructor_id, skill, test_project, source_file_name, storage_key, total_max)
-       values ($1, $2, $3, $4, $5, $6, $7)`,
-      [schemeId, userId, scheme.skill, scheme.testProject, file.name, storageKey, scheme.totalMax],
+      `insert into assessment_schemes (id, created_by, team_id, skill, test_project, source_file_name, storage_key, total_max)
+       values ($1, $2, $8, $3, $4, $5, $6, $7)`,
+      [schemeId, userId, scheme.skill, scheme.testProject, file.name, storageKey, scheme.totalMax, teamId],
     );
 
     for (const [criterionIndex, criterion] of scheme.criteria.entries()) {
@@ -153,13 +147,13 @@ const updateSchemeSchema = z.object({
  * re-importing rather than editing here.
  */
 export async function updateScheme(input: z.input<typeof updateSchemeSchema>): Promise<void> {
-  const userId = await requireUserId();
+  const { userId, teamId } = await requireTeamContext();
   const parsed = updateSchemeSchema.parse(input);
 
   const row = await queryOne<{ id: string }>(
     `update assessment_schemes set skill = $3, test_project = $4
-      where id = $1 and instructor_id = $2 returning id`,
-    [parsed.schemeId, userId, parsed.skill.trim(), parsed.testProject.trim()],
+      where id = $1 and team_id = $2 returning id`,
+    [parsed.schemeId, teamId, parsed.skill.trim(), parsed.testProject.trim()],
   );
 
   if (!row) throw new Error("Marking scheme not found, or you do not have access to it.");
@@ -182,15 +176,15 @@ const updateRunSchema = z.object({
  * is deleting the run and marking every aspect again.
  */
 export async function updateRun(input: z.input<typeof updateRunSchema>): Promise<{ schemeId: string }> {
-  const userId = await requireUserId();
+  const { userId, teamId } = await requireTeamContext();
   const parsed = updateRunSchema.parse(input);
 
   const row = await queryOne<{ scheme_id: string }>(
     `update assessment_runs set plan_id = $3, label = $4, updated_at = now()
-      where id = $1 and instructor_id = $2
-        and ($3::uuid is null or exists (select 1 from training_plans where id = $3 and instructor_id = $2))
+      where id = $1 and team_id = $2
+        and ($3::uuid is null or exists (select 1 from training_plans where id = $3 and team_id = $2))
       returning scheme_id`,
-    [parsed.runId, userId, parsed.planId ?? null, (parsed.label ?? "").trim() || null],
+    [parsed.runId, teamId, parsed.planId ?? null, (parsed.label ?? "").trim() || null],
   );
 
   if (!row) throw new Error("Marking run not found, or you do not have access to it.");
@@ -207,16 +201,16 @@ const createRunSchema = z.object({
 });
 
 export async function createRun(input: z.input<typeof createRunSchema>): Promise<{ id: string }> {
-  const userId = await requireUserId();
+  const { userId, teamId } = await requireTeamContext();
   const parsed = createRunSchema.parse(input);
 
   const row = await queryOne<{ id: string }>(
-    `insert into assessment_runs (scheme_id, instructor_id, plan_id, label)
-     select $1, $2, $3, $4
-      where exists (select 1 from assessment_schemes where id = $1 and instructor_id = $2)
-        and ($3::uuid is null or exists (select 1 from training_plans where id = $3 and instructor_id = $2))
+    `insert into assessment_runs (scheme_id, created_by, team_id, plan_id, label)
+     select $1, $5, $2, $3, $4
+      where exists (select 1 from assessment_schemes where id = $1 and team_id = $2)
+        and ($3::uuid is null or exists (select 1 from training_plans where id = $3 and team_id = $2))
      returning id`,
-    [parsed.schemeId, userId, parsed.planId ?? null, (parsed.label ?? "").trim() || null],
+    [parsed.schemeId, teamId, parsed.planId ?? null, (parsed.label ?? "").trim() || null, userId],
   );
 
   if (!row) throw new Error("Scheme or competitor not found, or you do not have access to it.");
@@ -242,7 +236,7 @@ const saveMarkSchema = z.object({
  * maximum here, since the number arrives from the browser.
  */
 export async function saveMark(input: z.input<typeof saveMarkSchema>): Promise<void> {
-  const userId = await requireUserId();
+  const { userId, teamId } = await requireTeamContext();
   const parsed = saveMarkSchema.parse(input);
 
   const aspect = await queryOne<{ type: "measurement" | "judgement"; max_mark: number }>(
@@ -252,8 +246,8 @@ export async function saveMark(input: z.input<typeof saveMarkSchema>): Promise<v
        join assessment_criteria c on c.id = sc.criterion_id
        join assessment_schemes s on s.id = c.scheme_id
        join assessment_runs r on r.scheme_id = s.id
-      where a.id = $1 and r.id = $2 and r.instructor_id = $3`,
-    [parsed.aspectId, parsed.runId, userId],
+      where a.id = $1 and r.id = $2 and r.team_id = $3`,
+    [parsed.aspectId, parsed.runId, teamId],
   );
 
   if (!aspect) throw new Error("Aspect not found on this run, or you do not have access to it.");
@@ -287,11 +281,11 @@ export async function saveMark(input: z.input<typeof saveMarkSchema>): Promise<v
 }
 
 export async function deleteRun(runId: string): Promise<{ schemeId: string }> {
-  const userId = await requireUserId();
+  const { userId, teamId } = await requireTeamContext();
 
   const row = await queryOne<{ scheme_id: string }>(
-    "delete from assessment_runs where id = $1 and instructor_id = $2 returning scheme_id",
-    [runId, userId],
+    "delete from assessment_runs where id = $1 and team_id = $2 returning scheme_id",
+    [runId, teamId],
   );
 
   if (!row) throw new Error("Marking run not found, or you do not have access to it.");
@@ -301,11 +295,11 @@ export async function deleteRun(runId: string): Promise<{ schemeId: string }> {
 }
 
 export async function deleteScheme(schemeId: string): Promise<void> {
-  const userId = await requireUserId();
+  const { userId, teamId } = await requireTeamContext();
 
   const row = await queryOne<{ storage_key: string | null }>(
-    "delete from assessment_schemes where id = $1 and instructor_id = $2 returning storage_key",
-    [schemeId, userId],
+    "delete from assessment_schemes where id = $1 and team_id = $2 returning storage_key",
+    [schemeId, teamId],
   );
 
   if (!row) throw new Error("Marking scheme not found, or you do not have access to it.");

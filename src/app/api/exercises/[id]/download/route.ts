@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { auth } from "@/auth";
+import { requireTeamContext } from "@/lib/team-data";
 import { queryOne } from "@/lib/db";
 import { bucket, s3Public } from "@/lib/s3";
 
@@ -17,12 +18,15 @@ const DOWNLOAD_URL_TTL_SECONDS = 60;
  *
  * The client supplies only an exercise id — never a storage key. The key is
  * resolved server-side from a join that also proves ownership, so there is no
- * input that could point at another instructor's object.
+ * input that could point at another team's object.
  */
 export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
   const session = await auth();
-  const userId = session?.user?.id;
-  if (!userId) return new NextResponse(null, { status: 401 });
+  if (!session?.user?.id) return new NextResponse(null, { status: 401 });
+
+  // Scoped to the team, not the person: a teammate must be able to download a
+  // file somebody else on the team uploaded.
+  const { teamId } = await requireTeamContext();
 
   const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!uuid.test(params.id)) return new NextResponse(null, { status: 404 });
@@ -38,8 +42,8 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
       where e.id = $1
         and e.status = 'ready'
         and e.kind = 'file'
-        and tp.instructor_id = $2`,
-    [params.id, userId],
+        and tp.team_id = $2`,
+    [params.id, teamId],
   );
 
   // 404 rather than 403 for someone else's file: a 403 would confirm that the

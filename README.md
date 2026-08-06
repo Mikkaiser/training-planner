@@ -83,10 +83,20 @@ Sessions use the JWT strategy so `middleware.ts` can verify them at the edge
 without a database round trip. The `sessions` table exists but stays empty
 unless that strategy changes.
 
-**There is no row level security.** Ownership is enforced in application code:
-every query and every server action filters or joins on `instructor_id`. When
-adding a data-access path, carry that check through, or you will expose other
-instructors' plans. `scripts/smoke.ts` asserts the isolation holds.
+**There is no row level security.** Ownership is a *team*, enforced in
+application code: every query and every server action filters or joins on
+`team_id`, resolved once by `getActiveTeam` / `requireTeamContext` in
+`src/lib/team-data.ts`. When adding a data-access path, carry that check
+through, or you will expose another team's plans.
+
+`created_by` is provenance — who made the row — and is never an authorization
+check. It was called `instructor_id` until teams landed; the rename was
+deliberate, so a query still filtering on the old column fails loudly instead of
+quietly returning the wrong rows.
+
+`scripts/smoke.ts` asserts a teammate can read, a removed member immediately
+cannot, and another team never could. `verify:flows` asserts the same through
+the browser with a real second signed-in user.
 
 ### Tests
 
