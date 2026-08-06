@@ -11,8 +11,8 @@ import { bucket, s3Internal } from "@/lib/s3";
  *
  * These live outside "use server" deliberately. Every export of a "use server"
  * module becomes an endpoint the browser can call with arbitrary arguments —
- * collectStorageKeys takes a userId, so exposing it would let anyone enumerate
- * another instructor's object keys by passing their id.
+ * collectStorageKeys takes a teamId, so exposing it would let anyone enumerate
+ * another team's object keys by passing their id.
  */
 
 /**
@@ -42,7 +42,7 @@ export async function deleteObjects(keys: string[]): Promise<void> {
 export async function collectStorageKeys(
   scope: "plan" | "phase" | "block",
   id: string,
-  userId: string,
+  teamId: string,
 ): Promise<string[]> {
   const where = scope === "plan" ? "tp.id = $1" : scope === "phase" ? "ph.id = $1" : "b.id = $1";
 
@@ -53,8 +53,8 @@ export async function collectStorageKeys(
        join blocks b on b.id = e.block_id
        join phases ph on ph.id = b.phase_id
        join training_plans tp on tp.id = ph.plan_id
-      where ${where} and tp.instructor_id = $2 and e.storage_key is not null`,
-    [id, userId],
+      where ${where} and tp.team_id = $2 and e.storage_key is not null`,
+    [id, teamId],
   );
 
   return rows.map((row) => row.storage_key);

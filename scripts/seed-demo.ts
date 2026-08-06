@@ -130,6 +130,24 @@ const PLANS: SeedPlan[] = [
   { title: "New plan — not started", student: "Hana Berg", phases: [] },
 ];
 
+/** The user's personal team, made by the teams migration or here for a new seed user. */
+async function resolveTeamId(client: PoolClient, userId: string, email: string): Promise<string> {
+  const existing = await client.query<{ id: string }>(
+    "select t.id from teams t join team_members tm on tm.team_id = t.id where tm.user_id = $1 and t.is_personal",
+    [userId],
+  );
+  if (existing.rows[0]) return existing.rows[0].id;
+
+  const created = await client.query<{ id: string }>(
+    "insert into teams (name, is_personal, created_by) values ($1, true, $2) returning id",
+    [`${email.split("@")[0]}'s plans`, userId],
+  );
+  const teamId = created.rows[0].id;
+  await client.query("insert into team_members (team_id, user_id, role) values ($1, $2, 'owner')", [teamId, userId]);
+  await client.query("update users set active_team_id = $2 where id = $1", [userId, teamId]);
+  return teamId;
+}
+
 async function resolveUserId(client: PoolClient, email: string): Promise<string> {
   const existing = await client.query<{ id: string }>("select id from users where email = $1", [email]);
   if (existing.rows[0]) return existing.rows[0].id;
@@ -153,17 +171,18 @@ async function main(): Promise<void> {
     await client.query("begin");
 
     const userId = await resolveUserId(client, email);
+    const teamId = await resolveTeamId(client, userId, email);
 
     // Cascades clear phases, blocks, gates, gate_events and exercises.
     const removed = await client.query(
-      "delete from training_plans where instructor_id = $1 and title = any($2::text[])",
-      [userId, PLANS.map((plan) => plan.title)],
+      "delete from training_plans where team_id = $1 and title = any($2::text[])",
+      [teamId, PLANS.map((plan) => plan.title)],
     );
 
     for (const plan of PLANS) {
       const { rows } = await client.query<{ id: string }>(
-        "insert into training_plans (instructor_id, title, student_name) values ($1, $2, $3) returning id",
-        [userId, plan.title, plan.student],
+        "insert into training_plans (created_by, team_id, title, student_name) values ($1, $4, $2, $3) returning id",
+        [userId, plan.title, plan.student, teamId],
       );
       const planId = rows[0].id;
 

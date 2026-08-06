@@ -5,5 +5,7 @@ import { authConfig } from "@/auth.config";
 export const { auth: middleware } = NextAuth(authConfig);
 
 export const config = {
-  matcher: ["/((?!api/auth|_next/static|_next/image|favicon.ico).*)"],
+  // invite/ is excluded so an invited trainer reaches the landing page while
+  // logged out; the page itself sends them to sign in and back again.
+  matcher: ["/((?!api/auth|invite|_next/static|_next/image|favicon.ico|icon.png|apple-icon.png|opengraph-image.png|manifest.webmanifest|brand).*)"],
 };

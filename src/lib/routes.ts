@@ -2,7 +2,12 @@ export const APP_ROUTES = {
   home: "/",
   login: "/login",
   assessments: "/assessments",
+  team: "/team",
 } as const;
+
+export function inviteRoute(token: string): string {
+  return `/invite/${token}`;
+}
 
 export function planDetailRoute(planId: string): string {
   return `/plan/${planId}`;

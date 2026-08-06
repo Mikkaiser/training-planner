@@ -3,10 +3,20 @@ import { signIn } from "@/auth";
 import { APP_ROUTES } from "@/lib/routes";
 import { Logo } from "@/components/layout/Logo";
 
-export default function LoginPage() {
+export default function LoginPage({
+  searchParams,
+}: {
+  searchParams?: { next?: string };
+}) {
+  // Only a path on this site, never an absolute URL: `next` comes from the
+  // query string, and echoing it into redirectTo unchecked is an open redirect
+  // straight out of a login page.
+  const next = searchParams?.next;
+  const target = next && next.startsWith("/") && !next.startsWith("//") ? next : APP_ROUTES.home;
+
   async function signInWithGoogle() {
     "use server";
-    await signIn("google", { redirectTo: APP_ROUTES.home });
+    await signIn("google", { redirectTo: target });
   }
 
   return (
@@ -18,7 +28,9 @@ export default function LoginPage() {
 
         <h1 style={{ margin: 0, fontSize: "32px", letterSpacing: "-0.03em" }}>Welcome back</h1>
         <p style={{ color: "var(--ink-2)", marginTop: "10px", marginBottom: "24px", fontSize: "14px" }}>
-          Continue with your instructor account to open your plans.
+          {next?.startsWith("/invite/")
+            ? "Sign in to accept the invitation."
+            : "Continue with your instructor account to open your plans."}
         </p>
 
         <form action={signInWithGoogle}>

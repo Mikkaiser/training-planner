@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireTeamContext } from "@/lib/team-data";
 import { auth } from "@/auth";
 import { pool, queryOne } from "@/lib/db";
 import { collectStorageKeys, deleteObjects } from "@/lib/exercise-storage";
@@ -37,19 +38,8 @@ type UpdateGateInput = {
   status: GateStatus;
 };
 
-async function requireUserId(): Promise<string> {
-  const session = await auth();
-  const id = session?.user?.id;
-
-  if (!id) {
-    throw new Error("You need to sign in before managing blocks.");
-  }
-
-  return id;
-}
-
 export async function createBlock(input: CreateBlockInput) {
-  const userId = await requireUserId();
+  const { userId, teamId } = await requireTeamContext();
 
   // Block and its gate are written together: previously two separate calls
   // that could leave a block without a gate if the second one failed.
@@ -65,7 +55,7 @@ export async function createBlock(input: CreateBlockInput) {
          select 1
            from phases ph
            join training_plans tp on tp.id = ph.plan_id
-          where ph.id = $1 and tp.id = $8 and tp.instructor_id = $9
+          where ph.id = $1 and tp.id = $8 and tp.team_id = $9
        )
        returning id`,
       [
@@ -77,7 +67,7 @@ export async function createBlock(input: CreateBlockInput) {
         input.hours,
         input.orderIndex,
         input.planId,
-        userId,
+        teamId,
       ],
     );
 
@@ -107,7 +97,7 @@ export async function createBlock(input: CreateBlockInput) {
 }
 
 export async function updateBlock(input: UpdateBlockInput) {
-  const userId = await requireUserId();
+  const { userId, teamId } = await requireTeamContext();
 
   const row = await queryOne<{ id: string }>(
     `update blocks as b
@@ -120,7 +110,7 @@ export async function updateBlock(input: UpdateBlockInput) {
        join training_plans tp on tp.id = ph.plan_id
       where b.id = $1
         and ph.id = b.phase_id
-        and tp.instructor_id = $7
+        and tp.team_id = $7
      returning b.id`,
     [
       input.blockId,
@@ -129,7 +119,7 @@ export async function updateBlock(input: UpdateBlockInput) {
       input.verbLevel,
       input.competenceType,
       input.hours ?? null,
-      userId,
+      teamId,
     ],
   );
 
@@ -141,12 +131,12 @@ export async function updateBlock(input: UpdateBlockInput) {
 }
 
 export async function deleteBlock(planId: string, blockId: string) {
-  const userId = await requireUserId();
+  const { userId, teamId } = await requireTeamContext();
 
   // Collected before the delete: `on delete cascade` removes the exercise rows
   // but knows nothing about the bucket, so without this every deleted block
   // silently leaks its files.
-  const storageKeys = await collectStorageKeys("block", blockId, userId);
+  const storageKeys = await collectStorageKeys("block", blockId, teamId);
 
   const row = await queryOne<{ id: string }>(
     `delete from blocks as b
@@ -154,9 +144,9 @@ export async function deleteBlock(planId: string, blockId: string) {
       where b.id = $1
         and ph.id = b.phase_id
         and tp.id = ph.plan_id
-        and tp.instructor_id = $2
+        and tp.team_id = $2
      returning b.id`,
-    [blockId, userId],
+    [blockId, teamId],
   );
 
   if (!row) {
@@ -188,7 +178,7 @@ export async function reorderBlocks(input: {
    */
   phases: { phaseId: string; orderedIds: string[] }[];
 }) {
-  const userId = await requireUserId();
+  const { userId, teamId } = await requireTeamContext();
   if (input.phases.length === 0) return;
 
   const phaseIds = input.phases.map((phase) => phase.phaseId);
@@ -207,8 +197,8 @@ export async function reorderBlocks(input: {
       `select ph.id
          from phases ph
          join training_plans tp on tp.id = ph.plan_id
-        where ph.id = any($1::uuid[]) and tp.id = $2 and tp.instructor_id = $3`,
-      [phaseIds, input.planId, userId],
+        where ph.id = any($1::uuid[]) and tp.id = $2 and tp.team_id = $3`,
+      [phaseIds, input.planId, teamId],
     );
 
     if (ownedPhases.rowCount !== phaseIds.length) {
@@ -271,7 +261,7 @@ export async function reorderBlocks(input: {
  * second gate appearing on the same block and doubling its checkpoints.
  */
 export async function createGate(input: { planId: string; blockId: string }) {
-  const userId = await requireUserId();
+  const { userId, teamId } = await requireTeamContext();
 
   const row = await queryOne<{ id: string }>(
     `insert into gates (plan_id, after_block_id, status, hours_threshold)
@@ -281,10 +271,10 @@ export async function createGate(input: { planId: string; blockId: string }) {
        join training_plans tp on tp.id = ph.plan_id
       where b.id = $2
         and tp.id = $1
-        and tp.instructor_id = $3
+        and tp.team_id = $3
         and not exists (select 1 from gates g where g.after_block_id = b.id)
      returning id`,
-    [input.planId, input.blockId, userId],
+    [input.planId, input.blockId, teamId],
   );
 
   if (!row) {
@@ -300,16 +290,16 @@ export async function createGate(input: { planId: string; blockId: string }) {
  * would leave the stat strip counting verdicts for a checkpoint nobody can see.
  */
 export async function deleteGate(input: { planId: string; gateId: string }) {
-  const userId = await requireUserId();
+  const { userId, teamId } = await requireTeamContext();
 
   const row = await queryOne<{ id: string }>(
     `delete from gates as g
       using training_plans tp
       where g.id = $1
         and tp.id = g.plan_id
-        and tp.instructor_id = $2
+        and tp.team_id = $2
      returning g.id`,
-    [input.gateId, userId],
+    [input.gateId, teamId],
   );
 
   if (!row) {
@@ -320,7 +310,7 @@ export async function deleteGate(input: { planId: string; gateId: string }) {
 }
 
 export async function updateGateStatus(input: UpdateGateInput) {
-  const userId = await requireUserId();
+  const { userId, teamId } = await requireTeamContext();
 
   // The status update and its history row go together: gates.status only holds
   // the current value, and the list view's stat strip reads gate_events for
@@ -336,9 +326,9 @@ export async function updateGateStatus(input: UpdateGateInput) {
          from training_plans tp
         where g.id = $1
           and tp.id = g.plan_id
-          and tp.instructor_id = $3
+          and tp.team_id = $3
        returning g.id, g.plan_id`,
-      [input.gateId, input.status, userId],
+      [input.gateId, input.status, teamId],
     );
 
     const gate = result.rows[0];

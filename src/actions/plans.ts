@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireTeamContext } from "@/lib/team-data";
 import { auth } from "@/auth";
 import { pool, queryOne } from "@/lib/db";
 import { collectStorageKeys, copyExercisesForClone, deleteObjects } from "@/lib/exercise-storage";
@@ -11,25 +12,14 @@ type CreatePlanInput = {
   studentName: string;
 };
 
-async function requireUserId(): Promise<string> {
-  const session = await auth();
-  const id = session?.user?.id;
-
-  if (!id) {
-    throw new Error("You need to sign in before managing plans.");
-  }
-
-  return id;
-}
-
 export async function createPlan(input: CreatePlanInput) {
-  const userId = await requireUserId();
+  const { userId, teamId } = await requireTeamContext();
 
   const row = await queryOne<{ id: string }>(
-    `insert into training_plans (title, student_name, instructor_id)
-     values ($1, $2, $3)
+    `insert into training_plans (title, student_name, created_by, team_id)
+     values ($1, $2, $3, $4)
      returning id`,
-    [input.title, input.studentName, userId],
+    [input.title, input.studentName, userId, teamId],
   );
 
   if (!row) {
@@ -50,7 +40,7 @@ type UpdatePlanInput = {
 
 /** Rename a plan or correct the competitor's name after it was created. */
 export async function updatePlan(input: UpdatePlanInput) {
-  const userId = await requireUserId();
+  const { userId, teamId } = await requireTeamContext();
 
   const title = input.title.trim();
   const studentName = input.studentName.trim();
@@ -62,9 +52,9 @@ export async function updatePlan(input: UpdatePlanInput) {
   const row = await queryOne<{ id: string }>(
     `update training_plans
         set title = $2, student_name = $3
-      where id = $1 and instructor_id = $4
+      where id = $1 and team_id = $4
      returning id`,
-    [input.planId, title, studentName, userId],
+    [input.planId, title, studentName, teamId],
   );
 
   if (!row) {
@@ -93,7 +83,7 @@ type ClonePlanInput = {
  * gate rows below are always inserted as pending.
  */
 export async function clonePlan(input: ClonePlanInput) {
-  const userId = await requireUserId();
+  const { userId, teamId } = await requireTeamContext();
   const client = await pool.connect();
 
   // sourceBlockId -> newBlockId, needed for the exercise copy after commit.
@@ -104,11 +94,11 @@ export async function clonePlan(input: ClonePlanInput) {
     await client.query("begin");
 
     const created = await client.query<{ id: string }>(
-      `insert into training_plans (title, student_name, instructor_id)
-       select $1, $2, $3
-        where exists (select 1 from training_plans where id = $4 and instructor_id = $3)
+      `insert into training_plans (title, student_name, created_by, team_id)
+       select $1, $2, $5, $3
+        where exists (select 1 from training_plans where id = $4 and team_id = $3)
        returning id`,
-      [input.title, input.studentName, userId, input.sourcePlanId],
+      [input.title, input.studentName, teamId, input.sourcePlanId, userId],
     );
 
     if (!created.rows[0]) {
@@ -194,14 +184,14 @@ export async function clonePlan(input: ClonePlanInput) {
 }
 
 export async function deletePlan(planId: string) {
-  const userId = await requireUserId();
+  const { userId, teamId } = await requireTeamContext();
 
   // Before the cascade takes the phases, blocks and exercise rows with it.
-  const storageKeys = await collectStorageKeys("plan", planId, userId);
+  const storageKeys = await collectStorageKeys("plan", planId, teamId);
 
   const row = await queryOne<{ id: string }>(
-    `delete from training_plans where id = $1 and instructor_id = $2 returning id`,
-    [planId, userId],
+    `delete from training_plans where id = $1 and team_id = $2 returning id`,
+    [planId, teamId],
   );
 
   if (!row) {

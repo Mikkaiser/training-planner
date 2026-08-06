@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireTeamContext } from "@/lib/team-data";
 import { auth } from "@/auth";
 import { pool, queryOne } from "@/lib/db";
 import { collectStorageKeys, deleteObjects } from "@/lib/exercise-storage";
@@ -19,19 +20,8 @@ type UpdatePhaseInput = {
   title: string;
 };
 
-async function requireUserId(): Promise<string> {
-  const session = await auth();
-  const id = session?.user?.id;
-
-  if (!id) {
-    throw new Error("You need to sign in before managing phases.");
-  }
-
-  return id;
-}
-
 export async function createPhase(input: CreatePhaseInput) {
-  const userId = await requireUserId();
+  const { userId, teamId } = await requireTeamContext();
 
   // The select guard replaces the old RLS insert policy: the row is only
   // written if the target plan belongs to the signed-in instructor.
@@ -39,10 +29,10 @@ export async function createPhase(input: CreatePhaseInput) {
     `insert into phases (plan_id, title, order_index)
      select $1, $2, $3
      where exists (
-       select 1 from training_plans where id = $1 and instructor_id = $4
+       select 1 from training_plans where id = $1 and team_id = $4
      )
      returning id`,
-    [input.planId, input.title, input.orderIndex, userId],
+    [input.planId, input.title, input.orderIndex, teamId],
   );
 
   if (!row) {
@@ -53,7 +43,7 @@ export async function createPhase(input: CreatePhaseInput) {
 }
 
 export async function updatePhase(input: UpdatePhaseInput) {
-  const userId = await requireUserId();
+  const { userId, teamId } = await requireTeamContext();
 
   const row = await queryOne<{ id: string }>(
     `update phases as ph
@@ -61,9 +51,9 @@ export async function updatePhase(input: UpdatePhaseInput) {
        from training_plans as tp
       where ph.id = $1
         and tp.id = ph.plan_id
-        and tp.instructor_id = $3
+        and tp.team_id = $3
      returning ph.id`,
-    [input.phaseId, input.title, userId],
+    [input.phaseId, input.title, teamId],
   );
 
   if (!row) {
@@ -83,7 +73,7 @@ export async function updatePhase(input: UpdatePhaseInput) {
  * would not match the guarded update, so the counts would disagree.
  */
 export async function reorderPhases(input: { planId: string; orderedIds: string[] }) {
-  const userId = await requireUserId();
+  const { userId, teamId } = await requireTeamContext();
   if (input.orderedIds.length === 0) return;
 
   const client = await pool.connect();
@@ -95,8 +85,8 @@ export async function reorderPhases(input: { planId: string; orderedIds: string[
       `select ph.id
          from phases ph
          join training_plans tp on tp.id = ph.plan_id
-        where ph.plan_id = $1 and tp.instructor_id = $2`,
-      [input.planId, userId],
+        where ph.plan_id = $1 and tp.team_id = $2`,
+      [input.planId, teamId],
     );
 
     // Comparing the id sets rather than counts also rejects a duplicated id and
@@ -115,8 +105,8 @@ export async function reorderPhases(input: { planId: string; orderedIds: string[
         where ph.id = v.id
           and ph.plan_id = $1
           and tp.id = ph.plan_id
-          and tp.instructor_id = $3`,
-      [input.planId, input.orderedIds, userId],
+          and tp.team_id = $3`,
+      [input.planId, input.orderedIds, teamId],
     );
 
     if (updated.rowCount !== input.orderedIds.length) {
@@ -137,19 +127,19 @@ export async function reorderPhases(input: { planId: string; orderedIds: string[
 }
 
 export async function deletePhase(planId: string, phaseId: string) {
-  const userId = await requireUserId();
+  const { userId, teamId } = await requireTeamContext();
 
   // Before the cascade removes the blocks and their exercise rows.
-  const storageKeys = await collectStorageKeys("phase", phaseId, userId);
+  const storageKeys = await collectStorageKeys("phase", phaseId, teamId);
 
   const row = await queryOne<{ id: string }>(
     `delete from phases as ph
       using training_plans as tp
       where ph.id = $1
         and tp.id = ph.plan_id
-        and tp.instructor_id = $2
+        and tp.team_id = $2
      returning ph.id`,
-    [phaseId, userId],
+    [phaseId, teamId],
   );
 
   if (!row) {

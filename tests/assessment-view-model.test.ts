@@ -32,7 +32,8 @@ const mark = (over: Partial<AssessmentMark> = {}): AssessmentMark => ({
 function makeScheme(): AssessmentScheme {
   return {
     id: "scheme-1",
-    instructor_id: "user-1",
+    team_id: "team-1",
+    created_by: "user-1",
     skill: "Test Skill",
     test_project: "Synthetic",
     source_file_name: "synthetic.xlsx",
