@@ -668,16 +668,22 @@ a {
   transform: translateX(-50%);
 }
 
-/* A card that is one big link, with controls on top of it.
+/* A card or a table row that is one big link, with controls on top of it.
    The link wraps only the plan's name, so it has a real accessible name, and
    its ::after stretches over the whole card to keep the click target the design
    asks for. Nesting buttons inside the anchor instead would be invalid markup
-   and would navigate rather than fire. */
-.tp-card-linked {
+   and would navigate rather than fire.
+
+   Because it stays a real anchor, middle-click, ctrl-click and "open in new
+   tab" all keep working — which an onClick handler on the row would have
+   quietly taken away. */
+.tp-card-linked,
+.tp-row-linked {
   position: relative;
 }
 
-.tp-card-linked .tp-card-link::after {
+.tp-card-linked .tp-card-link::after,
+.tp-row-linked .tp-card-link::after {
   content: "";
   position: absolute;
   inset: 0;

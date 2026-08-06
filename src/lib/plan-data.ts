@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { query, queryOne, TS } from "@/lib/db";
+import type { LibraryRow } from "@/lib/exercise-library";
 import { compareByOrder } from "@/lib/plan-view-model";
 import { APP_ROUTES } from "@/lib/routes";
 import type { Block, Exercise, Gate, Phase, Plan, PlanWithPhases } from "@/lib/types";
@@ -25,6 +26,38 @@ async function getExercisesForBlocks(blockIds: string[]): Promise<Exercise[]> {
         and status = 'ready'
       order by created_at`,
     [blockIds],
+  );
+}
+
+/**
+ * Every exercise the instructor has attached anywhere, for the reuse picker.
+ *
+ * The only query that spans plans rather than walking one plan's tree — hence
+ * the CTE, matching getInstructorStats. `exercises` has no instructor_id, so
+ * ownership comes from block -> phase -> plan, the same chain every write path
+ * uses.
+ *
+ * 'ready' only, for the reason getExercisesForBlocks gives: a reserved row has
+ * no bytes behind it, and copying one would produce an exercise that looks
+ * attached and downloads nothing. The cap is generous for one instructor's
+ * material and keeps the payload small enough to search in the browser, which
+ * is what spares this a request per keystroke.
+ */
+export async function getReusableExercises(limit = 500): Promise<LibraryRow[]> {
+  const user = await getCurrentUserOrRedirect();
+
+  return query<LibraryRow>(
+    `with my_plans as (select id from training_plans where instructor_id = $1)
+     select e.id, e.file_name, e.kind, e.url, e.content_type, e.size_bytes,
+            ${TS("e.created_at", "created_at")}
+       from exercises e
+       join blocks b on b.id = e.block_id
+       join phases ph on ph.id = b.phase_id
+      where ph.plan_id in (select id from my_plans)
+        and e.status = 'ready'
+      order by e.created_at desc
+      limit $2`,
+    [user.id, limit],
   );
 }
 

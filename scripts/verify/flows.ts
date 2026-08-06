@@ -394,6 +394,73 @@ async function main(): Promise<void> {
     const linkRel = await page.getByRole("link", { name: /Open REST pagination notes/ }).getAttribute("rel");
     check("the link opens without leaking the referrer", (linkRel ?? "").includes("noreferrer"), String(linkRel));
 
+    // ── Reuse both onto a second block ───────────────────────────────────
+    // The first block now holds one ready file and one ready link, which is
+    // exactly what the picker should be offering elsewhere.
+    await page.getByRole("button", { name: "Add Block" }).first().click();
+    await page.getByLabel("Add Block").fill("Reuse Target");
+    await page.getByRole("button", { name: "Add", exact: true }).click();
+    await page.waitForSelector("text=Reuse Target", { timeout: 15_000 });
+
+    // Scoped to the card that holds this block: there are two phases by now, so
+    // "the last Add Exercise" is not necessarily the block just created.
+    await expandAllPhases(page);
+    const reuseCard = page.locator(".tp-card", {
+      has: page.getByRole("button", { name: /^Block title: Reuse Target/ }),
+    });
+    await reuseCard.getByRole("button", { name: "Add Exercise" }).first().click();
+
+    // Everything here is scoped to the dialog: the roadmap behind it has its own
+    // "verification-brief.pdf" controls, and the backdrop swallows clicks aimed
+    // at them.
+    const picker = page.getByRole("dialog");
+    const librarySearch = picker.getByLabel("Search exercises you have used before");
+    await librarySearch.waitFor({ timeout: 15_000 });
+
+    await librarySearch.fill("verification-brief");
+    await page.waitForTimeout(400);
+    await picker.getByRole("button", { name: "Reuse verification-brief.pdf" }).click();
+
+    await librarySearch.fill("REST pagination");
+    await page.waitForTimeout(400);
+    await picker.getByRole("button", { name: "Reuse REST pagination notes" }).click();
+
+    await picker.getByRole("button", { name: /^Attach 2$/ }).click();
+    await page.waitForTimeout(2500);
+    await picker.getByRole("button", { name: "Done" }).click();
+    await gotoAuthed(page, planPath);
+    await expandAllPhases(page);
+
+    const reusedBody = await page.locator("body").innerText();
+    check(
+      "both exercises are reused onto the second block",
+      (reusedBody.match(/verification-brief\.pdf/g) ?? []).length >= 2 &&
+        (reusedBody.match(/REST pagination notes/g) ?? []).length >= 2,
+    );
+
+    const reusedLinks = await page.$$eval('a[href="https://example.com/rest-pagination"]', (nodes) => nodes.length);
+    check("the reused link points at the same URL", reusedLinks >= 2, `${reusedLinks} found`);
+
+    const downloads = await page.$$eval('a[href^="/api/exercises/"]', (nodes) =>
+      nodes.map((node) => (node as HTMLAnchorElement).getAttribute("href") ?? ""),
+    );
+    check("the reused file has its own download", new Set(downloads).size >= 2, downloads.join(" "));
+
+    // The guarantee the unique storage_key exists to provide: a reused file is
+    // a copy, so removing one must leave the other downloadable. Sharing a key
+    // would make this fetch 404 after the delete.
+    const [firstDownload, secondDownload] = [...new Set(downloads)];
+    await reuseCard.getByRole("button", { name: /^Remove verification-brief\.pdf$/ }).first().click();
+    await page.getByRole("button", { name: "Remove file", exact: true }).click();
+    await page.waitForTimeout(2000);
+
+    const survivor = await page.request.get(`${BASE_URL}${firstDownload}`);
+    check(
+      "deleting a reused copy leaves the original downloadable",
+      survivor.ok(),
+      `${firstDownload} -> ${survivor.status()} (other copy was ${secondDownload})`,
+    );
+
     // ── Remove the attached file ─────────────────────────────────────────
     // Opacity is asserted, not just presence. Playwright clicks an
     // opacity-0 element quite happily, so a "remove works" check can pass on a
@@ -628,6 +695,36 @@ async function main(): Promise<void> {
         .then(() => true)
         .catch(() => false);
       check(`${view} view: a plan still opens from the list`, opened, page.url());
+
+      // The whole card or row is the target, not just the name. Clicking dead
+      // space — a progress bar, a gate label — has to navigate too, and only a
+      // stretched link does that while leaving middle-click and "open in new
+      // tab" intact.
+      await gotoAuthed(page, `/?view=${view}`);
+      const container = view === "cards" ? ".tp-card-linked" : "tr.tp-row-linked";
+      const box = await page.locator(container).first().boundingBox();
+      let deadSpace = false;
+      if (box) {
+        // Right of centre, clear of the name on the left and the controls on
+        // the far right.
+        await page.mouse.click(box.x + box.width * 0.55, box.y + box.height / 2);
+        deadSpace = await page
+          .waitForURL(/\/plan\//, { timeout: 20_000 })
+          .then(() => true)
+          .catch(() => false);
+      }
+      check(`${view} view: clicking anywhere on it opens the plan`, deadSpace, page.url());
+
+      // ...but not so greedily that it swallows the controls layered above it.
+      await gotoAuthed(page, `/?view=${view}`);
+      await page.getByRole("button", { name: new RegExp(`^Edit .*${process.pid}.*plan$`) }).first().click();
+      const editorOpened = await page
+        .getByRole("dialog")
+        .waitFor({ timeout: 10_000 })
+        .then(() => true)
+        .catch(() => false);
+      check(`${view} view: the row controls still win over the link`, editorOpened);
+      await page.keyboard.press("Escape");
     }
 
     // Both plans carry the pid by now, and the original has also been renamed,

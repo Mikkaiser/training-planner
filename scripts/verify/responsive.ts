@@ -40,12 +40,24 @@ async function main(): Promise<void> {
     );
     if (hrefs.length === 0) throw new Error("No plans — run `pnpm seed:demo` first.");
 
+    // The rail only exists on a roadmap with blocks in an open phase, and the
+    // newest plan is often an empty one left by another run. Picking blindly
+    // made a missing rail read as a CSS regression, so find one that has it.
+    let planHref = hrefs[0];
+    for (const href of hrefs.slice(0, 5)) {
+      await gotoAuthed(page, href);
+      if (await page.locator(".tp-rail-line").count()) {
+        planHref = href;
+        break;
+      }
+    }
+
     const routes = [
       { label: "list · cards", path: "/?view=cards" },
       { label: "list · table", path: "/?view=table" },
-      { label: "detail · timeline", path: `${hrefs[0]}?view=timeline` },
-      { label: "detail · tree", path: `${hrefs[0]}?view=tree` },
-      { label: "detail · route", path: `${hrefs[0]}?view=route` },
+      { label: "detail · timeline", path: `${planHref}?view=timeline` },
+      { label: "detail · tree", path: `${planHref}?view=tree` },
+      { label: "detail · route", path: `${planHref}?view=route` },
       { label: "empty roadmap", path: hrefs[hrefs.length - 1] },
       { label: "assessments library", path: "/assessments" },
       { label: "login", path: "/login" },

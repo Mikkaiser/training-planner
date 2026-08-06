@@ -6,8 +6,8 @@ import { HeadObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { z } from "zod";
 import { auth } from "@/auth";
-import { queryOne } from "@/lib/db";
-import { deleteObjects } from "@/lib/exercise-storage";
+import { query, queryOne } from "@/lib/db";
+import { copyExerciseInto, deleteObjects, type CopyableExercise } from "@/lib/exercise-storage";
 import {
   MAX_FILE_BYTES,
   MAX_FILES_PER_BLOCK,
@@ -18,6 +18,8 @@ import {
   slugifyFileName,
   validateUploadCandidate,
 } from "@/lib/exercise-files";
+import { dedupeReusable, type ReusableExercise } from "@/lib/exercise-library";
+import { getReusableExercises } from "@/lib/plan-data";
 import { planDetailRoute } from "@/lib/routes";
 import { bucket, s3Internal, s3Public } from "@/lib/s3";
 
@@ -203,6 +205,99 @@ export async function confirmExerciseUpload(input: z.input<typeof confirmSchema>
   );
 
   revalidatePath(planDetailRoute(parsed.planId));
+}
+
+/**
+ * Everything the instructor has attached anywhere, collapsed to one entry per
+ * distinct exercise, for the reuse picker.
+ *
+ * Sent whole and filtered in the browser rather than searched per keystroke:
+ * one instructor's material is a few hundred rows at most, and it makes the
+ * matching rules pure enough to unit test. getReusableExercises resolves and
+ * checks the session itself, as every read in plan-data.ts does.
+ */
+export async function listReusableExercises(): Promise<ReusableExercise[]> {
+  return dedupeReusable(await getReusableExercises());
+}
+
+const attachExistingSchema = z.object({
+  planId: z.string().uuid(),
+  blockId: z.string().uuid(),
+  sourceIds: z.array(z.string().uuid()).min(1).max(MAX_FILES_PER_BLOCK),
+});
+
+export type AttachExistingResult = { attached: number; failed: string[] };
+
+/**
+ * Attaches copies of exercises the instructor has already used elsewhere.
+ *
+ * Copies, never references: exercises.storage_key is unique so that each row
+ * owns its object, and removing an exercise from one block can never break
+ * another block that shows the same material.
+ *
+ * The select both loads the sources and proves the caller owns every one of
+ * them, through the same block -> phase -> plan -> instructor chain as every
+ * other write here. A forged id simply does not come back.
+ */
+export async function attachExistingExercises(
+  input: z.input<typeof attachExistingSchema>,
+): Promise<AttachExistingResult> {
+  const userId = await requireUserId();
+  const parsed = attachExistingSchema.parse(input);
+
+  const target = await queryOne<{ used: number }>(
+    `select (select count(*) from exercises where block_id = b.id)::int as used
+       from blocks b
+       join phases ph on ph.id = b.phase_id
+       join training_plans tp on tp.id = ph.plan_id
+      where b.id = $1 and tp.id = $2 and tp.instructor_id = $3`,
+    [parsed.blockId, parsed.planId, userId],
+  );
+
+  if (!target) throw new Error("Block not found, or you do not have access to it.");
+
+  // Checked once for the whole batch. The per-insert guard the other actions
+  // use would attach as many as fit and drop the rest without saying so.
+  const room = MAX_FILES_PER_BLOCK - target.used;
+  if (parsed.sourceIds.length > room) {
+    throw new Error(
+      room <= 0
+        ? `This block already holds ${MAX_FILES_PER_BLOCK} exercises.`
+        : `Only ${room} more exercise${room === 1 ? "" : "s"} will fit on this block.`,
+    );
+  }
+
+  const sources = await query<CopyableExercise & { id: string }>(
+    `select e.id, e.file_name, e.kind, e.storage_key, e.content_type, e.url, e.size_bytes, e.uploaded_by
+       from exercises e
+       join blocks b on b.id = e.block_id
+       join phases ph on ph.id = b.phase_id
+       join training_plans tp on tp.id = ph.plan_id
+      where e.id = any($1::uuid[])
+        and e.status = 'ready'
+        and tp.instructor_id = $2`,
+    [parsed.sourceIds, userId],
+  );
+
+  if (sources.length === 0) throw new Error("Those exercises were not found, or you do not have access to them.");
+
+  const failed: string[] = [];
+  let attached = 0;
+
+  for (const source of sources) {
+    try {
+      await copyExerciseInto(source, parsed.blockId, parsed.planId);
+      attached += 1;
+    } catch (error) {
+      // Unlike a clone, this was an explicit click on named items, so the
+      // caller is told which ones did not make it rather than left to notice.
+      console.error("[attachExistingExercises] could not copy", { id: source.id, error });
+      failed.push(source.file_name);
+    }
+  }
+
+  revalidatePath(planDetailRoute(parsed.planId));
+  return { attached, failed };
 }
 
 const deleteSchema = z.object({

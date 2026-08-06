@@ -3,6 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createExerciseLink } from "@/actions/exercises";
+import { ReuseExercisePicker } from "@/components/plan/detail/ReuseExercisePicker";
 import { Modal } from "@/components/ui/Modal";
 import { Tag } from "@/components/ui/Tag";
 import { CheckIcon, CrossIcon, UploadIcon } from "@/components/ui/icons";
@@ -184,6 +185,13 @@ export function ExerciseUploadPanel({ open, onClose, planId, phaseLabel, block }
             ) : null}
           </form>
         </div>
+
+        <ReuseExercisePicker
+          planId={planId}
+          blockId={block.id}
+          existing={block.exercises}
+          onAttached={() => undefined}
+        />
       </div>
 
       {queue.length > 0 ? (
