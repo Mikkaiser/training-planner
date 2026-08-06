@@ -100,7 +100,7 @@ function PlanRow({ plan }: { plan: PlanSummaryVM }) {
   return (
     <tr className="tp-row-linked">
       <td style={tdLeft}>
-        <Link href={planDetailRoute(plan.id)} className="tp-row tp-gap-3">
+        <Link href={planDetailRoute(plan.id)} className="tp-row tp-gap-3 tp-card-link">
           <div
             style={{
               width: 32,
@@ -188,14 +188,15 @@ function PlanRow({ plan }: { plan: PlanSummaryVM }) {
 }
 
 /**
- * No tp-row-linked here: the inline tint would beat the hover rule anyway, and
- * a draft row already signals itself with that tint and an explicit "Open →".
+ * tp-row-linked is here for the positioning the stretched link needs, not for
+ * the hover: the inline tint below beats that rule, and a draft row already
+ * signals itself with the tint and an explicit "Open →".
  */
 function DraftRow({ plan }: { plan: PlanSummaryVM }) {
   return (
-    <tr style={{ background: "rgba(219, 253, 107, 0.06)" }}>
+    <tr className="tp-row-linked" style={{ background: "rgba(219, 253, 107, 0.06)" }}>
       <td style={tdLeft}>
-        <Link href={planDetailRoute(plan.id)} className="tp-row tp-gap-3">
+        <Link href={planDetailRoute(plan.id)} className="tp-row tp-gap-3 tp-card-link">
           <div
             style={{
               width: 32,
