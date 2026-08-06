@@ -1,6 +1,7 @@
 import { LogIn } from "lucide-react";
 import { signIn } from "@/auth";
 import { APP_ROUTES } from "@/lib/routes";
+import { Logo } from "@/components/layout/Logo";
 
 export default function LoginPage() {
   async function signInWithGoogle() {
@@ -11,9 +12,8 @@ export default function LoginPage() {
   return (
     <main className="tp-page" style={{ justifyContent: "center", alignItems: "center", padding: "24px" }}>
       <section className="tp-card" style={{ width: "100%", maxWidth: "420px", padding: "28px", boxShadow: "var(--shadow-lg)" }}>
-        <div className="tp-logo" style={{ marginBottom: "18px" }}>
-          <div className="tp-logo-mark tp-mono">T</div>
-          <span>Training Planner</span>
+        <div style={{ marginBottom: "18px" }}>
+          <Logo variant="lockup" size={30} />
         </div>
 
         <h1 style={{ margin: 0, fontSize: "32px", letterSpacing: "-0.03em" }}>Welcome back</h1>

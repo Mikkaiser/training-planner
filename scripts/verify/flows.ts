@@ -163,6 +163,68 @@ async function main(): Promise<void> {
       await page.getByText("A blank roadmap, a clear horizon.").isVisible(),
     );
 
+    // ── Brand ────────────────────────────────────────────────────────────
+    // The mark is inline SVG, so "is it there" is a DOM question; the icons
+    // and the manifest are routes, so those are fetches.
+    const markOn = async (path: string) => {
+      await gotoAuthed(page, path);
+      return (await page.locator(".tp-brand svg").count()) > 0;
+    };
+
+    check("the logo is on the plan list", await markOn("/"));
+    check("the logo is on a roadmap", await markOn(planPath));
+
+    await page.goto(`${BASE_URL}/login`, { waitUntil: "networkidle" });
+    check("the logo is on the login page", (await page.locator(".tp-brand svg").count()) > 0);
+
+    await gotoAuthed(page, "/");
+    check(
+      "the wordmark reads as the logo spells it",
+      (await page.locator(".tp-brand-word").first().innerText()).trim() === "trainingplanner",
+    );
+
+    const homeFromLogo = await page
+      .getByRole("link", { name: "Training Planner — home" })
+      .first()
+      .click()
+      .then(() => page.waitForURL(`${BASE_URL}/`, { timeout: 15_000 }))
+      .then(() => true)
+      .catch(() => false);
+    check("the logo goes home", homeFromLogo);
+
+    for (const [label, path, type] of [
+      ["the tab icon", "/icon.png", "image/png"],
+      ["the apple touch icon", "/apple-icon.png", "image/png"],
+      ["the link preview image", "/opengraph-image.png", "image/png"],
+      ["the manifest", "/manifest.webmanifest", "manifest"],
+    ] as const) {
+      const response = await page.request.get(`${BASE_URL}${path}`);
+      check(
+        `${label} is served`,
+        response.ok() && (response.headers()["content-type"] ?? "").includes(type),
+        `${response.status()} ${response.headers()["content-type"] ?? ""}`,
+      );
+    }
+
+    // A manifest naming an icon that 404s installs with a blank tile and says
+    // nothing about it, which is the whole failure mode worth guarding.
+    const manifest = await (await page.request.get(`${BASE_URL}/manifest.webmanifest`)).json();
+    const iconResults = await Promise.all(
+      (manifest.icons ?? []).map(async (icon: { src: string }) => {
+        const response = await page.request.get(`${BASE_URL}${icon.src}`);
+        return { src: icon.src, ok: response.ok() };
+      }),
+    );
+    check(
+      `every manifest icon resolves (${iconResults.length})`,
+      iconResults.length > 0 && iconResults.every((icon) => icon.ok),
+      iconResults.filter((icon) => !icon.ok).map((icon) => icon.src).join(", "),
+    );
+
+    // Back to the roadmap: the logo check above navigated home, and everything
+    // after this point assumes it is still on the plan it just created.
+    await gotoAuthed(page, planPath);
+
     // ── Add a phase, then a block ────────────────────────────────────────
     await page.getByRole("button", { name: "Add Phase" }).click();
     await page.getByRole("button", { name: "Foundation", exact: true }).click();

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Logo } from "@/components/layout/Logo";
 import { MainNav } from "@/components/layout/MainNav";
 import { UserMenu } from "@/components/layout/UserMenu";
 import { BackArrowIcon } from "@/components/ui/icons";
@@ -29,9 +30,8 @@ export function TopBar({
     <header className="tp-topbar">
       {mode === "list" ? (
         <div className="tp-row tp-gap-4" style={{ minWidth: 0 }}>
-          <Link href={APP_ROUTES.home} className="tp-logo">
-            <div className="tp-logo-mark tp-mono">T</div>
-            <span>Training Planner</span>
+          <Link href={APP_ROUTES.home} aria-label="Training Planner — home">
+            <Logo variant="lockup" />
           </Link>
           <MainNav />
         </div>
@@ -44,6 +44,12 @@ export function TopBar({
             aria-label="Back to plans"
           >
             <BackArrowIcon size={12} />
+          </Link>
+          {/* The mark alone here: the back arrow already carries the "leave"
+              affordance, and a full lockup would crowd the competitor's name,
+              which is what this bar is actually for. */}
+          <Link href={APP_ROUTES.home} aria-label="Training Planner — home" className="tp-brand-detail">
+            <Logo variant="mark" size={22} />
           </Link>
           {titleSlot ?? (
             <div className="tp-col" style={{ lineHeight: 1.2 }}>
