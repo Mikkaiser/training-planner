@@ -5,6 +5,7 @@ import { deleteBlock, updateBlock } from "@/actions/blocks";
 import { deleteExercise } from "@/actions/exercises";
 import { ExerciseUploadPanel } from "@/components/plan/detail/ExerciseUploadPanel";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
+import { EditExerciseButton } from "@/components/plan/detail/EditExerciseButton";
 import { InlineEdit } from "@/components/ui/InlineEdit";
 import { SelectPill } from "@/components/ui/SelectPill";
 import { competenceTagClass } from "@/components/ui/Tag";
@@ -132,6 +133,7 @@ export function BlockCard({ block, planId, phaseLabel, active = false, handle }:
                   <DownloadIcon size={12} />
                 </a>
               )}
+              <EditExerciseButton planId={planId} exercise={exercise} disabled={pending} />
               <ConfirmButton
                 className="tp-btn tp-btn-ghost tp-btn-sm"
                 style={{ padding: "4px 8px", borderColor: "transparent", color: "var(--ink-2)" }}

@@ -417,13 +417,15 @@ async function main(): Promise<void> {
     const librarySearch = picker.getByLabel("Search exercises you have used before");
     await librarySearch.waitFor({ timeout: 15_000 });
 
+    // .first() throughout: two exercises can legitimately share a label and
+    // differ only by URL, so the picker showing more than one is correct.
     await librarySearch.fill("verification-brief");
     await page.waitForTimeout(400);
-    await picker.getByRole("button", { name: "Reuse verification-brief.pdf" }).click();
+    await picker.getByRole("button", { name: "Reuse verification-brief.pdf" }).first().click();
 
     await librarySearch.fill("REST pagination");
     await page.waitForTimeout(400);
-    await picker.getByRole("button", { name: "Reuse REST pagination notes" }).click();
+    await picker.getByRole("button", { name: "Reuse REST pagination notes" }).first().click();
 
     await picker.getByRole("button", { name: /^Attach 2$/ }).click();
     await page.waitForTimeout(2500);
@@ -459,6 +461,84 @@ async function main(): Promise<void> {
       "deleting a reused copy leaves the original downloadable",
       survivor.ok(),
       `${firstDownload} -> ${survivor.status()} (other copy was ${secondDownload})`,
+    );
+
+    // ── Edit a label and a link ──────────────────────────────────────────
+    // Both were fixed at the moment of attaching: correcting either meant
+    // deleting the exercise and adding it again. Done on the reused copy, so
+    // this also proves an edit does not reach back to the original.
+    await reuseCard.getByRole("button", { name: "Edit REST pagination notes" }).click();
+    const exerciseDialog = page.getByRole("dialog");
+
+    // The create path refuses a javascript: URL, so the edit path has to as
+    // well — an update that skipped the check would be a way straight past it.
+    await exerciseDialog.getByLabel("Link").fill("javascript:alert(1)");
+    await exerciseDialog.getByRole("button", { name: "Save", exact: true }).click();
+    await page.waitForTimeout(600);
+    // Read through a catch: if the URL were accepted the dialog would have
+    // closed, and innerText would throw rather than report a red check.
+    const refused = await exerciseDialog
+      .innerText()
+      .then((text) => /Only http and https/.test(text))
+      .catch(() => false);
+    check("editing a link refuses a javascript: URL too", refused);
+
+    await exerciseDialog.getByLabel("Label").fill("Pagination notes v2");
+    await exerciseDialog.getByLabel("Link").fill("https://example.com/rest-pagination-v2");
+    await exerciseDialog.getByRole("button", { name: "Save", exact: true }).click();
+    await page.waitForTimeout(1800);
+    await gotoAuthed(page, planPath);
+    await expandAllPhases(page);
+
+    check("an exercise label can be edited", await page.getByText("Pagination notes v2").first().isVisible());
+    const editedHref = await page
+      .getByRole("link", { name: /Open Pagination notes v2/ })
+      .getAttribute("href");
+    check(
+      "an exercise link can be repointed",
+      editedHref === "https://example.com/rest-pagination-v2",
+      String(editedHref),
+    );
+
+    // The copies are independent rows, which is what the modal tells the user.
+    const originalHref = await page
+      .getByRole("link", { name: /Open REST pagination notes/ })
+      .first()
+      .getAttribute("href");
+    check(
+      "editing a reused copy leaves the original alone",
+      originalHref === "https://example.com/rest-pagination",
+      String(originalHref),
+    );
+
+    // A file has no address to edit, so the field must not be offered — an
+    // empty URL box on a file would look like something to fill in.
+    await page.getByRole("button", { name: "Edit verification-brief.pdf" }).first().click();
+    const fileDialog = page.getByRole("dialog");
+    check(
+      "a file offers a label but no link field",
+      (await fileDialog.getByLabel("Label").count()) === 1 &&
+        (await fileDialog.getByLabel("Link").count()) === 0,
+    );
+    await fileDialog.getByLabel("Label").fill("Renamed brief.pdf");
+    await fileDialog.getByRole("button", { name: "Save", exact: true }).click();
+    await page.waitForTimeout(1800);
+    await gotoAuthed(page, planPath);
+    await expandAllPhases(page);
+    check("a file can be relabelled", await page.getByText("Renamed brief.pdf").first().isVisible());
+
+    // Put the name back: later checks look this file up by it, and a run that
+    // leaves the world as it found it is the convention here.
+    await page.getByRole("button", { name: "Edit Renamed brief.pdf" }).first().click();
+    const restoreDialog = page.getByRole("dialog");
+    await restoreDialog.getByLabel("Label").fill("verification-brief.pdf");
+    await restoreDialog.getByRole("button", { name: "Save", exact: true }).click();
+    await page.waitForTimeout(1800);
+    await gotoAuthed(page, planPath);
+    await expandAllPhases(page);
+    check(
+      "the label change round-trips back",
+      await page.getByText("verification-brief.pdf").first().isVisible(),
     );
 
     // ── Remove the attached file ─────────────────────────────────────────
