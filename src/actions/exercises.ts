@@ -300,6 +300,76 @@ export async function attachExistingExercises(
   return { attached, failed };
 }
 
+const updateExerciseSchema = z.object({
+  planId: z.string().uuid(),
+  exerciseId: z.string().uuid(),
+  label: z.string().min(1).max(MAX_LABEL_LENGTH),
+  /** Links only. Ignored for a file, whose address is derived from its id. */
+  url: z.string().max(MAX_URL_LENGTH).optional(),
+});
+
+/**
+ * Corrects an exercise's label, and a link's destination.
+ *
+ * A file's URL is not editable: it has none. What it is served from is derived
+ * from its id, and pointing a file row at somebody else's object is exactly
+ * what storage_key being unique is there to prevent. So the kind is read from
+ * the row rather than trusted from the caller, and a url sent for a file is
+ * dropped rather than quietly written into a column the check constraint
+ * forbids.
+ *
+ * Copies made by reuse or cloning are independent rows, so renaming one here
+ * leaves the others as they were.
+ */
+export async function updateExercise(input: z.input<typeof updateExerciseSchema>): Promise<void> {
+  const userId = await requireUserId();
+  const parsed = updateExerciseSchema.parse(input);
+
+  const existing = await queryOne<{ kind: "file" | "link" }>(
+    `select e.kind
+       from exercises e
+       join blocks b on b.id = e.block_id
+       join phases ph on ph.id = b.phase_id
+       join training_plans tp on tp.id = ph.plan_id
+      where e.id = $1 and tp.id = $2 and tp.instructor_id = $3`,
+    [parsed.exerciseId, parsed.planId, userId],
+  );
+
+  if (!existing) throw new Error("Exercise not found, or you do not have access to it.");
+
+  let url: string | null = null;
+
+  if (existing.kind === "link") {
+    const raw = (parsed.url ?? "").trim();
+    if (!raw) throw new Error("A link needs a URL.");
+
+    // Same normalisation as createExerciseLink, so an edited link cannot become
+    // something the create path would have refused — a javascript: URL, say.
+    const checked = normaliseExerciseUrl(raw);
+    if (!checked.ok) throw new Error(checked.reason);
+    url = checked.url;
+  }
+
+  const row = await queryOne<{ id: string }>(
+    `update exercises e
+        set file_name = $4,
+            url = case when e.kind = 'link' then $5 else e.url end
+       from blocks b, phases ph, training_plans tp
+      where e.id = $1
+        and b.id = e.block_id
+        and ph.id = b.phase_id
+        and tp.id = ph.plan_id
+        and tp.id = $2
+        and tp.instructor_id = $3
+      returning e.id`,
+    [parsed.exerciseId, parsed.planId, userId, parsed.label.trim(), url],
+  );
+
+  if (!row) throw new Error("Exercise not found, or you do not have access to it.");
+
+  revalidatePath(planDetailRoute(parsed.planId));
+}
+
 const deleteSchema = z.object({
   planId: z.string().uuid(),
   exerciseId: z.string().uuid(),
